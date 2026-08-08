@@ -1,0 +1,8 @@
+step=2600000
+chunk=26
+difficulty=D0
+score=59.21
+median_harvested_mg=67.8
+p25_harvested_mg=44.7
+median_time_avg_od=0.0035
+crash_rate=0.0000

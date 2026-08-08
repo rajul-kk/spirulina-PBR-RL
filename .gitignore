@@ -14,10 +14,18 @@
 # controller in model_data/BEST_bc_clone_D2_validated, which is the project's recommended
 # deliverable and the only artefact that passes held-out D2 validation.
 **/recurrent_checkpoints*/
+**/tdmpc2_checkpoints/
+**/varmpc_checkpoints/
 **/best_det_checkpoint/
 **/contaminated_v16_dual_process/
 *.zip
 *.pkl
+*.backup_*
+
+# Per-run training logs copied into each archive directory alongside its checkpoint. Multi-MB
+# each and dominated by per-step [EnvDebug] output; the findings are summarised in
+# PPO_IBM/finalresults.md, which is tracked.
+PPO_IBM/model_data/archive_*/*.log
 
 # ── TensorBoard event files ────────────────────────────────────────────────────────────
 **/ppo_recurrent_tensorboard/

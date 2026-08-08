@@ -1,0 +1,48 @@
+# ── Virtual environments ────────────────────────────────────────────────────────────────
+**/.venv/
+**/venv/
+**/site-packages/
+
+# ── Python caches ──────────────────────────────────────────────────────────────────────
+**/__pycache__/
+*.pyc
+*.pyo
+
+# ── Model weights & normalisation stats ────────────────────────────────────────────────
+# Multiple GB across ~8,600 files and fully regenerable from the training scripts. Git is
+# the wrong tool for these. The one exception is force-added below: the behaviour-cloned
+# controller in model_data/BEST_bc_clone_D2_validated, which is the project's recommended
+# deliverable and the only artefact that passes held-out D2 validation.
+**/recurrent_checkpoints*/
+**/best_det_checkpoint/
+**/contaminated_v16_dual_process/
+*.zip
+*.pkl
+
+# ── TensorBoard event files ────────────────────────────────────────────────────────────
+**/ppo_recurrent_tensorboard/
+**/rsac_tensorboard/
+**/sac_tensorboard/
+**/ppo_pbr_tensorboard/
+**/events.out.tfevents.*
+
+# ── Bulk run logs ──────────────────────────────────────────────────────────────────────
+# Individual training logs are multi-MB (mostly per-step [EnvDebug] output) and are already
+# copied into each run's model_data/archive_*/ directory alongside its checkpoint. The
+# per-run config snapshots (logs/config_*.json) ARE tracked — they are small and are the
+# record of what each run actually ran with.
+PPO_IBM/logs/*.log
+PPO_IBM/logs/scratch/
+PPO_IBM/logs/validation/
+
+# ── Third-party dataset dumps ──────────────────────────────────────────────────────────
+**/__MACOSX/
+**/PBR_Simulation_Dataset/
+
+# ── Generated knowledge graph ──────────────────────────────────────────────────────────
+graphify-out/
+
+# ── OS noise ───────────────────────────────────────────────────────────────────────────
+Thumbs.db
+.DS_Store
+desktop.ini

@@ -1,0 +1,505 @@
+─── Behaviour-Cloning Warm Start ───
+Expert      : stir(60.0, 80.0) light(900.0, 1000.0), harvest = clip(1.0*(od/0.015 - 1), 0, 0.3)
+Demo mix    : {0: 0.4, 1: 0.4, 2: 0.2}
+Episodes    : 24 | BC epochs: 10
+
+  Calibrating VecNormalize with 2000 random steps...
+[EnvDebug] Step: 500, Active: 183, Mass: 21.65, OD: 0.0036, Turb: 3.6437, pH: 8.95, Shock: 0.96, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.101, Done: False
+[EnvDebug] Step: 1000, Active: 226, Mass: 16.87, OD: 0.0028, Turb: 2.7568, pH: 8.94, Shock: 0.20, Clump: 1.00, MeanX: 0.00, RGB: 0.97, Rew: 0.068, Done: False
+[EnvDebug] Step: 1500, Active: 158, Mass: 12.66, OD: 0.0021, Turb: 2.1128, pH: 8.94, Shock: 0.21, Clump: 1.00, MeanX: 0.00, RGB: 0.97, Rew: 0.053, Done: False
+[EnvDebug] Step: 2000, Active: 115, Mass: 9.87, OD: 0.0016, Turb: 1.5452, pH: 8.94, Shock: 0.82, Clump: 1.00, MeanX: 0.00, RGB: 0.97, Rew: 0.058, Done: False
+  Calibration complete. Obs mean: [2.670000e+00 8.910000e+00 5.910000e+00 1.110763e+04 3.465000e+01
+ 5.064902e+04]
+
+  Collecting expert demonstrations...
+[EnvDebug] Step: 500, Active: 640, Mass: 47.08, OD: 0.0078, Turb: 7.6685, pH: 8.95, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.99, Rew: 0.149, Done: False
+[EnvDebug] Step: 1000, Active: 638, Mass: 57.33, OD: 0.0096, Turb: 9.4154, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.99, Rew: 0.158, Done: False
+[EnvDebug] Step: 1500, Active: 637, Mass: 70.05, OD: 0.0117, Turb: 11.5303, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.161, Done: False
+[EnvDebug] Step: 2000, Active: 634, Mass: 85.12, OD: 0.0142, Turb: 14.0884, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.160, Done: False
+[EnvDebug] Step: 2500, Active: 1236, Mass: 100.79, OD: 0.0168, Turb: 16.6079, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.152, Done: False
+[EnvDebug] Step: 3000, Active: 1230, Mass: 121.68, OD: 0.0203, Turb: 19.9703, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.138, Done: False
+[EnvDebug] Step: 3500, Active: 967, Mass: 115.38, OD: 0.0192, Turb: 18.8286, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.143, Done: False
+[EnvDebug] Step: 4000, Active: 1613, Mass: 115.93, OD: 0.0193, Turb: 19.2651, pH: 8.95, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.142, Done: False
+[EnvDebug] Step: 4500, Active: 1269, Mass: 109.63, OD: 0.0183, Turb: 17.7064, pH: 8.95, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.146, Done: False
+[EnvDebug] Step: 5000, Active: 984, Mass: 103.34, OD: 0.0172, Turb: 17.3372, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.151, Done: False
+[EnvDebug] Step: 5500, Active: 785, Mass: 100.22, OD: 0.0167, Turb: 16.7193, pH: 8.87, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.99, Rew: 0.153, Done: False
+[EnvDebug] Step: 6000, Active: 1562, Mass: 121.22, OD: 0.0202, Turb: 19.7627, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.138, Done: False
+[EnvDebug] Step: 6500, Active: 1210, Mass: 113.82, OD: 0.0190, Turb: 18.6334, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.144, Done: False
+[EnvDebug] Step: 7000, Active: 987, Mass: 112.33, OD: 0.0187, Turb: 18.7125, pH: 8.95, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.145, Done: False
+[EnvDebug] Step: 7200, Active: 988, Mass: 121.28, OD: 0.0202, Turb: 20.1354, pH: 8.94, Shock: 1.00, Clump: 1.04, MeanX: 0.00, RGB: 0.98, Rew: 0.139, Done: True
+  demo ep   1/24  D1  stir=  65.4 light=  904.1 mean_frac=0.136  steps=7200  harvested=  173.1mg  time_avg_od=0.0181
+[EnvDebug] Step: 500, Active: 524, Mass: 37.54, OD: 0.0063, Turb: 6.3088, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.136, Done: False
+[EnvDebug] Step: 1000, Active: 523, Mass: 43.49, OD: 0.0072, Turb: 7.3222, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.145, Done: False
+[EnvDebug] Step: 1500, Active: 517, Mass: 50.20, OD: 0.0084, Turb: 8.4008, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.152, Done: False
+[EnvDebug] Step: 2000, Active: 517, Mass: 58.66, OD: 0.0098, Turb: 9.6732, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.158, Done: False
+[EnvDebug] Step: 2500, Active: 515, Mass: 68.30, OD: 0.0114, Turb: 11.2617, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.161, Done: False
+[EnvDebug] Step: 3000, Active: 1014, Mass: 78.27, OD: 0.0130, Turb: 13.0121, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.160, Done: False
+[EnvDebug] Step: 3500, Active: 1012, Mass: 91.13, OD: 0.0152, Turb: 15.5299, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.156, Done: False
+[EnvDebug] Step: 4000, Active: 998, Mass: 104.71, OD: 0.0175, Turb: 17.1524, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.149, Done: False
+[EnvDebug] Step: 4500, Active: 854, Mass: 104.36, OD: 0.0174, Turb: 17.1443, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.149, Done: False
+[EnvDebug] Step: 5000, Active: 1429, Mass: 102.37, OD: 0.0171, Turb: 16.6258, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.150, Done: False
+[EnvDebug] Step: 5500, Active: 1184, Mass: 97.93, OD: 0.0163, Turb: 16.2605, pH: 8.89, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.152, Done: False
+[EnvDebug] Step: 6000, Active: 1181, Mass: 114.18, OD: 0.0190, Turb: 18.9047, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.143, Done: False
+[EnvDebug] Step: 6500, Active: 995, Mass: 112.10, OD: 0.0187, Turb: 18.2507, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.144, Done: False
+[EnvDebug] Step: 7000, Active: 812, Mass: 105.22, OD: 0.0175, Turb: 17.0913, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.149, Done: False
+[EnvDebug] Step: 7200, Active: 1026, Mass: 111.50, OD: 0.0186, Turb: 18.4338, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.145, Done: True
+  demo ep   2/24  D0  stir=  76.3 light=  991.3 mean_frac=0.078  steps=7200  harvested=   93.3mg  time_avg_od=0.0173
+[EnvDebug] Step: 500, Active: 442, Mass: 33.47, OD: 0.0056, Turb: 5.5448, pH: 8.95, Shock: 0.99, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.130, Done: False
+[EnvDebug] Step: 1000, Active: 439, Mass: 42.03, OD: 0.0070, Turb: 7.0674, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.144, Done: False
+[EnvDebug] Step: 1500, Active: 439, Mass: 53.45, OD: 0.0089, Turb: 8.9778, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.156, Done: False
+[EnvDebug] Step: 2000, Active: 873, Mass: 67.25, OD: 0.0112, Turb: 10.9288, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.161, Done: False
+[EnvDebug] Step: 2500, Active: 868, Mass: 84.91, OD: 0.0142, Turb: 13.9933, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.160, Done: False
+[EnvDebug] Step: 3000, Active: 864, Mass: 106.94, OD: 0.0178, Turb: 17.5892, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.149, Done: False
+[EnvDebug] Step: 3500, Active: 1600, Mass: 123.99, OD: 0.0207, Turb: 20.5915, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.137, Done: False
+[EnvDebug] Step: 4000, Active: 1219, Mass: 118.03, OD: 0.0197, Turb: 19.7715, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.141, Done: False
+[EnvDebug] Step: 4500, Active: 930, Mass: 112.77, OD: 0.0188, Turb: 18.5283, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.145, Done: False
+[EnvDebug] Step: 5000, Active: 1405, Mass: 106.93, OD: 0.0178, Turb: 17.7052, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.148, Done: False
+[EnvDebug] Step: 5500, Active: 1094, Mass: 104.93, OD: 0.0175, Turb: 17.5769, pH: 8.87, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.150, Done: False
+[EnvDebug] Step: 6000, Active: 1092, Mass: 132.46, OD: 0.0221, Turb: 21.6793, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.131, Done: False
+[EnvDebug] Step: 6500, Active: 1642, Mass: 124.55, OD: 0.0208, Turb: 20.7252, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.136, Done: False
+[EnvDebug] Step: 7000, Active: 1236, Mass: 117.57, OD: 0.0196, Turb: 19.1029, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.142, Done: False
+[EnvDebug] Step: 7200, Active: 1234, Mass: 128.61, OD: 0.0214, Turb: 21.4762, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.134, Done: True
+  demo ep   3/24  D1  stir=  74.6 light=  954.4 mean_frac=0.143  steps=7200  harvested=  191.3mg  time_avg_od=0.0189
+[EnvDebug] Step: 500, Active: 266, Mass: 19.43, OD: 0.0032, Turb: 3.2776, pH: 8.95, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.094, Done: False
+[EnvDebug] Step: 1000, Active: 265, Mass: 22.99, OD: 0.0038, Turb: 3.7981, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.105, Done: False
+[EnvDebug] Step: 1500, Active: 264, Mass: 27.27, OD: 0.0045, Turb: 4.4732, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.117, Done: False
+[EnvDebug] Step: 2000, Active: 262, Mass: 32.22, OD: 0.0054, Turb: 5.2797, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.128, Done: False
+[EnvDebug] Step: 2500, Active: 523, Mass: 38.16, OD: 0.0064, Turb: 6.4823, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.137, Done: False
+[EnvDebug] Step: 3000, Active: 520, Mass: 45.10, OD: 0.0075, Turb: 7.5415, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.147, Done: False
+[EnvDebug] Step: 3500, Active: 518, Mass: 53.39, OD: 0.0089, Turb: 8.9353, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.155, Done: False
+[EnvDebug] Step: 4000, Active: 514, Mass: 62.88, OD: 0.0105, Turb: 10.5457, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.160, Done: False
+[EnvDebug] Step: 4500, Active: 1023, Mass: 73.93, OD: 0.0123, Turb: 12.4820, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.160, Done: False
+[EnvDebug] Step: 5000, Active: 1020, Mass: 86.86, OD: 0.0145, Turb: 14.5464, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.158, Done: False
+[EnvDebug] Step: 5500, Active: 999, Mass: 99.86, OD: 0.0166, Turb: 16.3857, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.152, Done: False
+[EnvDebug] Step: 6000, Active: 991, Mass: 116.74, OD: 0.0195, Turb: 19.5518, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.141, Done: False
+[EnvDebug] Step: 6500, Active: 922, Mass: 109.13, OD: 0.0182, Turb: 18.0987, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.147, Done: False
+[EnvDebug] Step: 7000, Active: 1357, Mass: 111.12, OD: 0.0185, Turb: 18.4447, pH: 8.95, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.145, Done: False
+[EnvDebug] Step: 7200, Active: 1354, Mass: 118.70, OD: 0.0198, Turb: 19.5292, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.140, Done: True
+  demo ep   4/24  D2  stir=  76.3 light=  900.3 mean_frac=0.045  steps=7200  harvested=   40.1mg  time_avg_od=0.0150
+[EnvDebug] Step: 500, Active: 531, Mass: 40.46, OD: 0.0067, Turb: 6.6739, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.99, Rew: 0.142, Done: False
+[EnvDebug] Step: 1000, Active: 528, Mass: 51.23, OD: 0.0085, Turb: 8.4647, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.154, Done: False
+[EnvDebug] Step: 1500, Active: 526, Mass: 65.19, OD: 0.0109, Turb: 10.9891, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.162, Done: False
+[EnvDebug] Step: 2000, Active: 1045, Mass: 82.16, OD: 0.0137, Turb: 13.5861, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.160, Done: False
+[EnvDebug] Step: 2500, Active: 1018, Mass: 101.78, OD: 0.0170, Turb: 16.9512, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.99, Rew: 0.152, Done: False
+[EnvDebug] Step: 3000, Active: 1012, Mass: 128.22, OD: 0.0214, Turb: 21.2428, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.99, Rew: 0.135, Done: False
+[EnvDebug] Step: 3500, Active: 1543, Mass: 122.25, OD: 0.0204, Turb: 19.7093, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.99, Rew: 0.138, Done: False
+[EnvDebug] Step: 4000, Active: 1209, Mass: 120.45, OD: 0.0201, Turb: 20.0976, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.99, Rew: 0.140, Done: False
+[EnvDebug] Step: 4500, Active: 902, Mass: 113.23, OD: 0.0189, Turb: 18.5233, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.99, Rew: 0.145, Done: False
+[EnvDebug] Step: 5000, Active: 1391, Mass: 109.80, OD: 0.0183, Turb: 18.4492, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.99, Rew: 0.147, Done: False
+[EnvDebug] Step: 5500, Active: 1021, Mass: 101.78, OD: 0.0170, Turb: 16.8930, pH: 8.84, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.99, Rew: 0.152, Done: False
+[EnvDebug] Step: 6000, Active: 1016, Mass: 128.19, OD: 0.0214, Turb: 21.0793, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.99, Rew: 0.135, Done: False
+[EnvDebug] Step: 6500, Active: 1564, Mass: 124.04, OD: 0.0207, Turb: 20.8992, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.99, Rew: 0.137, Done: False
+[EnvDebug] Step: 7000, Active: 1159, Mass: 115.60, OD: 0.0193, Turb: 19.1277, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.99, Rew: 0.143, Done: False
+[EnvDebug] Step: 7200, Active: 1154, Mass: 126.42, OD: 0.0211, Turb: 21.0493, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.99, Rew: 0.136, Done: True
+  demo ep   5/24  D2  stir=  60.7 light=  973.0 mean_frac=0.157  steps=7200  harvested=  217.2mg  time_avg_od=0.0189
+[EnvDebug] Step: 500, Active: 2914, Mass: 212.55, OD: 0.0354, Turb: 35.8815, pH: 8.95, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.074, Done: False
+[EnvDebug] Step: 1000, Active: 2038, Mass: 181.00, OD: 0.0302, Turb: 30.0989, pH: 8.95, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.094, Done: False
+[EnvDebug] Step: 1500, Active: 1429, Mass: 154.79, OD: 0.0258, Turb: 26.1052, pH: 8.95, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.114, Done: False
+[EnvDebug] Step: 2000, Active: 984, Mass: 130.06, OD: 0.0217, Turb: 21.0434, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.133, Done: False
+[EnvDebug] Step: 2500, Active: 1378, Mass: 110.66, OD: 0.0184, Turb: 18.4888, pH: 8.86, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.146, Done: False
+[EnvDebug] Step: 3000, Active: 1367, Mass: 135.79, OD: 0.0226, Turb: 22.0520, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.128, Done: False
+[EnvDebug] Step: 3500, Active: 969, Mass: 118.58, OD: 0.0198, Turb: 19.2347, pH: 8.94, Shock: 1.00, Clump: 1.04, MeanX: 0.00, RGB: 0.98, Rew: 0.141, Done: False
+[EnvDebug] Step: 4000, Active: 1537, Mass: 115.37, OD: 0.0192, Turb: 19.0013, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.143, Done: False
+[EnvDebug] Step: 4500, Active: 1197, Mass: 110.41, OD: 0.0184, Turb: 17.9834, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.146, Done: False
+[EnvDebug] Step: 5000, Active: 939, Mass: 106.29, OD: 0.0177, Turb: 17.5522, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.149, Done: False
+[EnvDebug] Step: 5500, Active: 834, Mass: 101.09, OD: 0.0168, Turb: 16.9539, pH: 8.88, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.152, Done: False
+[EnvDebug] Step: 6000, Active: 1446, Mass: 122.78, OD: 0.0205, Turb: 19.9593, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.137, Done: False
+[EnvDebug] Step: 6500, Active: 1142, Mass: 119.23, OD: 0.0199, Turb: 19.6172, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.140, Done: False
+[EnvDebug] Step: 7000, Active: 893, Mass: 113.87, OD: 0.0190, Turb: 18.4540, pH: 8.94, Shock: 1.00, Clump: 1.04, MeanX: 0.00, RGB: 0.98, Rew: 0.145, Done: False
+[EnvDebug] Step: 7200, Active: 1269, Mass: 123.98, OD: 0.0207, Turb: 20.7352, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.137, Done: True
+  demo ep   6/24  D0  stir=  77.3 light=  954.1 mean_frac=0.248  steps=7200  harvested=  421.0mg  time_avg_od=0.0184
+[EnvDebug] Step: 500, Active: 295, Mass: 23.56, OD: 0.0039, Turb: 3.9584, pH: 8.95, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.108, Done: False
+[EnvDebug] Step: 1000, Active: 294, Mass: 30.99, OD: 0.0052, Turb: 5.3303, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.126, Done: False
+[EnvDebug] Step: 1500, Active: 383, Mass: 40.57, OD: 0.0068, Turb: 6.8116, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.143, Done: False
+[EnvDebug] Step: 2000, Active: 581, Mass: 53.16, OD: 0.0089, Turb: 8.9721, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.156, Done: False
+[EnvDebug] Step: 2500, Active: 578, Mass: 69.81, OD: 0.0116, Turb: 11.4822, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.163, Done: False
+[EnvDebug] Step: 3000, Active: 1148, Mass: 90.58, OD: 0.0151, Turb: 14.9594, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.157, Done: False
+[EnvDebug] Step: 3500, Active: 1144, Mass: 117.88, OD: 0.0196, Turb: 19.4615, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.142, Done: False
+[EnvDebug] Step: 4000, Active: 946, Mass: 125.18, OD: 0.0209, Turb: 20.8113, pH: 8.95, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.137, Done: False
+[EnvDebug] Step: 4500, Active: 1325, Mass: 113.31, OD: 0.0189, Turb: 18.7640, pH: 8.95, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.145, Done: False
+[EnvDebug] Step: 5000, Active: 998, Mass: 110.20, OD: 0.0184, Turb: 18.2696, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.147, Done: False
+[EnvDebug] Step: 5500, Active: 1532, Mass: 109.79, OD: 0.0183, Turb: 18.4936, pH: 8.86, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.147, Done: False
+[EnvDebug] Step: 6000, Active: 1528, Mass: 142.57, OD: 0.0238, Turb: 23.4833, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.123, Done: False
+[EnvDebug] Step: 6500, Active: 1107, Mass: 133.98, OD: 0.0223, Turb: 22.2624, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.130, Done: False
+[EnvDebug] Step: 7000, Active: 1641, Mass: 127.86, OD: 0.0213, Turb: 21.0561, pH: 8.95, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.134, Done: False
+[EnvDebug] Step: 7200, Active: 1639, Mass: 141.73, OD: 0.0236, Turb: 23.7292, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.124, Done: True
+  demo ep   7/24  D0  stir=  68.5 light=  902.8 mean_frac=0.145  steps=7200  harvested=  200.2mg  time_avg_od=0.0199
+[EnvDebug] Step: 500, Active: 322, Mass: 24.27, OD: 0.0040, Turb: 3.9953, pH: 8.94, Shock: 0.98, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.109, Done: False
+[EnvDebug] Step: 1000, Active: 321, Mass: 30.29, OD: 0.0050, Turb: 5.0212, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.124, Done: False
+[EnvDebug] Step: 1500, Active: 321, Mass: 37.92, OD: 0.0063, Turb: 6.3173, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.139, Done: False
+[EnvDebug] Step: 2000, Active: 641, Mass: 47.15, OD: 0.0079, Turb: 7.7408, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.150, Done: False
+[EnvDebug] Step: 2500, Active: 640, Mass: 58.67, OD: 0.0098, Turb: 9.8890, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.158, Done: False
+[EnvDebug] Step: 3000, Active: 636, Mass: 72.64, OD: 0.0121, Turb: 12.2404, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.162, Done: False
+[EnvDebug] Step: 3500, Active: 1229, Mass: 90.07, OD: 0.0150, Turb: 15.0444, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.157, Done: False
+[EnvDebug] Step: 4000, Active: 1254, Mass: 109.62, OD: 0.0183, Turb: 18.2225, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.147, Done: False
+[EnvDebug] Step: 4500, Active: 1032, Mass: 111.09, OD: 0.0185, Turb: 18.6077, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.146, Done: False
+[EnvDebug] Step: 5000, Active: 795, Mass: 105.06, OD: 0.0175, Turb: 17.3410, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.150, Done: False
+[EnvDebug] Step: 5500, Active: 1230, Mass: 100.62, OD: 0.0168, Turb: 16.8130, pH: 8.87, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.152, Done: False
+[EnvDebug] Step: 6000, Active: 1221, Mass: 123.97, OD: 0.0207, Turb: 20.2896, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.137, Done: False
+[EnvDebug] Step: 6500, Active: 979, Mass: 122.55, OD: 0.0204, Turb: 20.4241, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.138, Done: False
+[EnvDebug] Step: 7000, Active: 1467, Mass: 112.75, OD: 0.0188, Turb: 18.7152, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.144, Done: False
+[EnvDebug] Step: 7200, Active: 1467, Mass: 122.76, OD: 0.0205, Turb: 20.2768, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.138, Done: True
+  demo ep   8/24  D0  stir=  73.4 light=  964.7 mean_frac=0.105  steps=7200  harvested=  133.1mg  time_avg_od=0.0183
+[EnvDebug] Step: 500, Active: 351, Mass: 26.46, OD: 0.0044, Turb: 4.4176, pH: 8.95, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.99, Rew: 0.115, Done: False
+[EnvDebug] Step: 1000, Active: 350, Mass: 33.31, OD: 0.0056, Turb: 5.5248, pH: 8.95, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.130, Done: False
+[EnvDebug] Step: 1500, Active: 346, Mass: 42.20, OD: 0.0070, Turb: 7.0396, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.145, Done: False
+[EnvDebug] Step: 2000, Active: 692, Mass: 53.97, OD: 0.0090, Turb: 8.9196, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.156, Done: False
+[EnvDebug] Step: 2500, Active: 689, Mass: 69.14, OD: 0.0115, Turb: 11.3697, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.162, Done: False
+[EnvDebug] Step: 3000, Active: 686, Mass: 88.37, OD: 0.0147, Turb: 14.6699, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.122, Done: False
+[EnvDebug] Step: 3500, Active: 1365, Mass: 111.58, OD: 0.0186, Turb: 18.2715, pH: 8.93, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.146, Done: False
+[EnvDebug] Step: 4000, Active: 1191, Mass: 123.19, OD: 0.0205, Turb: 20.1977, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.138, Done: False
+[EnvDebug] Step: 4500, Active: 836, Mass: 108.97, OD: 0.0182, Turb: 18.1760, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.148, Done: False
+[EnvDebug] Step: 5000, Active: 1323, Mass: 109.56, OD: 0.0183, Turb: 18.3446, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.147, Done: False
+[EnvDebug] Step: 5500, Active: 1005, Mass: 105.88, OD: 0.0176, Turb: 17.2793, pH: 8.85, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.150, Done: False
+[EnvDebug] Step: 6000, Active: 1016, Mass: 134.69, OD: 0.0224, Turb: 22.1858, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.130, Done: False
+[EnvDebug] Step: 6500, Active: 1463, Mass: 124.32, OD: 0.0207, Turb: 20.7240, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.137, Done: False
+[EnvDebug] Step: 7000, Active: 1125, Mass: 121.21, OD: 0.0202, Turb: 19.9459, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.139, Done: False
+[EnvDebug] Step: 7200, Active: 1124, Mass: 133.35, OD: 0.0222, Turb: 21.5614, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.131, Done: True
+  demo ep   9/24  D1  stir=  67.7 light=  999.7 mean_frac=0.131  steps=7200  harvested=  177.0mg  time_avg_od=0.0192
+[EnvDebug] Step: 500, Active: 214, Mass: 16.40, OD: 0.0027, Turb: 2.6754, pH: 8.94, Shock: 0.96, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.085, Done: False
+[EnvDebug] Step: 1000, Active: 214, Mass: 21.11, OD: 0.0035, Turb: 3.6075, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.101, Done: False
+[EnvDebug] Step: 1500, Active: 214, Mass: 27.18, OD: 0.0045, Turb: 4.6098, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.118, Done: False
+[EnvDebug] Step: 2000, Active: 427, Mass: 34.62, OD: 0.0058, Turb: 5.7641, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.133, Done: False
+[EnvDebug] Step: 2500, Active: 426, Mass: 44.27, OD: 0.0074, Turb: 7.4541, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.147, Done: False
+[EnvDebug] Step: 3000, Active: 423, Mass: 56.23, OD: 0.0094, Turb: 9.3215, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.158, Done: False
+[EnvDebug] Step: 3500, Active: 844, Mass: 71.08, OD: 0.0118, Turb: 11.6575, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.161, Done: False
+[EnvDebug] Step: 4000, Active: 843, Mass: 90.07, OD: 0.0150, Turb: 15.2193, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.158, Done: False
+[EnvDebug] Step: 4500, Active: 831, Mass: 111.70, OD: 0.0186, Turb: 18.6158, pH: 8.95, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.146, Done: False
+[EnvDebug] Step: 5000, Active: 1303, Mass: 109.01, OD: 0.0182, Turb: 18.0158, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.147, Done: False
+[EnvDebug] Step: 5500, Active: 946, Mass: 99.87, OD: 0.0166, Turb: 16.5140, pH: 8.87, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.153, Done: False
+[EnvDebug] Step: 6000, Active: 949, Mass: 126.45, OD: 0.0211, Turb: 20.4123, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.136, Done: False
+[EnvDebug] Step: 6500, Active: 1517, Mass: 127.41, OD: 0.0212, Turb: 21.1344, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.134, Done: False
+[EnvDebug] Step: 7000, Active: 1122, Mass: 118.32, OD: 0.0197, Turb: 19.5453, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.141, Done: False
+[EnvDebug] Step: 7200, Active: 1120, Mass: 129.52, OD: 0.0216, Turb: 21.7645, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.133, Done: True
+  demo ep  10/24  D2  stir=  73.7 light=  965.0 mean_frac=0.098  steps=7200  harvested=  123.4mg  time_avg_od=0.0181
+[EnvDebug] Step: 500, Active: 580, Mass: 45.53, OD: 0.0076, Turb: 7.5911, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.99, Rew: 0.148, Done: False
+[EnvDebug] Step: 1000, Active: 578, Mass: 58.47, OD: 0.0097, Turb: 9.5554, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.159, Done: False
+[EnvDebug] Step: 1500, Active: 577, Mass: 74.74, OD: 0.0125, Turb: 12.5931, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.162, Done: False
+[EnvDebug] Step: 2000, Active: 1147, Mass: 93.96, OD: 0.0157, Turb: 15.7416, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.156, Done: False
+[EnvDebug] Step: 2500, Active: 1026, Mass: 105.92, OD: 0.0177, Turb: 17.7560, pH: 8.90, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.149, Done: False
+[EnvDebug] Step: 3000, Active: 1020, Mass: 132.45, OD: 0.0221, Turb: 22.3234, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.131, Done: False
+[EnvDebug] Step: 3500, Active: 1502, Mass: 121.05, OD: 0.0202, Turb: 20.2979, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.139, Done: False
+[EnvDebug] Step: 4000, Active: 1163, Mass: 116.77, OD: 0.0195, Turb: 19.0576, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.142, Done: False
+[EnvDebug] Step: 4500, Active: 906, Mass: 113.48, OD: 0.0189, Turb: 18.8011, pH: 8.95, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.145, Done: False
+[EnvDebug] Step: 5000, Active: 1386, Mass: 108.23, OD: 0.0180, Turb: 18.1422, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.148, Done: False
+[EnvDebug] Step: 5500, Active: 1052, Mass: 103.00, OD: 0.0172, Turb: 17.2279, pH: 8.86, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.151, Done: False
+[EnvDebug] Step: 6000, Active: 1047, Mass: 129.02, OD: 0.0215, Turb: 21.4041, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.134, Done: False
+[EnvDebug] Step: 6500, Active: 1623, Mass: 124.44, OD: 0.0207, Turb: 20.5020, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.136, Done: False
+[EnvDebug] Step: 7000, Active: 1210, Mass: 115.79, OD: 0.0193, Turb: 19.2648, pH: 8.95, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.143, Done: False
+[EnvDebug] Step: 7200, Active: 1205, Mass: 126.18, OD: 0.0210, Turb: 20.3625, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.136, Done: True
+  demo ep  11/24  D1  stir=  67.8 light=  913.5 mean_frac=0.165  steps=7200  harvested=  223.5mg  time_avg_od=0.0188
+[EnvDebug] Step: 500, Active: 343, Mass: 24.74, OD: 0.0041, Turb: 4.0645, pH: 8.95, Shock: 0.96, Clump: 1.00, MeanX: 0.00, RGB: 0.99, Rew: 0.109, Done: False
+[EnvDebug] Step: 1000, Active: 345, Mass: 28.97, OD: 0.0048, Turb: 4.8414, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.99, Rew: 0.120, Done: False
+[EnvDebug] Step: 1500, Active: 341, Mass: 34.08, OD: 0.0057, Turb: 5.6198, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.131, Done: False
+[EnvDebug] Step: 2000, Active: 338, Mass: 40.28, OD: 0.0067, Turb: 6.7844, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.141, Done: False
+[EnvDebug] Step: 2500, Active: 656, Mass: 47.43, OD: 0.0079, Turb: 7.8369, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.149, Done: False
+[EnvDebug] Step: 3000, Active: 667, Mass: 56.34, OD: 0.0094, Turb: 9.3892, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.157, Done: False
+[EnvDebug] Step: 3500, Active: 663, Mass: 66.73, OD: 0.0111, Turb: 11.0937, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.160, Done: False
+[EnvDebug] Step: 4000, Active: 661, Mass: 79.13, OD: 0.0132, Turb: 13.2771, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.160, Done: False
+[EnvDebug] Step: 4500, Active: 1276, Mass: 93.30, OD: 0.0155, Turb: 15.6544, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.155, Done: False
+[EnvDebug] Step: 5000, Active: 1243, Mass: 103.74, OD: 0.0173, Turb: 17.1008, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.150, Done: False
+[EnvDebug] Step: 5500, Active: 1009, Mass: 99.55, OD: 0.0166, Turb: 16.2573, pH: 8.88, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.152, Done: False
+[EnvDebug] Step: 6000, Active: 1003, Mass: 117.90, OD: 0.0197, Turb: 19.1065, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.141, Done: False
+[EnvDebug] Step: 6500, Active: 1110, Mass: 112.83, OD: 0.0188, Turb: 18.8087, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.144, Done: False
+[EnvDebug] Step: 7000, Active: 1351, Mass: 111.54, OD: 0.0186, Turb: 18.3060, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.145, Done: False
+[EnvDebug] Step: 7200, Active: 1349, Mass: 119.39, OD: 0.0199, Turb: 19.2927, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.139, Done: True
+  demo ep  12/24  D1  stir=  70.5 light=  931.0 mean_frac=0.067  steps=7200  harvested=   67.6mg  time_avg_od=0.0166
+[EnvDebug] Step: 500, Active: 630, Mass: 46.13, OD: 0.0077, Turb: 7.5748, pH: 8.95, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.148, Done: False
+[EnvDebug] Step: 1000, Active: 628, Mass: 55.43, OD: 0.0092, Turb: 9.4580, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.156, Done: False
+[EnvDebug] Step: 1500, Active: 627, Mass: 67.14, OD: 0.0112, Turb: 11.0982, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.161, Done: False
+[EnvDebug] Step: 2000, Active: 623, Mass: 81.07, OD: 0.0135, Turb: 13.4730, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.161, Done: False
+[EnvDebug] Step: 2500, Active: 1235, Mass: 97.09, OD: 0.0162, Turb: 16.2183, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.154, Done: False
+[EnvDebug] Step: 3000, Active: 1230, Mass: 116.98, OD: 0.0195, Turb: 18.6911, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.141, Done: False
+[EnvDebug] Step: 3500, Active: 1026, Mass: 117.39, OD: 0.0196, Turb: 19.1798, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.141, Done: False
+[EnvDebug] Step: 4000, Active: 824, Mass: 108.31, OD: 0.0181, Turb: 18.0490, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.148, Done: False
+[EnvDebug] Step: 4500, Active: 1335, Mass: 111.10, OD: 0.0185, Turb: 18.3055, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.145, Done: False
+[EnvDebug] Step: 5000, Active: 1008, Mass: 101.70, OD: 0.0170, Turb: 16.8851, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.151, Done: False
+[EnvDebug] Step: 5500, Active: 831, Mass: 101.75, OD: 0.0170, Turb: 16.6884, pH: 8.89, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.152, Done: False
+[EnvDebug] Step: 6000, Active: 1657, Mass: 122.85, OD: 0.0205, Turb: 20.2794, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.137, Done: False
+[EnvDebug] Step: 6500, Active: 1297, Mass: 116.13, OD: 0.0194, Turb: 19.1538, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.142, Done: False
+[EnvDebug] Step: 7000, Active: 1036, Mass: 111.90, OD: 0.0187, Turb: 18.3903, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.145, Done: False
+[EnvDebug] Step: 7200, Active: 1035, Mass: 120.58, OD: 0.0201, Turb: 20.2797, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.139, Done: True
+  demo ep  13/24  D1  stir=  77.8 light=  993.4 mean_frac=0.130  steps=7200  harvested=  165.0mg  time_avg_od=0.0180
+[EnvDebug] Step: 500, Active: 311, Mass: 24.57, OD: 0.0041, Turb: 3.9594, pH: 8.95, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.111, Done: False
+[EnvDebug] Step: 1000, Active: 307, Mass: 32.03, OD: 0.0053, Turb: 5.3530, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.129, Done: False
+[EnvDebug] Step: 1500, Active: 354, Mass: 42.60, OD: 0.0071, Turb: 6.9818, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.146, Done: False
+[EnvDebug] Step: 2000, Active: 614, Mass: 56.40, OD: 0.0094, Turb: 9.3415, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.158, Done: False
+[EnvDebug] Step: 2500, Active: 612, Mass: 74.97, OD: 0.0125, Turb: 12.3769, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.163, Done: False
+[EnvDebug] Step: 3000, Active: 1222, Mass: 98.79, OD: 0.0165, Turb: 16.5334, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.154, Done: False
+[EnvDebug] Step: 3500, Active: 1205, Mass: 128.78, OD: 0.0215, Turb: 21.0496, pH: 8.95, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.134, Done: False
+[EnvDebug] Step: 4000, Active: 1359, Mass: 128.88, OD: 0.0215, Turb: 21.3601, pH: 8.95, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.134, Done: False
+[EnvDebug] Step: 4500, Active: 1364, Mass: 124.07, OD: 0.0207, Turb: 20.3095, pH: 8.95, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.137, Done: False
+[EnvDebug] Step: 5000, Active: 989, Mass: 118.37, OD: 0.0197, Turb: 19.3577, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.142, Done: False
+[EnvDebug] Step: 5500, Active: 1452, Mass: 113.65, OD: 0.0189, Turb: 18.6812, pH: 8.85, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.144, Done: False
+[EnvDebug] Step: 6000, Active: 1447, Mass: 149.66, OD: 0.0249, Turb: 24.5084, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.118, Done: False
+[EnvDebug] Step: 6500, Active: 1045, Mass: 139.56, OD: 0.0233, Turb: 22.8544, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.127, Done: False
+[EnvDebug] Step: 7000, Active: 1454, Mass: 128.53, OD: 0.0214, Turb: 21.3146, pH: 8.95, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.134, Done: False
+[EnvDebug] Step: 7200, Active: 1453, Mass: 143.30, OD: 0.0239, Turb: 23.3832, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.123, Done: True
+  demo ep  14/24  D0  stir=  71.4 light=  932.2 mean_frac=0.161  steps=7200  harvested=  232.5mg  time_avg_od=0.0208
+[EnvDebug] Step: 500, Active: 1780, Mass: 131.04, OD: 0.0218, Turb: 22.3556, pH: 8.95, Shock: 0.98, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.131, Done: False
+[EnvDebug] Step: 1000, Active: 1254, Mass: 115.76, OD: 0.0193, Turb: 19.1115, pH: 8.95, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.143, Done: False
+[EnvDebug] Step: 1500, Active: 988, Mass: 115.58, OD: 0.0193, Turb: 19.4585, pH: 8.95, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.144, Done: False
+[EnvDebug] Step: 2000, Active: 1463, Mass: 108.16, OD: 0.0180, Turb: 17.8925, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.148, Done: False
+[EnvDebug] Step: 2500, Active: 1130, Mass: 105.94, OD: 0.0177, Turb: 17.6040, pH: 8.86, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.149, Done: False
+[EnvDebug] Step: 3000, Active: 1123, Mass: 134.33, OD: 0.0224, Turb: 22.3006, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.130, Done: False
+[EnvDebug] Step: 3500, Active: 1695, Mass: 127.94, OD: 0.0213, Turb: 21.2098, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.134, Done: False
+[EnvDebug] Step: 4000, Active: 1270, Mass: 121.27, OD: 0.0202, Turb: 19.9062, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.139, Done: False
+[EnvDebug] Step: 4500, Active: 957, Mass: 115.88, OD: 0.0193, Turb: 19.3687, pH: 8.95, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.144, Done: False
+[EnvDebug] Step: 5000, Active: 1438, Mass: 110.54, OD: 0.0184, Turb: 18.2760, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.146, Done: False
+[EnvDebug] Step: 5500, Active: 1077, Mass: 105.62, OD: 0.0176, Turb: 17.6052, pH: 8.85, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.150, Done: False
+[EnvDebug] Step: 6000, Active: 1072, Mass: 134.54, OD: 0.0224, Turb: 22.2437, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.130, Done: False
+[EnvDebug] Step: 6500, Active: 1622, Mass: 129.02, OD: 0.0215, Turb: 21.4931, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.133, Done: False
+[EnvDebug] Step: 7000, Active: 1204, Mass: 121.60, OD: 0.0203, Turb: 20.4328, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.139, Done: False
+[EnvDebug] Step: 7200, Active: 1203, Mass: 133.83, OD: 0.0223, Turb: 21.9898, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.130, Done: True
+  demo ep  15/24  D1  stir=  66.8 light=  939.2 mean_frac=0.250  steps=7200  harvested=  361.6mg  time_avg_od=0.0194
+[EnvDebug] Step: 500, Active: 402, Mass: 28.97, OD: 0.0048, Turb: 4.7577, pH: 8.95, Shock: 0.98, Clump: 1.00, MeanX: 0.00, RGB: 0.99, Rew: 0.120, Done: False
+[EnvDebug] Step: 1000, Active: 407, Mass: 34.43, OD: 0.0057, Turb: 5.6557, pH: 8.95, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.99, Rew: 0.132, Done: False
+[EnvDebug] Step: 1500, Active: 406, Mass: 41.47, OD: 0.0069, Turb: 6.9769, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.143, Done: False
+[EnvDebug] Step: 2000, Active: 400, Mass: 49.56, OD: 0.0083, Turb: 8.0589, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.153, Done: False
+[EnvDebug] Step: 2500, Active: 794, Mass: 59.49, OD: 0.0099, Turb: 10.0540, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.158, Done: False
+[EnvDebug] Step: 3000, Active: 791, Mass: 71.94, OD: 0.0120, Turb: 12.1364, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.161, Done: False
+[EnvDebug] Step: 3500, Active: 786, Mass: 86.73, OD: 0.0145, Turb: 14.1089, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.159, Done: False
+[EnvDebug] Step: 4000, Active: 785, Mass: 104.44, OD: 0.0174, Turb: 17.7370, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.99, Rew: 0.150, Done: False
+[EnvDebug] Step: 4500, Active: 1386, Mass: 111.11, OD: 0.0185, Turb: 18.1890, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.145, Done: False
+[EnvDebug] Step: 5000, Active: 1064, Mass: 102.87, OD: 0.0171, Turb: 17.1252, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.151, Done: False
+[EnvDebug] Step: 5500, Active: 868, Mass: 101.48, OD: 0.0169, Turb: 16.7167, pH: 8.87, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.152, Done: False
+[EnvDebug] Step: 6000, Active: 1662, Mass: 122.55, OD: 0.0204, Turb: 20.4993, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.137, Done: False
+[EnvDebug] Step: 6500, Active: 1335, Mass: 113.83, OD: 0.0190, Turb: 18.6741, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.144, Done: False
+[EnvDebug] Step: 7000, Active: 1097, Mass: 112.95, OD: 0.0188, Turb: 18.9047, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.144, Done: False
+[EnvDebug] Step: 7200, Active: 1096, Mass: 121.86, OD: 0.0203, Turb: 19.8678, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.138, Done: True
+  demo ep  16/24  D2  stir=  64.5 light=  962.3 mean_frac=0.094  steps=7200  harvested=  110.8mg  time_avg_od=0.0179
+[EnvDebug] Step: 500, Active: 438, Mass: 31.81, OD: 0.0053, Turb: 5.2055, pH: 8.95, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.126, Done: False
+[EnvDebug] Step: 1000, Active: 436, Mass: 37.62, OD: 0.0063, Turb: 6.2220, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.137, Done: False
+[EnvDebug] Step: 1500, Active: 436, Mass: 44.97, OD: 0.0075, Turb: 7.4988, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.147, Done: False
+[EnvDebug] Step: 2000, Active: 435, Mass: 53.76, OD: 0.0090, Turb: 8.9784, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.156, Done: False
+[EnvDebug] Step: 2500, Active: 864, Mass: 63.78, OD: 0.0106, Turb: 10.6091, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.159, Done: False
+[EnvDebug] Step: 3000, Active: 861, Mass: 76.07, OD: 0.0127, Turb: 12.6125, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.161, Done: False
+[EnvDebug] Step: 3500, Active: 860, Mass: 90.77, OD: 0.0151, Turb: 15.0279, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.157, Done: False
+[EnvDebug] Step: 4000, Active: 852, Mass: 107.03, OD: 0.0178, Turb: 17.8177, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.148, Done: False
+[EnvDebug] Step: 4500, Active: 1455, Mass: 107.97, OD: 0.0180, Turb: 17.9456, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.147, Done: False
+[EnvDebug] Step: 5000, Active: 1166, Mass: 102.85, OD: 0.0171, Turb: 17.0491, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.150, Done: False
+[EnvDebug] Step: 5500, Active: 956, Mass: 100.65, OD: 0.0168, Turb: 16.5591, pH: 8.89, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.152, Done: False
+[EnvDebug] Step: 6000, Active: 954, Mass: 120.00, OD: 0.0200, Turb: 19.3449, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.140, Done: False
+[EnvDebug] Step: 6500, Active: 1545, Mass: 116.23, OD: 0.0194, Turb: 19.3401, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.142, Done: False
+[EnvDebug] Step: 7000, Active: 1208, Mass: 108.50, OD: 0.0181, Turb: 18.3438, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.115, Done: False
+[EnvDebug] Step: 7200, Active: 1204, Mass: 116.26, OD: 0.0194, Turb: 18.8420, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.142, Done: True
+  demo ep  17/24  D0  stir=  76.7 light=  978.7 mean_frac=0.093  steps=7200  harvested=  109.0mg  time_avg_od=0.0178
+[EnvDebug] Step: 500, Active: 207, Mass: 15.17, OD: 0.0025, Turb: 2.5924, pH: 8.95, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.080, Done: False
+[EnvDebug] Step: 1000, Active: 206, Mass: 18.23, OD: 0.0030, Turb: 3.0861, pH: 8.95, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.091, Done: False
+[EnvDebug] Step: 1500, Active: 203, Mass: 21.86, OD: 0.0036, Turb: 3.6482, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.103, Done: False
+[EnvDebug] Step: 2000, Active: 203, Mass: 26.68, OD: 0.0044, Turb: 4.6018, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.116, Done: False
+[EnvDebug] Step: 2500, Active: 406, Mass: 32.45, OD: 0.0054, Turb: 5.4999, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.128, Done: False
+[EnvDebug] Step: 3000, Active: 405, Mass: 39.58, OD: 0.0066, Turb: 6.4782, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.141, Done: False
+[EnvDebug] Step: 3500, Active: 403, Mass: 48.13, OD: 0.0080, Turb: 7.8733, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.151, Done: False
+[EnvDebug] Step: 4000, Active: 802, Mass: 58.27, OD: 0.0097, Turb: 9.8379, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.158, Done: False
+[EnvDebug] Step: 4500, Active: 799, Mass: 70.57, OD: 0.0118, Turb: 11.8403, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.161, Done: False
+[EnvDebug] Step: 5000, Active: 795, Mass: 85.17, OD: 0.0142, Turb: 13.8892, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.159, Done: False
+[EnvDebug] Step: 5500, Active: 773, Mass: 99.89, OD: 0.0166, Turb: 16.3970, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.153, Done: False
+[EnvDebug] Step: 6000, Active: 1536, Mass: 118.93, OD: 0.0198, Turb: 19.6257, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.140, Done: False
+[EnvDebug] Step: 6500, Active: 1269, Mass: 118.83, OD: 0.0198, Turb: 19.5439, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.140, Done: False
+[EnvDebug] Step: 7000, Active: 956, Mass: 108.61, OD: 0.0181, Turb: 17.9547, pH: 8.95, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.148, Done: False
+[EnvDebug] Step: 7200, Active: 954, Mass: 117.38, OD: 0.0196, Turb: 19.4343, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.142, Done: True
+  demo ep  18/24  D0  stir=  77.5 light=  905.9 mean_frac=0.049  steps=7200  harvested=   52.6mg  time_avg_od=0.0149
+[EnvDebug] Step: 500, Active: 1491, Mass: 110.60, OD: 0.0184, Turb: 18.5788, pH: 8.94, Shock: 0.96, Clump: 1.00, MeanX: 0.00, RGB: 0.99, Rew: 0.146, Done: False
+[EnvDebug] Step: 1000, Active: 1298, Mass: 121.15, OD: 0.0202, Turb: 19.7746, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.139, Done: False
+[EnvDebug] Step: 1500, Active: 988, Mass: 115.77, OD: 0.0193, Turb: 19.3661, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.99, Rew: 0.143, Done: False
+[EnvDebug] Step: 2000, Active: 1419, Mass: 103.91, OD: 0.0173, Turb: 17.3124, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.150, Done: False
+[EnvDebug] Step: 2500, Active: 1126, Mass: 103.40, OD: 0.0172, Turb: 16.9826, pH: 8.86, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.151, Done: False
+[EnvDebug] Step: 3000, Active: 1116, Mass: 129.14, OD: 0.0215, Turb: 21.1220, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.134, Done: False
+[EnvDebug] Step: 3500, Active: 1671, Mass: 120.84, OD: 0.0201, Turb: 19.6422, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.139, Done: False
+[EnvDebug] Step: 4000, Active: 1343, Mass: 121.25, OD: 0.0202, Turb: 20.1823, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.139, Done: False
+[EnvDebug] Step: 4500, Active: 1009, Mass: 114.38, OD: 0.0191, Turb: 19.2742, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.99, Rew: 0.144, Done: False
+[EnvDebug] Step: 5000, Active: 1458, Mass: 108.33, OD: 0.0181, Turb: 17.6441, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.99, Rew: 0.147, Done: False
+[EnvDebug] Step: 5500, Active: 1170, Mass: 103.95, OD: 0.0173, Turb: 17.0725, pH: 8.85, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.150, Done: False
+[EnvDebug] Step: 6000, Active: 1160, Mass: 130.09, OD: 0.0217, Turb: 20.9892, pH: 8.94, Shock: 1.00, Clump: 1.04, MeanX: 0.00, RGB: 0.98, Rew: 0.133, Done: False
+[EnvDebug] Step: 6500, Active: 1382, Mass: 125.30, OD: 0.0209, Turb: 20.8537, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.99, Rew: 0.136, Done: False
+[EnvDebug] Step: 7000, Active: 1353, Mass: 118.62, OD: 0.0198, Turb: 19.2905, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.99, Rew: 0.141, Done: False
+[EnvDebug] Step: 7200, Active: 1350, Mass: 129.81, OD: 0.0216, Turb: 21.1805, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.133, Done: True
+  demo ep  19/24  D0  stir=  63.0 light=  945.0 mean_frac=0.229  steps=7200  harvested=  318.8mg  time_avg_od=0.0191
+[EnvDebug] Step: 500, Active: 411, Mass: 29.58, OD: 0.0049, Turb: 4.8232, pH: 8.94, Shock: 0.97, Clump: 1.00, MeanX: 0.00, RGB: 0.99, Rew: 0.121, Done: False
+[EnvDebug] Step: 1000, Active: 408, Mass: 35.09, OD: 0.0058, Turb: 5.7912, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.99, Rew: 0.133, Done: False
+[EnvDebug] Step: 1500, Active: 406, Mass: 41.78, OD: 0.0070, Turb: 6.8998, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.99, Rew: 0.143, Done: False
+[EnvDebug] Step: 2000, Active: 405, Mass: 49.80, OD: 0.0083, Turb: 8.2628, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.99, Rew: 0.152, Done: False
+[EnvDebug] Step: 2500, Active: 806, Mass: 58.95, OD: 0.0098, Turb: 9.8426, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.99, Rew: 0.158, Done: False
+[EnvDebug] Step: 3000, Active: 801, Mass: 69.74, OD: 0.0116, Turb: 11.4094, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.161, Done: False
+[EnvDebug] Step: 3500, Active: 797, Mass: 82.50, OD: 0.0138, Turb: 13.6771, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.99, Rew: 0.159, Done: False
+[EnvDebug] Step: 4000, Active: 793, Mass: 97.28, OD: 0.0162, Turb: 16.1198, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.99, Rew: 0.154, Done: False
+[EnvDebug] Step: 4500, Active: 1512, Mass: 109.12, OD: 0.0182, Turb: 18.0053, pH: 8.95, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.146, Done: False
+[EnvDebug] Step: 5000, Active: 1188, Mass: 100.96, OD: 0.0168, Turb: 16.7541, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.99, Rew: 0.151, Done: False
+[EnvDebug] Step: 5500, Active: 972, Mass: 98.01, OD: 0.0163, Turb: 16.5876, pH: 8.88, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.153, Done: False
+[EnvDebug] Step: 6000, Active: 968, Mass: 116.17, OD: 0.0194, Turb: 19.1531, pH: 8.94, Shock: 1.00, Clump: 1.04, MeanX: 0.00, RGB: 0.98, Rew: 0.142, Done: False
+[EnvDebug] Step: 6500, Active: 1574, Mass: 116.24, OD: 0.0194, Turb: 19.1544, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.141, Done: False
+[EnvDebug] Step: 7000, Active: 1297, Mass: 108.68, OD: 0.0181, Turb: 18.1197, pH: 8.95, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.147, Done: False
+[EnvDebug] Step: 7200, Active: 1294, Mass: 116.16, OD: 0.0194, Turb: 19.1138, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.142, Done: True
+  demo ep  20/24  D1  stir=  64.6 light=  905.2 mean_frac=0.081  steps=7200  harvested=   91.1mg  time_avg_od=0.0174
+[EnvDebug] Step: 500, Active: 316, Mass: 22.78, OD: 0.0038, Turb: 3.6849, pH: 8.95, Shock: 0.98, Clump: 1.00, MeanX: 0.00, RGB: 0.99, Rew: 0.104, Done: False
+[EnvDebug] Step: 1000, Active: 311, Mass: 26.84, OD: 0.0045, Turb: 4.5106, pH: 8.95, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.115, Done: False
+[EnvDebug] Step: 1500, Active: 309, Mass: 32.07, OD: 0.0053, Turb: 5.3412, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.127, Done: False
+[EnvDebug] Step: 2000, Active: 307, Mass: 38.33, OD: 0.0064, Turb: 6.3628, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.139, Done: False
+[EnvDebug] Step: 2500, Active: 610, Mass: 45.61, OD: 0.0076, Turb: 7.5858, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.148, Done: False
+[EnvDebug] Step: 3000, Active: 607, Mass: 54.52, OD: 0.0091, Turb: 9.0578, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.156, Done: False
+[EnvDebug] Step: 3500, Active: 604, Mass: 65.11, OD: 0.0109, Turb: 10.8869, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.160, Done: False
+[EnvDebug] Step: 4000, Active: 601, Mass: 77.35, OD: 0.0129, Turb: 12.8513, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.161, Done: False
+[EnvDebug] Step: 4500, Active: 1188, Mass: 91.22, OD: 0.0152, Turb: 15.1043, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.156, Done: False
+[EnvDebug] Step: 5000, Active: 1140, Mass: 104.00, OD: 0.0173, Turb: 17.1056, pH: 8.95, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.150, Done: False
+[EnvDebug] Step: 5500, Active: 922, Mass: 100.01, OD: 0.0167, Turb: 16.8583, pH: 8.86, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.99, Rew: 0.152, Done: False
+[EnvDebug] Step: 6000, Active: 923, Mass: 119.44, OD: 0.0199, Turb: 19.2628, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.140, Done: False
+[EnvDebug] Step: 6500, Active: 1473, Mass: 113.79, OD: 0.0190, Turb: 18.8869, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.143, Done: False
+[EnvDebug] Step: 7000, Active: 1175, Mass: 108.24, OD: 0.0180, Turb: 18.0499, pH: 8.95, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.99, Rew: 0.147, Done: False
+[EnvDebug] Step: 7200, Active: 1174, Mass: 116.15, OD: 0.0194, Turb: 19.4475, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.142, Done: True
+  demo ep  21/24  D1  stir=  64.0 light=  909.1 mean_frac=0.064  steps=7200  harvested=   72.6mg  time_avg_od=0.0165
+[EnvDebug] Step: 500, Active: 758, Mass: 57.70, OD: 0.0096, Turb: 9.8273, pH: 8.95, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.99, Rew: 0.158, Done: False
+[EnvDebug] Step: 1000, Active: 756, Mass: 72.14, OD: 0.0120, Turb: 11.9530, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.162, Done: False
+[EnvDebug] Step: 1500, Active: 751, Mass: 89.78, OD: 0.0150, Turb: 14.8133, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.158, Done: False
+[EnvDebug] Step: 2000, Active: 1437, Mass: 106.74, OD: 0.0178, Turb: 17.3551, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.118, Done: False
+[EnvDebug] Step: 2500, Active: 1114, Mass: 102.23, OD: 0.0170, Turb: 17.3084, pH: 8.86, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.151, Done: False
+[EnvDebug] Step: 3000, Active: 1108, Mass: 126.04, OD: 0.0210, Turb: 20.8277, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.136, Done: False
+[EnvDebug] Step: 3500, Active: 1337, Mass: 119.35, OD: 0.0199, Turb: 19.8066, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.140, Done: False
+[EnvDebug] Step: 4000, Active: 1310, Mass: 112.57, OD: 0.0188, Turb: 18.8183, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.145, Done: False
+[EnvDebug] Step: 4500, Active: 1064, Mass: 112.73, OD: 0.0188, Turb: 18.8167, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.145, Done: False
+[EnvDebug] Step: 5000, Active: 811, Mass: 106.22, OD: 0.0177, Turb: 17.6004, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.99, Rew: 0.150, Done: False
+[EnvDebug] Step: 5500, Active: 1252, Mass: 101.73, OD: 0.0170, Turb: 16.6173, pH: 8.86, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.151, Done: False
+[EnvDebug] Step: 6000, Active: 1246, Mass: 126.19, OD: 0.0210, Turb: 20.7412, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.135, Done: False
+[EnvDebug] Step: 6500, Active: 958, Mass: 120.09, OD: 0.0200, Turb: 19.5824, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.140, Done: False
+[EnvDebug] Step: 7000, Active: 1559, Mass: 120.38, OD: 0.0201, Turb: 20.1023, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.139, Done: False
+[EnvDebug] Step: 7200, Active: 1555, Mass: 130.81, OD: 0.0218, Turb: 21.7734, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.132, Done: True
+  demo ep  22/24  D1  stir=  66.0 light=  967.2 mean_frac=0.170  steps=7200  harvested=  221.7mg  time_avg_od=0.0186
+[EnvDebug] Step: 500, Active: 781, Mass: 60.83, OD: 0.0101, Turb: 10.0228, pH: 8.94, Shock: 0.97, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.160, Done: False
+[EnvDebug] Step: 1000, Active: 779, Mass: 80.00, OD: 0.0133, Turb: 13.4895, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.161, Done: False
+[EnvDebug] Step: 1500, Active: 772, Mass: 104.29, OD: 0.0174, Turb: 17.5796, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.152, Done: False
+[EnvDebug] Step: 2000, Active: 1278, Mass: 111.64, OD: 0.0186, Turb: 18.9818, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.146, Done: False
+[EnvDebug] Step: 2500, Active: 918, Mass: 103.73, OD: 0.0173, Turb: 17.3529, pH: 8.87, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.151, Done: False
+[EnvDebug] Step: 3000, Active: 1828, Mass: 133.80, OD: 0.0223, Turb: 22.6612, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.129, Done: False
+[EnvDebug] Step: 3500, Active: 1343, Mass: 126.55, OD: 0.0211, Turb: 21.5126, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.135, Done: False
+[EnvDebug] Step: 4000, Active: 1021, Mass: 123.86, OD: 0.0206, Turb: 20.2871, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.138, Done: False
+[EnvDebug] Step: 4500, Active: 1502, Mass: 116.43, OD: 0.0194, Turb: 19.3684, pH: 8.95, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.142, Done: False
+[EnvDebug] Step: 5000, Active: 1102, Mass: 109.80, OD: 0.0183, Turb: 17.9906, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.147, Done: False
+[EnvDebug] Step: 5500, Active: 845, Mass: 109.47, OD: 0.0182, Turb: 17.8374, pH: 8.88, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.148, Done: False
+[EnvDebug] Step: 6000, Active: 1675, Mass: 141.48, OD: 0.0236, Turb: 23.6438, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.124, Done: False
+[EnvDebug] Step: 6500, Active: 1236, Mass: 135.51, OD: 0.0226, Turb: 22.1747, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.129, Done: False
+[EnvDebug] Step: 7000, Active: 1705, Mass: 126.94, OD: 0.0212, Turb: 21.2185, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.135, Done: False
+[EnvDebug] Step: 7200, Active: 1788, Mass: 140.19, OD: 0.0234, Turb: 23.3630, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.125, Done: True
+  demo ep  23/24  D0  stir=  78.8 light=  936.5 mean_frac=0.206  steps=7200  harvested=  302.9mg  time_avg_od=0.0199
+[EnvDebug] Step: 500, Active: 2436, Mass: 177.86, OD: 0.0296, Turb: 29.7056, pH: 8.95, Shock: 0.99, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.096, Done: False
+[EnvDebug] Step: 1000, Active: 1709, Mass: 153.01, OD: 0.0255, Turb: 25.3014, pH: 8.95, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.115, Done: False
+[EnvDebug] Step: 1500, Active: 1190, Mass: 131.47, OD: 0.0219, Turb: 21.5667, pH: 8.95, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.132, Done: False
+[EnvDebug] Step: 2000, Active: 853, Mass: 115.06, OD: 0.0192, Turb: 19.0270, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.144, Done: False
+[EnvDebug] Step: 2500, Active: 1189, Mass: 100.18, OD: 0.0167, Turb: 16.7418, pH: 8.86, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.152, Done: False
+[EnvDebug] Step: 3000, Active: 1184, Mass: 124.36, OD: 0.0207, Turb: 20.6113, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.137, Done: False
+[EnvDebug] Step: 3500, Active: 928, Mass: 120.69, OD: 0.0201, Turb: 19.8152, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.140, Done: False
+[EnvDebug] Step: 4000, Active: 1429, Mass: 114.80, OD: 0.0191, Turb: 18.5979, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.143, Done: False
+[EnvDebug] Step: 4500, Active: 1118, Mass: 111.42, OD: 0.0186, Turb: 18.7716, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.146, Done: False
+[EnvDebug] Step: 5000, Active: 894, Mass: 111.06, OD: 0.0185, Turb: 17.8596, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.147, Done: False
+[EnvDebug] Step: 5500, Active: 1306, Mass: 100.78, OD: 0.0168, Turb: 17.0568, pH: 8.86, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.152, Done: False
+[EnvDebug] Step: 6000, Active: 1298, Mass: 125.54, OD: 0.0209, Turb: 21.4463, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.136, Done: False
+[EnvDebug] Step: 6500, Active: 1027, Mass: 123.66, OD: 0.0206, Turb: 20.6219, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.138, Done: False
+[EnvDebug] Step: 7000, Active: 1569, Mass: 117.18, OD: 0.0195, Turb: 19.5104, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.141, Done: False
+[EnvDebug] Step: 7200, Active: 1566, Mass: 127.72, OD: 0.0213, Turb: 21.2099, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.134, Done: True
+  demo ep  24/24  D0  stir=  72.6 light=  992.7 mean_frac=0.249  steps=7200  harvested=  384.2mg  time_avg_od=0.0188
+
+  ============================================================================
+  EXPERT PERFORMANCE on the real training start distribution (n=24)
+  ============================================================================
+    median harvested_mg :    175.1   p25:   105.1   min: 40.1  max: 421.0
+    median time_avg_od  :   0.0183
+    crash_rate          :     0.0%
+    vs D1 gate: PASS   [h+ p25+ od+ crash+]
+    vs D2 gate: PASS   [h+ p25+ od+ crash+]
+  ============================================================================
+
+  Collected 172,800 (obs, action) pairs.
+
+  Behaviour cloning (actor + critic, gamma=0.9995, return range 0.0..135.2)...
+  BC epoch  1/10  action MSE = 0.064043   value MSE = 7419.86
+  BC epoch  2/10  action MSE = 0.015439   value MSE = 5990.35
+  BC epoch  3/10  action MSE = 0.011378   value MSE = 5066.29
+  BC epoch  4/10  action MSE = 0.009334   value MSE = 4257.82
+  BC epoch  5/10  action MSE = 0.007306   value MSE = 3546.77
+  BC epoch  6/10  action MSE = 0.006291   value MSE = 2930.43
+  BC epoch  7/10  action MSE = 0.005873   value MSE = 2403.02
+  BC epoch  8/10  action MSE = 0.005538   value MSE = 1968.57
+  BC epoch  9/10  action MSE = 0.005168   value MSE = 1651.09
+  BC epoch 10/10  action MSE = 0.004855   value MSE = 1435.77
+  critic-only epoch  1/25  value MSE =   1184.15  (RMSE  34.41 on returns 0.0..135.2)
+  critic-only epoch  2/25  value MSE =    979.37  (RMSE  31.29 on returns 0.0..135.2)
+  critic-only epoch  3/25  value MSE =    867.49  (RMSE  29.45 on returns 0.0..135.2)
+  critic-only epoch  4/25  value MSE =    784.39  (RMSE  28.01 on returns 0.0..135.2)
+  critic-only epoch  5/25  value MSE =    659.99  (RMSE  25.69 on returns 0.0..135.2)
+  critic-only epoch  6/25  value MSE =    538.08  (RMSE  23.20 on returns 0.0..135.2)
+  critic-only epoch  7/25  value MSE =    471.04  (RMSE  21.70 on returns 0.0..135.2)
+  critic-only epoch  8/25  value MSE =    416.52  (RMSE  20.41 on returns 0.0..135.2)
+  critic-only epoch  9/25  value MSE =    373.79  (RMSE  19.33 on returns 0.0..135.2)
+  critic-only epoch 10/25  value MSE =    340.00  (RMSE  18.44 on returns 0.0..135.2)
+  critic-only epoch 11/25  value MSE =    310.30  (RMSE  17.62 on returns 0.0..135.2)
+  critic-only epoch 12/25  value MSE =    284.73  (RMSE  16.87 on returns 0.0..135.2)
+  critic-only epoch 13/25  value MSE =    266.50  (RMSE  16.32 on returns 0.0..135.2)
+  critic-only epoch 14/25  value MSE =    255.67  (RMSE  15.99 on returns 0.0..135.2)
+  critic-only epoch 15/25  value MSE =    249.05  (RMSE  15.78 on returns 0.0..135.2)
+  critic-only epoch 16/25  value MSE =    242.97  (RMSE  15.59 on returns 0.0..135.2)
+  critic-only epoch 17/25  value MSE =    237.67  (RMSE  15.42 on returns 0.0..135.2)
+  critic-only epoch 18/25  value MSE =    232.29  (RMSE  15.24 on returns 0.0..135.2)
+  critic-only epoch 19/25  value MSE =    226.96  (RMSE  15.07 on returns 0.0..135.2)
+  critic-only epoch 20/25  value MSE =    219.14  (RMSE  14.80 on returns 0.0..135.2)
+  critic-only epoch 21/25  value MSE =    213.67  (RMSE  14.62 on returns 0.0..135.2)
+  critic-only epoch 22/25  value MSE =    209.53  (RMSE  14.48 on returns 0.0..135.2)
+  critic-only epoch 23/25  value MSE =    206.12  (RMSE  14.36 on returns 0.0..135.2)
+  critic-only epoch 24/25  value MSE =    203.54  (RMSE  14.27 on returns 0.0..135.2)
+  critic-only epoch 25/25  value MSE =    200.99  (RMSE  14.18 on returns 0.0..135.2)
+
+  Verification — deterministic rollouts at D1 (expect mean frac ~0.04-0.15, first600 ~0, last600 higher):
+[EnvDebug] Step: 500, Active: 350, Mass: 27.04, OD: 0.0045, Turb: 4.4835, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.116, Done: False
+[EnvDebug] Step: 1000, Active: 347, Mass: 34.15, OD: 0.0057, Turb: 5.5347, pH: 8.95, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.132, Done: False
+[EnvDebug] Step: 1500, Active: 345, Mass: 43.27, OD: 0.0072, Turb: 7.2464, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.147, Done: False
+[EnvDebug] Step: 2000, Active: 685, Mass: 54.35, OD: 0.0091, Turb: 9.1294, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.156, Done: False
+[EnvDebug] Step: 2500, Active: 681, Mass: 68.64, OD: 0.0114, Turb: 11.2835, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.162, Done: False
+[EnvDebug] Step: 3000, Active: 679, Mass: 86.70, OD: 0.0144, Turb: 14.4499, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.159, Done: False
+[EnvDebug] Step: 3500, Active: 1352, Mass: 108.31, OD: 0.0181, Turb: 17.9795, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.148, Done: False
+[EnvDebug] Step: 4000, Active: 1302, Mass: 130.87, OD: 0.0218, Turb: 21.5083, pH: 8.95, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.99, Rew: 0.132, Done: False
+[EnvDebug] Step: 4500, Active: 1002, Mass: 125.78, OD: 0.0210, Turb: 20.9001, pH: 8.95, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.99, Rew: 0.136, Done: False
+[EnvDebug] Step: 5000, Active: 1604, Mass: 125.41, OD: 0.0209, Turb: 20.6246, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.99, Rew: 0.136, Done: False
+[EnvDebug] Step: 5500, Active: 1252, Mass: 122.49, OD: 0.0204, Turb: 20.2926, pH: 8.84, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.99, Rew: 0.138, Done: False
+[EnvDebug] Step: 6000, Active: 1243, Mass: 152.80, OD: 0.0255, Turb: 25.3033, pH: 8.94, Shock: 1.00, Clump: 1.04, MeanX: 0.00, RGB: 0.98, Rew: 0.116, Done: False
+[EnvDebug] Step: 6500, Active: 1863, Mass: 142.40, OD: 0.0237, Turb: 23.4316, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.123, Done: False
+[EnvDebug] Step: 7000, Active: 1395, Mass: 133.00, OD: 0.0222, Turb: 21.9961, pH: 8.95, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.130, Done: False
+[EnvDebug] Step: 7200, Active: 1391, Mass: 145.14, OD: 0.0242, Turb: 24.0442, pH: 8.94, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.98, Rew: 0.121, Done: True
+    ep 1: frac mean=0.114 std=0.114 first600=0.001 last600=0.246 | harvested=  170.7mg time_avg_od=0.0216
+[EnvDebug] Step: 500, Active: 1109, Mass: 150.24, OD: 0.0250, Turb: 24.7641, pH: 8.95, Shock: 0.99, Clump: 1.01, MeanX: 0.00, RGB: 0.98, Rew: 0.116, Done: False
+[EnvDebug] Step: 1000, Active: 1607, Mass: 126.28, OD: 0.0210, Turb: 21.1575, pH: 8.95, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.134, Done: False
+[EnvDebug] Step: 1500, Active: 1234, Mass: 111.89, OD: 0.0186, Turb: 18.6071, pH: 8.95, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.144, Done: False
+[EnvDebug] Step: 2000, Active: 1026, Mass: 107.44, OD: 0.0179, Turb: 17.9449, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.99, Rew: 0.147, Done: False
+[EnvDebug] Step: 2500, Active: 837, Mass: 101.14, OD: 0.0169, Turb: 16.8813, pH: 8.85, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.99, Rew: 0.151, Done: False
+[EnvDebug] Step: 3000, Active: 1193, Mass: 116.84, OD: 0.0195, Turb: 19.1731, pH: 8.95, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.99, Rew: 0.140, Done: False
+[EnvDebug] Step: 3500, Active: 1420, Mass: 113.97, OD: 0.0190, Turb: 19.0532, pH: 8.95, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.99, Rew: 0.142, Done: False
+[EnvDebug] Step: 4000, Active: 1186, Mass: 110.23, OD: 0.0184, Turb: 18.3065, pH: 8.95, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.99, Rew: 0.145, Done: False
+[EnvDebug] Step: 4500, Active: 1022, Mass: 110.35, OD: 0.0184, Turb: 18.2378, pH: 8.95, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.99, Rew: 0.145, Done: False
+[EnvDebug] Step: 5000, Active: 831, Mass: 104.09, OD: 0.0173, Turb: 17.2846, pH: 8.94, Shock: 1.00, Clump: 1.04, MeanX: 0.00, RGB: 0.99, Rew: 0.150, Done: False
+[EnvDebug] Step: 5500, Active: 1425, Mass: 103.33, OD: 0.0172, Turb: 17.1406, pH: 8.86, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.99, Rew: 0.149, Done: False
+[EnvDebug] Step: 6000, Active: 1417, Mass: 119.12, OD: 0.0199, Turb: 19.8294, pH: 8.95, Shock: 1.00, Clump: 1.04, MeanX: 0.00, RGB: 0.99, Rew: 0.139, Done: False
+[EnvDebug] Step: 6500, Active: 1127, Mass: 109.49, OD: 0.0182, Turb: 18.0688, pH: 8.95, Shock: 1.00, Clump: 1.04, MeanX: 0.00, RGB: 0.99, Rew: 0.146, Done: False
+[EnvDebug] Step: 7000, Active: 962, Mass: 107.83, OD: 0.0180, Turb: 17.7095, pH: 8.95, Shock: 1.00, Clump: 1.05, MeanX: 0.00, RGB: 0.99, Rew: 0.147, Done: False
+[EnvDebug] Step: 7200, Active: 960, Mass: 114.05, OD: 0.0190, Turb: 18.5560, pH: 8.95, Shock: 1.00, Clump: 1.05, MeanX: 0.00, RGB: 0.99, Rew: 0.143, Done: True
+    ep 2: frac mean=0.171 std=0.075 first600=0.256 last600=0.151 | harvested=  243.3mg time_avg_od=0.0179
+[EnvDebug] Step: 500, Active: 412, Mass: 30.31, OD: 0.0051, Turb: 4.9985, pH: 8.94, Shock: 0.97, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.123, Done: False
+[EnvDebug] Step: 1000, Active: 408, Mass: 36.90, OD: 0.0061, Turb: 6.1354, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.136, Done: False
+[EnvDebug] Step: 1500, Active: 407, Mass: 45.25, OD: 0.0075, Turb: 7.3773, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.148, Done: False
+[EnvDebug] Step: 2000, Active: 407, Mass: 55.23, OD: 0.0092, Turb: 9.3563, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.98, Rew: 0.157, Done: False
+[EnvDebug] Step: 2500, Active: 807, Mass: 67.00, OD: 0.0112, Turb: 11.1015, pH: 8.94, Shock: 1.00, Clump: 1.00, MeanX: 0.00, RGB: 0.99, Rew: 0.161, Done: False
+[EnvDebug] Step: 3000, Active: 801, Mass: 81.13, OD: 0.0135, Turb: 13.5501, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.160, Done: False
+[EnvDebug] Step: 3500, Active: 797, Mass: 98.10, OD: 0.0164, Turb: 16.0169, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.154, Done: False
+[EnvDebug] Step: 4000, Active: 1590, Mass: 117.83, OD: 0.0196, Turb: 19.8018, pH: 8.94, Shock: 1.00, Clump: 1.01, MeanX: 0.00, RGB: 0.99, Rew: 0.140, Done: False
+[EnvDebug] Step: 4500, Active: 1379, Mass: 122.94, OD: 0.0205, Turb: 20.3654, pH: 8.95, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.99, Rew: 0.137, Done: False
+[EnvDebug] Step: 5000, Active: 1151, Mass: 123.69, OD: 0.0206, Turb: 20.3488, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.99, Rew: 0.137, Done: False
+[EnvDebug] Step: 5500, Active: 910, Mass: 117.93, OD: 0.0197, Turb: 19.4714, pH: 8.84, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.99, Rew: 0.141, Done: False
+[EnvDebug] Step: 6000, Active: 1812, Mass: 141.41, OD: 0.0236, Turb: 23.2255, pH: 8.94, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.123, Done: False
+[EnvDebug] Step: 6500, Active: 1400, Mass: 131.44, OD: 0.0219, Turb: 21.9450, pH: 8.95, Shock: 1.00, Clump: 1.02, MeanX: 0.00, RGB: 0.98, Rew: 0.131, Done: False
+[EnvDebug] Step: 7000, Active: 1090, Mass: 123.00, OD: 0.0205, Turb: 20.1029, pH: 8.95, Shock: 1.00, Clump: 1.03, MeanX: 0.00, RGB: 0.99, Rew: 0.137, Done: False
+[EnvDebug] Step: 7200, Active: 1090, Mass: 132.58, OD: 0.0221, Turb: 21.7246, pH: 8.94, Shock: 1.00, Clump: 1.04, MeanX: 0.00, RGB: 0.98, Rew: 0.130, Done: True
+    ep 3: frac mean=0.094 std=0.103 first600=0.002 last600=0.212 | harvested=  129.7mg time_avg_od=0.0204
+
+  Saved warm start:
+    model : model_data/bc_warmstart\recurrent_ppo_genetic_ibm.zip
+    norm  : model_data/bc_warmstart\recurrent_vec_normalize.pkl
+    state : model_data/bc_warmstart\recurrent_training_state.pkl
+
+  Hand off with:
+    python recurrent_ppo.py --resume model_data/bc_warmstart\recurrent_ppo_genetic_ibm.zip

@@ -1,0 +1,20 @@
+train/approx_kl
+  latest=0.015  step=604800  trend=FALLING
+  last5=[0.0464, 0.011, 0.0156, 0.0507, 0.015]
+
+train/entropy_loss
+  latest=-1.7464  step=604800  trend=RISING
+  last5=[-1.8039, -1.7944, -1.788, -1.7636, -1.7464]
+
+train/explained_variance
+  latest=0.9832  step=604800  trend=flat
+  last5=[0.9484, -0.1514, 0.9705, 0.4692, 0.9832]
+
+train/policy_gradient_loss
+  latest=-0.0069  step=604800  trend=FALLING
+  last5=[0.0107, 0.0086, -0.0047, 0.0089, -0.0069]
+
+train/value_loss
+  latest=0.0907  step=604800  trend=FALLING
+  last5=[0.4326, 3.3191, 0.3429, 1.4231, 0.0907]
+

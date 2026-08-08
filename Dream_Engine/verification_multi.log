@@ -1,0 +1,143 @@
+﻿--- Verifying Dreamer Agent on cpu ---
+Env Initialized. Obs: 5, Action: 4
+Loaded World Model from model_data/dreamer_light\world_model.pth
+Loaded Actor from model_data/dreamer_light\actor.pth
+
+--- Starting Simulation (5 Episodes) ---
+
+Episode 1 | Strain: {'mu_max': 0.19164150220238196, 'Ks': 13.18309502677009, 'Ki': 120.18849875958453, 'Kii': 1574.5813148802458, 'T_opt': 23.998382598721253, 'Q_min': 1.5, 'Q_max': 5.0, 'tau_acclim': 3.9595540887600955}
+[EnvDebug] Step: 100, Active: 500, Done: False
+[EnvDebug] Step: 200, Active: 500, Done: False
+[EnvDebug] Step: 300, Active: 500, Done: False
+[EnvDebug] Step: 400, Active: 500, Done: False
+[EnvDebug] Step: 500, Active: 500, Done: False
+  Step  500 | Reward:  -0.01 | Pop:    500 | OD: 0.01
+[EnvDebug] Step: 600, Active: 500, Done: False
+[EnvDebug] Step: 700, Active: 500, Done: False
+[EnvDebug] Step: 800, Active: 500, Done: False
+[EnvDebug] Step: 900, Active: 500, Done: False
+[EnvDebug] Step: 1000, Active: 500, Done: False
+  Step 1000 | Reward:   0.02 | Pop:    500 | OD: 0.01
+[EnvDebug] Step: 1100, Active: 500, Done: False
+[EnvDebug] Step: 1200, Active: 500, Done: False
+[EnvDebug] Step: 1300, Active: 500, Done: False
+[EnvDebug] Step: 1400, Active: 500, Done: False
+[EnvDebug] Step: 1500, Active: 500, Done: False
+  Step 1500 | Reward:   0.05 | Pop:    500 | OD: 0.01
+[EnvDebug] Step: 1600, Active: 500, Done: False
+[EnvDebug] Step: 1700, Active: 500, Done: False
+[EnvDebug] Step: 1800, Active: 500, Done: False
+[EnvDebug] Step: 1900, Active: 502, Done: False
+[EnvDebug] Step: 2000, Active: 530, Done: False
+  Step 2000 | Reward:   0.07 | Pop:    530 | OD: 0.01
+Episode 1 Finished. Total Reward: 50.52 | Steps: 2000
+
+Episode 2 | Strain: {'mu_max': 0.28016122643271224, 'Ks': 23.157608488757297, 'Ki': 145.2508664924473, 'Kii': 2354.192124462269, 'T_opt': 27.88907415819145, 'Q_min': 1.5, 'Q_max': 5.0, 'tau_acclim': 2.564760877891358}
+[EnvDebug] Step: 100, Active: 500, Done: False
+[EnvDebug] Step: 200, Active: 500, Done: False
+[EnvDebug] Step: 300, Active: 500, Done: False
+[EnvDebug] Step: 400, Active: 500, Done: False
+[EnvDebug] Step: 500, Active: 500, Done: False
+  Step  500 | Reward:   0.01 | Pop:    500 | OD: 0.01
+[EnvDebug] Step: 600, Active: 500, Done: False
+[EnvDebug] Step: 700, Active: 500, Done: False
+[EnvDebug] Step: 800, Active: 500, Done: False
+[EnvDebug] Step: 900, Active: 500, Done: False
+[EnvDebug] Step: 1000, Active: 500, Done: False
+  Step 1000 | Reward:   0.11 | Pop:    500 | OD: 0.01
+[EnvDebug] Step: 1100, Active: 503, Done: False
+[EnvDebug] Step: 1200, Active: 576, Done: False
+[EnvDebug] Step: 1300, Active: 846, Done: False
+[EnvDebug] Step: 1400, Active: 989, Done: False
+[EnvDebug] Step: 1500, Active: 1000, Done: False
+  Step 1500 | Reward:   0.32 | Pop:   1000 | OD: 0.02
+[EnvDebug] Step: 1600, Active: 1002, Done: False
+[EnvDebug] Step: 1700, Active: 1066, Done: False
+[EnvDebug] Step: 1800, Active: 1558, Done: False
+[EnvDebug] Step: 1900, Active: 1944, Done: False
+[EnvDebug] Step: 2000, Active: 1998, Done: False
+  Step 2000 | Reward:   0.44 | Pop:   1998 | OD: 0.04
+Episode 2 Finished. Total Reward: 416.66 | Steps: 2000
+
+Episode 3 | Strain: {'mu_max': 0.33656928262644803, 'Ks': 16.534699874511087, 'Ki': 92.90702296944482, 'Kii': 1402.9825991941134, 'T_opt': 25.5906681897671, 'Q_min': 1.5, 'Q_max': 5.0, 'tau_acclim': 3.788893615033145}
+[EnvDebug] Step: 100, Active: 500, Done: False
+[EnvDebug] Step: 200, Active: 500, Done: False
+[EnvDebug] Step: 300, Active: 500, Done: False
+[EnvDebug] Step: 400, Active: 500, Done: False
+[EnvDebug] Step: 500, Active: 500, Done: False
+  Step  500 | Reward:  -0.01 | Pop:    500 | OD: 0.01
+[EnvDebug] Step: 600, Active: 500, Done: False
+[EnvDebug] Step: 700, Active: 500, Done: False
+[EnvDebug] Step: 800, Active: 500, Done: False
+[EnvDebug] Step: 900, Active: 500, Done: False
+[EnvDebug] Step: 1000, Active: 500, Done: False
+  Step 1000 | Reward:   0.05 | Pop:    500 | OD: 0.01
+[EnvDebug] Step: 1100, Active: 500, Done: False
+[EnvDebug] Step: 1200, Active: 500, Done: False
+[EnvDebug] Step: 1300, Active: 500, Done: False
+[EnvDebug] Step: 1400, Active: 500, Done: False
+[EnvDebug] Step: 1500, Active: 536, Done: False
+  Step 1500 | Reward:   0.24 | Pop:    536 | OD: 0.01
+[EnvDebug] Step: 1600, Active: 742, Done: False
+[EnvDebug] Step: 1700, Active: 957, Done: False
+[EnvDebug] Step: 1800, Active: 998, Done: False
+[EnvDebug] Step: 1900, Active: 1000, Done: False
+[EnvDebug] Step: 2000, Active: 1015, Done: False
+  Step 2000 | Reward:   0.68 | Pop:   1015 | OD: 0.02
+Episode 3 Finished. Total Reward: 198.98 | Steps: 2000
+
+Episode 4 | Strain: {'mu_max': 0.2241713432157677, 'Ks': 17.808999873239735, 'Ki': 110.84974462063622, 'Kii': 2907.491891558094, 'T_opt': 24.518884017365828, 'Q_min': 1.5, 'Q_max': 5.0, 'tau_acclim': 3.7007328711436203}
+[EnvDebug] Step: 100, Active: 500, Done: False
+[EnvDebug] Step: 200, Active: 500, Done: False
+[EnvDebug] Step: 300, Active: 500, Done: False
+[EnvDebug] Step: 400, Active: 500, Done: False
+[EnvDebug] Step: 500, Active: 500, Done: False
+  Step  500 | Reward:  -0.01 | Pop:    500 | OD: 0.01
+[EnvDebug] Step: 600, Active: 500, Done: False
+[EnvDebug] Step: 700, Active: 500, Done: False
+[EnvDebug] Step: 800, Active: 500, Done: False
+[EnvDebug] Step: 900, Active: 500, Done: False
+[EnvDebug] Step: 1000, Active: 500, Done: False
+  Step 1000 | Reward:   0.04 | Pop:    500 | OD: 0.01
+[EnvDebug] Step: 1100, Active: 500, Done: False
+[EnvDebug] Step: 1200, Active: 500, Done: False
+[EnvDebug] Step: 1300, Active: 500, Done: False
+[EnvDebug] Step: 1400, Active: 500, Done: False
+[EnvDebug] Step: 1500, Active: 502, Done: False
+  Step 1500 | Reward:   0.10 | Pop:    502 | OD: 0.01
+[EnvDebug] Step: 1600, Active: 539, Done: False
+[EnvDebug] Step: 1700, Active: 709, Done: False
+[EnvDebug] Step: 1800, Active: 927, Done: False
+[EnvDebug] Step: 1900, Active: 989, Done: False
+[EnvDebug] Step: 2000, Active: 1000, Done: False
+  Step 2000 | Reward:   0.17 | Pop:   1000 | OD: 0.02
+Episode 4 Finished. Total Reward: 155.13 | Steps: 2000
+
+Episode 5 | Strain: {'mu_max': 0.2960766268543081, 'Ks': 14.782806736258998, 'Ki': 71.90047374526586, 'Kii': 2224.2894447555977, 'T_opt': 25.274759995588997, 'Q_min': 1.5, 'Q_max': 5.0, 'tau_acclim': 1.4575144303437888}
+[EnvDebug] Step: 100, Active: 500, Done: False
+[EnvDebug] Step: 200, Active: 500, Done: False
+[EnvDebug] Step: 300, Active: 500, Done: False
+[EnvDebug] Step: 400, Active: 500, Done: False
+[EnvDebug] Step: 500, Active: 500, Done: False
+  Step  500 | Reward:   0.07 | Pop:    500 | OD: 0.01
+[EnvDebug] Step: 600, Active: 500, Done: False
+[EnvDebug] Step: 700, Active: 500, Done: False
+[EnvDebug] Step: 800, Active: 500, Done: False
+[EnvDebug] Step: 900, Active: 534, Done: False
+[EnvDebug] Step: 1000, Active: 786, Done: False
+  Step 1000 | Reward:   0.26 | Pop:    786 | OD: 0.01
+[EnvDebug] Step: 1100, Active: 981, Done: False
+[EnvDebug] Step: 1200, Active: 999, Done: False
+[EnvDebug] Step: 1300, Active: 1000, Done: False
+[EnvDebug] Step: 1400, Active: 1018, Done: False
+[EnvDebug] Step: 1500, Active: 1381, Done: False
+  Step 1500 | Reward:   0.52 | Pop:   1381 | OD: 0.03
+[EnvDebug] Step: 1600, Active: 1904, Done: False
+[EnvDebug] Step: 1700, Active: 1996, Done: False
+[EnvDebug] Step: 1800, Active: 2000, Done: False
+[EnvDebug] Step: 1900, Active: 2016, Done: False
+[EnvDebug] Step: 2000, Active: 2483, Done: False
+  Step 2000 | Reward:   2.22 | Pop:   2483 | OD: 0.05
+Episode 5 Finished. Total Reward: 607.92 | Steps: 2000
+
+--- Simulation Finished ---

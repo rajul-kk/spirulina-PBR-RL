@@ -1,9 +1,15 @@
 
+import os
 import sys
 import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
 from typing import Optional, Dict
+
+# Per-step physics trace, OFF by default. See the gate at the `[EnvDebug]` print for why:
+# it accounted for 43% of every training log in this project. Turn on when debugging physics:
+#     ENV_DEBUG=1 python diagnostics/dynamic_profile_sweep_od.py
+ENV_DEBUG = os.environ.get("ENV_DEBUG", "").strip().lower() in ("1", "true", "yes", "on")
 
 class GeneticPhotobioreactorEnv(gym.Env):
     """
@@ -74,11 +80,14 @@ class GeneticPhotobioreactorEnv(gym.Env):
         # steps (see step() dilution/harvest block); ignored on other steps.
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(3,), dtype=np.float32)
 
-        # Observation Space (6 Dims)
-        # 6D obs — real hardware sensors only:
-        # 0: Turbidity (SEN0189, 0-1000 NTU)   1: pH (SEN0161)
+        # Observation Space (8 Dims)
+        # Channels 0-5 are real hardware sensors; 6-7 are derived from those plus the
+        # controller's own clock (no additional hardware assumed — see Fix #18 below):
+        # 0: Turbidity (SEN0189, 0-1000 NTU)    1: pH (SEN0161)
         # 2: Harvest integral (pump counter, L) 3: Conductivity (DFR0300)
-        # 4: Temperature (DS18B20)               5: Light (BH1750, 0-65535 lux)
+        # 4: Temperature (DS18B20)              5: Light (BH1750, 0-65535 lux)
+        # 6: Turbidity EMA (software filter over channel 0)
+        # 7: Phase (episode fraction, or harvest-cycle fraction — see USE_EPISODE_PHASE)
         # Dropped: n_pool (no sensor), RGB (unreliable)
         # Fix #18 (v21): two ADDITIONAL channels, 6 -> 8.
         #   6: turbidity_ema  — long-window EMA of the turbidity sensor
@@ -104,9 +113,25 @@ class GeneticPhotobioreactorEnv(gym.Env):
         # and its own clock), so sim-to-real transferability is preserved. This deliberately
         # does NOT expose true `od`: that would be privileged information a real reactor's
         # nephelometer cannot provide, and would make results non-transferable.
+        # REVERTED TO 6D BY DEFAULT (v26). Fix #18's two extra channels are retained behind
+        # OBS_EXTENDED (class attribute) rather than deleted, because they were the single
+        # best-measured change of the PPO series (od +74%, first from-scratch policy to clear
+        # all four D1 criteria). Reasons for making 6D the default again:
+        #   * The 8D change silently orphaned every earlier checkpoint, including
+        #     model_data/BEST_bc_clone_D2_validated — the project's recommended deliverable and
+        #     the only artefact that passes held-out D2. It could not even be LOADED against
+        #     the 8D env (scripts/validate.py now reports that mismatch explicitly).
+        #   * legacy/TD_MPC2.py is written against OBS_DIM=6, so 6D removes one of the three
+        #     interface breaks that stopped it running at all.
+        #   * 6D is the real-hardware-sensor set, so it is the honest sim-to-real baseline;
+        #     channels 6-7 are derived quantities and belong behind a flag.
+        # Set OBS_EXTENDED=True to restore the 8D observation.
+        _low = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        _high = [1000.0, 14.0, 5000.0, 40000.0, 50.0, 65535.0, 1000.0, 1.0]
+        self._obs_dim = 8 if self.OBS_EXTENDED else 6
         self.observation_space = spaces.Box(
-            low=np.array( [0.0,    0.0,  0.0,    0.0,     0.0,  0.0,     0.0,    0.0], dtype=np.float32),
-            high=np.array([1000.0, 14.0, 5000.0, 40000.0, 50.0, 65535.0, 1000.0, 1.0], dtype=np.float32),
+            low=np.array(_low[:self._obs_dim], dtype=np.float32),
+            high=np.array(_high[:self._obs_dim], dtype=np.float32),
             dtype=np.float32
         )
         
@@ -419,9 +444,14 @@ class GeneticPhotobioreactorEnv(gym.Env):
                      / max(self.HARVEST_INTERVAL_STEPS, 1), 0.0, 1.0)),
         ], dtype=np.float32)
 
+        # Truncate to the configured width (6 by default, 8 with OBS_EXTENDED). Channels 6-7
+        # are still COMPUTED above — the turbidity EMA has to keep updating regardless so it is
+        # warm if the flag is switched on, and the cost is two float ops per step.
+        base_obs = base_obs[:self._obs_dim]
+
         # Stochastic Sensor Noise: ±1% jitter at D0, ±2% at D1+
         jitter_mag = 0.02 if self.difficulty >= 1 else 0.01
-        jitter = np.random.uniform(1.0 - jitter_mag, 1.0 + jitter_mag, size=(8,))
+        jitter = np.random.uniform(1.0 - jitter_mag, 1.0 + jitter_mag, size=(self._obs_dim,))
 
         # RPM-coupled EMA lag on pH and temperature (D1+)
         if self.difficulty >= 1:
@@ -440,12 +470,13 @@ class GeneticPhotobioreactorEnv(gym.Env):
             # Additive pH bias (SEN0161 ±0.1 pH calibration offset — per-episode constant)
             base_obs[1] = float(np.clip(base_obs[1] + self._ph_bias, 0.0, 14.0))
 
-        noisy_obs = base_obs * jitter * self._sensor_drift_mult
+        noisy_obs = base_obs * jitter * self._sensor_drift_mult[:self._obs_dim]
         noisy_obs[3] = float(np.clip(noisy_obs[3], 0.0, 40000.0))   # DFR0300 hard ceiling (post-jitter)
         noisy_obs[5] = float(np.clip(noisy_obs[5], 0.0, 65535.0))  # BH1750 hard ADC ceiling (16-bit)
-        # Fix #18: episode_phase is the controller's own clock — restore it exactly, since the
-        # jitter multiply above would otherwise corrupt a quantity that is known perfectly.
-        noisy_obs[7] = base_obs[7]
+        if self._obs_dim > 7:
+            # Fix #18: phase is the controller's own clock — restore it exactly, since the
+            # jitter multiply above would otherwise corrupt a quantity known perfectly.
+            noisy_obs[7] = base_obs[7]
         return noisy_obs.astype(np.float32)
 
     def get_privileged_state(self) -> np.ndarray:
@@ -509,6 +540,13 @@ class GeneticPhotobioreactorEnv(gym.Env):
     TURB_FOULING_COEF = 0.0
     HARVEST_PUMP_ERROR = 0.0
     USE_EPISODE_PHASE = True
+
+    # OBS_EXTENDED: False -> 6 channels (real hardware sensors only; the default and the
+    # sim-to-real baseline). True -> 8 channels, adding Fix #18's turbidity EMA and phase.
+    # Fix #18 measurably helped PPO (od +74% in v21) but its dimension change orphaned every
+    # prior checkpoint, so it is opt-in. Changing this invalidates saved models in BOTH
+    # directions — scripts/validate.py detects and reports the mismatch rather than crashing.
+    OBS_EXTENDED = False
 
     def _compute_reward(self, delta_mass_mg, shock_factor, harvested_this_step_mg=0.0, is_harvest_event=False):
         """Semi-continuous reward: sustained growth + periodic dilution/harvest.
@@ -1664,8 +1702,11 @@ class GeneticPhotobioreactorEnv(gym.Env):
             # No terminal bonus in semi-continuous mode — harvest yield (cumulative_harvested_mg)
             # accumulates continuously via reward_harvest each step (see _compute_reward).
         
-        # Debug Print
-        if (self.step_count % 500 == 0) or done:
+        # Per-step debug trace. Gated behind ENV_DEBUG (default OFF) because it dominated every
+        # log this project produced: 4,519 of 10,586 lines (43%) in a single chunk, multi-MB per
+        # run, and every single grep across 25 runs needed `grep -v EnvDebug` to be readable.
+        # Enable per-invocation with `ENV_DEBUG=1 python ...` when actually debugging physics.
+        if ENV_DEBUG and ((self.step_count % 500 == 0) or done):
              # Use collected stats if available, else 0
              d_shock = getattr(self, 'debug_shock', 0.0)
              d_clump = getattr(self, 'debug_clump', 1.0)

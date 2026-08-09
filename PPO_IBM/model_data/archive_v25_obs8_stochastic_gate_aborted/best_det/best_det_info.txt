@@ -1,0 +1,8 @@
+step=300000
+chunk=3
+difficulty=D0
+score=44.84
+median_harvested_mg=51.9
+p25_harvested_mg=41.7
+median_time_avg_od=0.0035
+crash_rate=0.0000

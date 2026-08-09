@@ -53,13 +53,20 @@ TRAINER = os.path.join(ROOT, "training", "recurrent_ppo.py")
 
 
 def live_training_pids():
-    """PIDs of running recurrent_ppo.py processes. Matches on the COMMAND LINE, not on
-    'python' — an unrelated python process once blocked a wait loop for hours."""
+    """PIDs of running trainer processes.
+
+    Matches on the COMMAND LINE rather than on 'python' — an unrelated python process once
+    blocked a wait loop for hours. But the pattern must be 'recurrent_ppo.py', NOT
+    'recurrent_ppo': the saved model is named `recurrent_ppo_genetic_ibm`, so the looser
+    pattern matches every diagnostic and validation process that references the checkpoint.
+    That false positive is not harmless in either direction — it would make this launcher
+    refuse to start while a read-only sweep was running, and a kill loop built on the same
+    pattern terminated a validation run mid-sweep."""
     try:
         out = subprocess.run(
             ["powershell", "-NoProfile", "-Command",
              "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | "
-             "Where-Object { $_.CommandLine -like '*recurrent_ppo*' } | "
+             "Where-Object { $_.CommandLine -like '*recurrent_ppo.py*' } | "
              "Select-Object -ExpandProperty ProcessId"],
             capture_output=True, text=True, timeout=60,
         ).stdout
@@ -77,6 +84,12 @@ def snapshot_config():
     from genetic_env import GeneticPhotobioreactorEnv as Env
 
     cfg = {
+        # Fix #24: gate mode and seed are part of a run's identity. Without the seed recorded,
+        # a replication cannot distinguish a configuration effect from an RNG draw — which is
+        # exactly the ambiguity that weakened the v21-vs-v23 comparison.
+        "gate_mode": os.environ.get("GATE_MODE", "dual"),
+        "run_seed": int(os.environ.get("RUN_SEED", "0")),
+        "env_debug": os.environ.get("ENV_DEBUG", ""),
         "total_training_steps": cs.TOTAL_TRAINING_STEPS,
         "chunk_steps": cs.CHUNK_STEPS,
         "advance_targets": {str(k): v for k, v in cs.ADVANCE_TARGETS.items()},
@@ -138,7 +151,8 @@ def main():
     print("  no existing training process ✓")
 
     cfg = snapshot_config()
-    print(f"  config: obs_dim={cfg['env_obs_dim']} steps={cfg['total_training_steps']:,} "
+    print(f"  config: gate={cfg['gate_mode']} seed={cfg['run_seed']} "
+          f"obs_dim={cfg['env_obs_dim']} steps={cfg['total_training_steps']:,} "
           f"turb_foul={cfg['env_turb_fouling_coef']} pump_err={cfg['env_harvest_pump_error']} "
           f"ep_phase={cfg['env_use_episode_phase']} std_anneal_final={cfg['std_anneal_final']}")
 
@@ -225,10 +239,12 @@ def main():
     with open(REGISTRY, "a", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
         if new:
-            w.writerow(["tag", "started", "pid", "resume", "obs_dim", "total_steps",
-                        "turb_foul", "pump_err", "ep_phase", "std_anneal_final", "note",
+            w.writerow(["tag", "started", "pid", "resume", "gate_mode", "seed", "obs_dim",
+                        "total_steps", "turb_foul", "pump_err", "ep_phase",
+                        "std_anneal_final", "note",
                         "best_harvest", "best_p25", "best_od", "best_crash", "result"])
         w.writerow([args.tag, time.strftime("%Y-%m-%d %H:%M:%S"), proc.pid, args.resume or "",
+                    cfg["gate_mode"], cfg["run_seed"],
                     cfg["env_obs_dim"], cfg["total_training_steps"],
                     cfg["env_turb_fouling_coef"], cfg["env_harvest_pump_error"],
                     cfg["env_use_episode_phase"], cfg["std_anneal_final"], args.note,

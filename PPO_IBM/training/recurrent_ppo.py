@@ -88,6 +88,15 @@ GATE_MODE = os.environ.get("GATE_MODE", "dual").strip().lower()
 if GATE_MODE not in ("dual", "stochastic"):
     raise SystemExit(f"GATE_MODE must be 'dual' or 'stochastic', got {GATE_MODE!r}")
 
+# Fix #24 (v26): explicit, RECORDED seed. Until now nothing seeded numpy/torch/the env, so two
+# runs of the same configuration differed by an unknown mixture of config effect and RNG draw.
+# That directly weakens a conclusion already reported: "v21's time_avg_od 0.0094 was not
+# reproducible" rested on v23 (same config) returning 0.0066 — but with no seed control, that
+# spread cannot be attributed to the configuration rather than the seed. With the seed pinned
+# and logged, a replication isolates config effects, and a deliberate seed sweep measures RNG
+# variance separately. Set RUN_SEED to compare configurations; vary it to measure variance.
+RUN_SEED = int(os.environ.get("RUN_SEED", "0"))
+
 
 def _lr_schedule_fn(_progress_remaining_ignored: float) -> float:
     """Passed to RecurrentPPO as `learning_rate`. Ignores SB3's own progress_remaining
@@ -101,6 +110,13 @@ def train_recurrent_agent(resume=False):
     print("Algorithm : RecurrentPPO (MlpLstmPolicy)")
     print("Env       : GeneticPhotobioreactorEnv (genetic_env)")
     print(f"Mode      : Adaptive Curriculum | Total budget: {TOTAL_TRAINING_STEPS:,} steps")
+    print(f"Gate      : {GATE_MODE} | seed: {RUN_SEED}")
+
+    # Fix #24 (v26): seed numpy, torch and Python's RNG before anything samples. SB3's
+    # set_random_seed covers all three plus CUDA; the env and action space are seeded separately
+    # below since they draw from their own generators.
+    from stable_baselines3.common.utils import set_random_seed
+    set_random_seed(RUN_SEED)
 
     model_name = "model_data/recurrent_ppo_genetic_ibm"
     checkpoint_dir = "./model_data/recurrent_checkpoints/"

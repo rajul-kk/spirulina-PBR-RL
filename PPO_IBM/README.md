@@ -1,11 +1,16 @@
 # PPO_IBM — Spirulina photobioreactor control
 
 RecurrentPPO (SB3-contrib) on `GeneticPhotobioreactorEnv`, with a difficulty curriculum
-(D0 → D1 → D2) gated on both stochastic rollouts and deterministic evaluation.
+(D0 → D1 → D2) gated on both stochastic rollouts and deterministic evaluation. TD-MPC2
+(model-based, MPPI planning) is a second algorithm under active development in `legacy/`,
+upgraded this session to a genuine TD-MPC2 spec (Q-ensemble, two-hot regression,
+macro-timestep world model) and wired to the same project gate.
 
 **Results and history: [`finalresults.md`](finalresults.md)** (full detail in
-`finalresults_full_archive.md`). Read that before changing anything — it records 24 runs, the
-fixes that worked, and several that were measured and refuted.
+`finalresults_full_archive.md`). Read that before changing anything — it records 24 PPO runs
+through v24, the fixes that worked, and several that were measured and refuted. **v25, v26,
+and the TD-MPC2 upgrade postdate that writeup and are summarized below** until they're folded
+in.
 
 ## Run everything from the repo root
 
@@ -35,7 +40,7 @@ Always prefix `PYTHONIOENCODING=utf-8` for direct invocations — the Windows co
 | `logs/` | training logs, per-run config snapshots, `validation/`, `scratch/` |
 | `docs/` | supporting notes |
 | `artifacts/` | plots, generated documents |
-| `legacy/` | unused alternative algorithms (SAC, TD-MPC2) and one-off utilities |
+| `legacy/` | `TD_MPC2.py` — actively developed second algorithm (see below); SAC and other one-off utilities, unused |
 
 ## Tooling
 
@@ -59,12 +64,90 @@ then failed held-out validation. It also prints the harvest-fraction profile, be
 *shape* has diagnosed every failure mode here (never-harvest, decay-to-zero, over-harvest-early)
 where aggregate scores did not.
 
+**`diagnostics/tdmpc2_cost_probe.py`** — TD-MPC2's equivalent of a pre-flight check: a
+correctness smoke test (TwoHotEncoder round-trip, one live `plan()`+`update()` call checked for
+NaN/shape) followed by a full four-component wall-clock cost measurement (`plan()`, `update()`,
+`env.step()`, LMU compressor) projected against the configured step budget. Exists because the
+first two cost estimates for this file were wrong by ~20x and ~1.8x respectively — see the
+TD-MPC2 section below. Run before trusting any new TD-MPC2 configuration's projected runtime.
+
+## PPO: gate-mode experiment (v25 aborted, v26 confirmed false positive)
+
+`GATE_MODE` (env var, `recurrent_ppo.py`) selects `dual` (default — stochastic AND
+deterministic must both pass, the long-standing gate) or `stochastic` (stochastic-only, for a
+self-consistent experiment: `GATE_MODE=stochastic python training/recurrent_ppo.py` paired with
+`held_out_sweep.py --stochastic` to validate on the same policy mode it was gated on).
+
+v26 (`GATE_MODE=stochastic`) declared D2 mastery on its stochastic rollouts at step 6.9M. Held-
+out validation — 40 seeds, both deterministic **and** `--stochastic` modes, matching the mode it
+trained under — gave harvest ~44mg / od ~0.0025 against a gate requiring harvest≥90mg /
+od≥0.011, in **both** modes: roughly half and a quarter of the required thresholds. Same failure
+class as v14 and v17 (in-training pass, held-out fail), now demonstrated to persist even when
+the held-out check uses the gate's own mode. **This does not reopen the dual-gate question** —
+it confirms gating on stochastic rollouts alone, even self-consistently validated, is not
+sufficient; see `finalresults.md`'s "THE KEY FINDING" section for the underlying mechanism.
+
+## TD-MPC2 upgrade (Fix #27) — genuine spec, project gate, still validating
+
+`legacy/TD_MPC2.py` was rewritten this session from a broken, pre-redesign-env implementation
+(4D action space against a 3D env, 24-raw-step / 0.48h planning horizon that could not see a
+600-step harvest event, its own disconnected curriculum logic, twin-Q, MSE reward/value) to a
+genuine TD-MPC2 spec wired to the same project curriculum gate PPO uses:
+
+- **3D action space** (`stir, light, harvest`), matching `genetic_env.py`.
+- **Macro-timestep world model**: `MACRO_STEPS=50` — dynamics/reward trained on 50-raw-step
+  blocks (action held constant, discounted reward summed) instead of single raw steps.
+  `PLANNING_HORIZON=12` macro-steps × 50 = 600 raw steps of lookahead = exactly one
+  `HARVEST_INTERVAL_STEPS`, the event the old horizon was structurally blind to.
+- **5-critic ensemble** (`nn.ModuleList` of `ValueNetwork`s, random subset-of-2 drawn per call)
+  replacing the twin-Q pair.
+- **Two-hot regression** (101 bins, symlog-scaled) for reward/value in place of MSE.
+- **Project dual gate**: imports `ADVANCE_TARGETS`/`MASTERY_MIN_EPISODES` from
+  `curriculum_schedule.py` directly (no more local, disconnected copy); a new
+  `run_tdmpc2_eval_episode()` provides the deterministic side (`agent.plan()` has no SB3
+  `model.predict()`-compatible interface, so `deterministic_eval.py` could not be reused
+  directly, only mirrored).
+- `finetune_td_mpc2()` was **not** updated to the new architecture and raises
+  `NotImplementedError` at entry rather than failing confusingly on a removed `q1`/`q2`.
+
+**Cost measurement, corrected twice.** This project has a standing rule against trusting an
+estimate over a direct measurement, applied here after two misses in a row: an initial estimate
+of ~1017h (not having read `ACTION_REPEAT` or the file's own step budget) corrected to ~46.65h
+after reading the full file; then, after launch, the observed throughput implied ~30h against a
+claimed 12.98h — `tdmpc2_cost_probe.py`'s first version had only measured `plan()`/`update()`
+and missed `env.step()` and the per-step LMU compressor entirely, **and** the file's
+`max_cells=300_000` (vs `7_500` used everywhere else in the project) cost 13.7ms/step vs
+4.6ms/step for an *identical* actual population (~2,990 cells either way — the cap was never
+approached). Fixed both; final measured cost is **23.38h for 8,000,000 steps**, ~1.4x a PPO run.
+
+**Two diagnostic findings from this session's monitoring, now fixed in code:**
+1. `run_tdmpc2_eval_episode` hardcoded `initial_cells=3000` for every deterministic eval
+   episode, vs the stochastic side's curriculum-sampled 100-1400 range at D0. A **no-op
+   policy** (never harvest, neutral stir/light) at `initial_cells=3000` alone produces
+   `time_avg_od=0.217` against D0's `0.004` gate — the det side's comfortable pass was
+   substantially an artifact of its fixed head start, not evidence of policy competence. Fixed:
+   now samples `initial_cells` via `_sample_init_cells`, matched to training.
+2. Checkpointing fired every 2,000 raw steps, each save pickling the **full 25,000-transition
+   replay buffer** on top of network weights (~7MB/save; ~15GB and 2,000+ files by ~55% through
+   an 8M-step run) — a real, disproportionate I/O tax unique to this training regime (PPO's
+   `CheckpointCallback` saves weights only, every 10,000 steps). Widened to every 50,000 steps.
+
+Both fixes are on disk, unapplied to the currently-running v27 attempt (editing the file does
+not affect an already-running process) — they take effect on the next launch. v27 itself has
+not yet reached a D0 verdict as of this writing; its stochastic-side `time_avg_od` plateaued for
+10+ consecutive chunks before the diagnostic above was found, so any advance it does eventually
+report should be read in light of finding #1 until a clean, fixed-code run confirms it
+independently.
+
 ## Known issue: observation-space versioning
 
-The observation went 6 → 8 channels (Fix #18). **Every checkpoint saved before that — including
-`model_data/BEST_bc_clone_D2_validated/`, the best artefact this project produced — cannot be
-loaded against the current env.** `validate.py` detects and reports this explicitly. To use
-those checkpoints, either regenerate them under the current env
+The observation went 6 → 8 channels (Fix #18), then was **reverted to 6 as the default**
+(`OBS_EXTENDED = False` class attribute on `GeneticPhotobioreactorEnv`) — the 8-channel
+extension remains available via `OBS_EXTENDED = True` but is opt-in, not default. Any change to
+this flag orphans checkpoints saved under the other setting, in either direction, including
+`model_data/BEST_bc_clone_D2_validated/` if it was produced under a different setting than the
+one currently active. `validate.py` detects and reports the mismatch explicitly rather than
+crashing confusingly. To use an orphaned checkpoint, either regenerate it under the current env
 (`python bc/bc_pretrain.py` takes ~15 min) or check out the matching env revision. Any future
 observation change orphans checkpoints the same way, so bump a version marker and note it here.
 

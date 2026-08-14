@@ -6,7 +6,7 @@
 
 **The best policy this project produced is a behaviour-cloned controller with no reinforcement learning applied.** It is preserved at `model_data/BEST_bc_clone_D2_validated/` and passes the held-out D2 gate: median harvest 109.4mg, p25 63.8, `time_avg_od` 0.0191, 0% crash over 40 seeds including adversarial cold starts.
 
-**No RL run ever produced a held-out-validated D2 policy.** Two runs (v14, v17) advanced to D2 in training and failed independent validation. Across v17/v18/v19 a clear pattern emerged: every change that made the *starting* policy better produced a *worse* final policy. The RL fine-tuning stage is destructive here, and five candidate explanations were measured or tested and eliminated.
+**No RL run ever produced a held-out-validated D2 policy** — nor, as of v27, a held-out-validated D0 policy from a second algorithm family. Two PPO runs (v14, v17) advanced to D2 in training and failed independent validation; v26 advanced to D2 on a stochastic-only gate and failed both modes; TD-MPC2's v27 advanced D0→D1 and its D0 claim missed held-out by a narrow margin (median `time_avg_od` 0.0036 vs 0.004, ~10% short). Across v17/v18/v19 a clear pattern emerged: every change that made the *starting* policy better produced a *worse* final policy. The RL fine-tuning stage is destructive here, and five candidate explanations were measured or tested and eliminated.
 
 ## Run history
 
@@ -238,3 +238,78 @@ the deterministic policy rather than the sampled one. Options, in order of direc
 3. Reconsider whether an LSTM policy trained by on-policy RL is the right tool at all: a
    proportional feedback law on OD, tuned in minutes, already outperforms every learned policy
    here and carries far less sim-to-real risk.
+
+## v25 (aborted) / v26: does gating on stochastic rollouts alone fix anything?
+
+`GATE_MODE=stochastic` (Fix #23) drops the deterministic side of the dual gate, testing
+directly whether the mechanism found above is really the cause of in-training/held-out
+divergence, or whether the dual gate was simply being overly conservative. v25 was aborted
+(config recorded, no result). v26 ran to a stochastic-gate D2 "early-stop" at step 6.9M
+(harvest 76.6mg, p25 49.8, od 0.0049, 0% crash — all comfortably clearing the stochastic-side
+targets in training).
+
+**Held-out validation — 40 seeds, both deterministic AND `--stochastic` modes (matching the
+mode it trained under) — failed in both**: harvest ~44mg / od ~0.0025, against the D2 gate's
+90mg / 0.011, roughly half and a quarter of target respectively. Same failure class as v14 and
+v17, now shown to persist even when the held-out check is run in the gate's own mode — ruling
+out "the held-out check used the wrong mode" as an explanation. **Confirms**: gating on
+stochastic rollouts alone, however it's validated, does not fix the underlying train/eval
+mismatch documented above. It does not reopen the case for a stochastic-only gate.
+
+## TD-MPC2 (v27): full upgrade to spec, D0→D1, D0 held-out miss
+
+The pre-existing `legacy/TD_MPC2.py` was broken against the current env (4D action space vs a
+3D env, a 24-raw-step / 0.48h planning horizon structurally blind to the 600-step harvest
+event, its own disconnected curriculum logic never wired to `ADVANCE_TARGETS`, twin-Q with MSE
+regression) and had never been run to completion. Fix #27 rewrote it to a genuine TD-MPC2
+spec — 3D action space; a macro-timestep world model (`MACRO_STEPS=50`, `PLANNING_HORIZON=12`
+→ 600 raw steps of lookahead, exactly one harvest interval); a 5-critic ensemble with
+random-subset-of-2 minimum; two-hot reward/value regression (101 bins, symlog-scaled); and the
+project's real dual gate, via a new `run_tdmpc2_eval_episode()` mirroring
+`deterministic_eval.py`'s role for TD-MPC2's `agent.plan()` interface.
+
+**Cost measurement, corrected twice** — the standing "measure, don't estimate" rule paid for
+itself here. An initial estimate of ~1017h was wrong for not having read `ACTION_REPEAT` or the
+file's own step budget; corrected to ~46.65h after reading the full file. After launch, observed
+throughput implied ~30h against a claimed 12.98h: the cost probe had measured only `plan()` and
+`update()`, missing `env.step()` and the per-step LMU compressor entirely — and separately,
+`max_cells=300_000` (vs `7_500` used everywhere else) cost 13.7ms/step vs 4.6ms/step for an
+*identical* actual population (~2,990 cells either way — the larger cap bought nothing). Fixed
+both; final measured cost was 23.38h for 8M steps.
+
+**Two more bugs found via live monitoring, both specific to this session's rewrite**, not the
+original file:
+1. The training run crashed immediately with `NameError: _compute_curriculum_stats not
+   defined` — imported everywhere it's used except its own definition site. One-line fix.
+2. `run_tdmpc2_eval_episode` hardcoded `initial_cells=3000` for every deterministic eval
+   episode, vs the stochastic side's curriculum-sampled 100-1400 range at D0. A **no-op
+   policy** (never harvest) at `initial_cells=3000` alone produces `time_avg_od=0.217` against
+   D0's 0.004 gate — the deterministic side's comfortable in-training pass (od ~0.012-0.024
+   throughout) was substantially an artifact of its fixed head start, not policy competence.
+   Fixed post-hoc: `run_tdmpc2_eval_episode` now samples `initial_cells` the same way training
+   does. (A second, lower-priority finding — checkpointing every 2,000 steps, each save
+   pickling the full 25,000-transition replay buffer, ~15GB by run's end — was also fixed,
+   widened to every 50,000 steps; unrelated to the gate's validity, just I/O overhead.)
+
+**Training result**: D0's stochastic-side `time_avg_od` plateaued at 0.0013-0.0019 for ~18
+consecutive chunks (1.8M steps) before breaking through — climbed to 0.0044, crossed the
+0.004 gate on 2 consecutive chunks, and D0 **advanced to D1** at step 4.8M. D1 held for the
+remainder of the 8M-step budget: harvest/p25/crash cleared their targets almost immediately,
+but `time_avg_od` oscillated 0.0051-0.0071 against a 0.008 target and never sustained a
+crossing — closest on the very last chunk (0.0077, 0.0003 short) before the budget ran out.
+**Mastery never advanced past D1.**
+
+**Held-out validation of the D0 claim** (`diagnostics/tdmpc2_held_out_sweep.py`, 40 fresh
+seeds, using the *fixed* initial_cells sampling so the check isn't subject to finding #2
+above): harvest and crash comfortably clear D0's targets in both modes, but `time_avg_od`
+median is **0.0036 vs the 0.004 target in both deterministic and stochastic mode** — a
+consistent, narrow miss (~10% short), not noise. **The D0 mastery claim does not independently
+replicate.** Same failure class as v14/v17/v26 (in-training pass, held-out fail), with a
+notably tighter margin than any of those — the closest any RL run in this project has come to
+a genuinely held-out-validated result, and still short.
+
+**Consequence**: TD-MPC2, with a corrected architecture, a corrected cost model, and a
+corrected gate, still could not produce a policy whose gate-passing performance survives fresh
+seeds. This adds a second algorithm family to the pattern established by PPO's v14/v17/v26,
+strengthening rather than replacing the existing recommendation — the BC clone remains the only
+artifact in this project that passes held-out validation.

@@ -71,6 +71,11 @@ NaN/shape) followed by a full four-component wall-clock cost measurement (`plan(
 first two cost estimates for this file were wrong by ~20x and ~1.8x respectively — see the
 TD-MPC2 section below. Run before trusting any new TD-MPC2 configuration's projected runtime.
 
+**`diagnostics/tdmpc2_held_out_sweep.py`** — TD-MPC2's equivalent of `held_out_sweep.py`
+(`agent.plan()` has no SB3 `model.predict()`-compatible interface, so it's a parallel
+implementation, not a shared one). Same rule: no mastery claim is final without this, run on
+fresh seeds disjoint from anything used to gate training.
+
 ## PPO: gate-mode experiment (v25 aborted, v26 confirmed false positive)
 
 `GATE_MODE` (env var, `recurrent_ppo.py`) selects `dual` (default — stochastic AND
@@ -87,7 +92,7 @@ the held-out check uses the gate's own mode. **This does not reopen the dual-gat
 it confirms gating on stochastic rollouts alone, even self-consistently validated, is not
 sufficient; see `finalresults.md`'s "THE KEY FINDING" section for the underlying mechanism.
 
-## TD-MPC2 upgrade (Fix #27) — genuine spec, project gate, still validating
+## TD-MPC2 upgrade (Fix #27) — genuine spec, ran to completion, D0 held-out miss
 
 `legacy/TD_MPC2.py` was rewritten this session from a broken, pre-redesign-env implementation
 (4D action space against a 3D env, 24-raw-step / 0.48h planning horizon that could not see a
@@ -132,12 +137,20 @@ approached). Fixed both; final measured cost is **23.38h for 8,000,000 steps**, 
    an 8M-step run) — a real, disproportionate I/O tax unique to this training regime (PPO's
    `CheckpointCallback` saves weights only, every 10,000 steps). Widened to every 50,000 steps.
 
-Both fixes are on disk, unapplied to the currently-running v27 attempt (editing the file does
-not affect an already-running process) — they take effect on the next launch. v27 itself has
-not yet reached a D0 verdict as of this writing; its stochastic-side `time_avg_od` plateaued for
-10+ consecutive chunks before the diagnostic above was found, so any advance it does eventually
-report should be read in light of finding #1 until a clean, fixed-code run confirms it
-independently.
+Both fixes were applied on disk after v27 had already launched (editing the file does not
+affect an already-running process), so v27 itself ran to completion on the **pre-fix** code —
+they take effect on the next launch, not this one.
+
+**v27's result**: D0's stochastic `time_avg_od` plateaued at 0.0013-0.0019 for ~18 chunks
+before crossing its 0.004 gate, advancing to D1 at step 4.8M. D1 held for the rest of the
+8,000,000-step budget — harvest/p25/crash cleared immediately, `time_avg_od` oscillated
+0.0051-0.0071 against a 0.008 target, closest on the very last chunk (0.0077) before the budget
+ran out. **Held-out validation of the D0 claim** (`diagnostics/tdmpc2_held_out_sweep.py`, 40
+fresh seeds, using the fixed `initial_cells` sampling so this check isn't itself subject to
+finding #1): harvest and crash clear comfortably, but `time_avg_od` median is **0.0036 against
+the 0.004 gate in both deterministic and stochastic mode** — consistent, ~10% short. **The D0
+claim does not independently replicate.** Same failure class as v14/v17/v26, with the tightest
+margin of any RL run in this project — see `finalresults.md` for full detail.
 
 ## Known issue: observation-space versioning
 

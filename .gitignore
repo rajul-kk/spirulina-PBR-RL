@@ -54,3 +54,6 @@ graphify-out/
 Thumbs.db
 .DS_Store
 desktop.ini
+
+# ── Local agent config ─────────────────────────────────────────────────────────────────
+.claude/

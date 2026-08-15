@@ -623,6 +623,22 @@ class GeneticPhotobioreactorEnv(gym.Env):
         od_x = self.od / OD_TARGET
         reward_od = 0.15 * float(od_x * np.exp(1.0 - od_x))
 
+        # (Fix #28 attempt, reverted): a rolling-window OD-average reward term was tried here
+        # to close the instantaneous-vs-time-averaged gap between reward_od and the gate's
+        # time_avg_od metric. Live-verified via the same D0/D1/D2 harvest-fraction sweep used
+        # to design it, and found to REINTRODUCE the "never harvest, grow forever" exploit
+        # Fix #10 closed: a never-harvesting trajectory doesn't oscillate, so its rolling
+        # average trivially equals its own (monotonically rising) instantaneous value —
+        # rewarding "sustained average OD" rewards the UNHARVESTED baseline more than a real
+        # harvesting policy, whose average is necessarily dragged down by its own periodic
+        # troughs. Confirmed via direct comparison against the pre-change reward at D2,
+        # init=300: OLD reward had frac~0.10 beating frac=0.00 (1115 vs 1047, harvesting
+        # correctly favored); adding this term flipped that ordering (1318 vs 1420, never-
+        # harvest winning). Not a weight-tuning issue — the mechanism itself rewards the
+        # wrong baseline. Left out rather than patched further; the time_avg_od gate-alignment
+        # problem is real (see the D2 sweep in finalresults.md) but this specific shape isn't
+        # the fix.
+
         # 2. Per-cell biological growth — incentivises steady healthy growth, and (folded
         # in, previously a separate "stagnation" term) penalises decline/flatlining.
         # Tried shifting the tanh's zero-crossing to 0.01 as a single smooth curve first,
@@ -720,6 +736,26 @@ class GeneticPhotobioreactorEnv(gym.Env):
         # delayed-OD credit-assignment gap; best-seen-chunk checkpoint selection), not more
         # reward reweighting.
         reward_harvest = 0.5 * float(np.tanh(harvested_this_step_mg / self.TARGET_MG_PER_EVENT))
+
+        # Fix #28: harvest-event OD-collapse penalty. reward_harvest above saturates almost
+        # immediately past the physically-optimal harvest fraction — directly measured: at D0,
+        # harvested_mg stayed roughly flat (~50-60mg) across harvest_frac 0.12-0.38, while
+        # time_avg_od collapsed 8x (0.0069 -> 0.0006) over that same range, i.e. reward_harvest
+        # gives no signal at all distinguishing "harvested efficiently" from "over-harvested
+        # for no extra yield." reward_od already penalizes the resulting low od, but only on
+        # THIS one step — the damage persists for many subsequent steps as the culture
+        # recovers, a long-horizon credit-assignment gap in a 7200-step episode with only 12
+        # harvest decisions. This term makes the cost immediate and locally attributable to
+        # the decision that caused it: on a harvest-event step only, penalize the post-harvest
+        # od (self.od is already updated to its post-dilution value above) falling below a
+        # floor fraction of OD_TARGET. Floor and weight chosen so the measured "healthy" ~0.12
+        # fraction (post-harvest od comfortably above the floor) draws no penalty while
+        # fractions of 0.20+ (post-harvest od well under it) do.
+        if is_harvest_event:
+            OD_SAFE_FLOOR = 0.4
+            post_harvest_ratio = self.od / OD_TARGET
+            if post_harvest_ratio < OD_SAFE_FLOOR:
+                reward_harvest -= 0.3 * float(OD_SAFE_FLOOR - post_harvest_ratio)
 
         reward = reward_od + reward_biomass + reward_od_delta + reward_harvest
 

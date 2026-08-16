@@ -50,23 +50,15 @@ o2_sat = 8.0 * (o2_frac / self.ambient_o2_frac) * np.exp(-0.02 * (self.temp - 25
 
 ---
 
-## O9 — Reward Has 10+ Overlapping Components
+## O9 — Reward Has 10+ Overlapping Components *(STALE — reward was rewritten)*
 
-**Reality:** A well-designed reward should be parsimonious. Multiple terms tracking the same physical quantity (biomass growth) with different lags and scales makes gradient attribution difficult and can create reward hacking opportunities.
-
-**Why kept:** The curriculum structure (D0 → D1 → D2) depends on dense early reward signals to bootstrap learning before the agent can produce measurable OD gains. The overlapping components (do2 proxy, nutrient proxy, pH proxy, biomass, od anchor, growth rate) serve as scaffolding at different timescales. Removing them before the agent has a stable D2 policy risks learning collapse.
-
-**Fix trigger:** After a D2 policy achieves consistent growth (peak OD > 0.10 across > 80% of episodes), simplify by removing all components except `reward_biomass`, `reward_od`, and `reward_growth_rate`, and retrain from that checkpoint to check for performance regression. Reward simplification is a post-curriculum cleanup step.
+**This entry describes an old reward design that no longer exists.** The current `_compute_reward()` (`environments/genetic_env.py`) has exactly **four** terms: `reward_od` (peaked target-band on instantaneous OD), `reward_biomass` (per-cell growth + flatline penalty), `reward_od_delta` (dense OD-direction signal, skipped on harvest-event steps), and `reward_harvest` (periodic harvest yield, now with a collapse penalty — see Fix #28 below). There is no separate do2/nutrient/pH proxy term, and no `reward_growth_rate` term as such — the reward history (`finalresults.md`) documents a long series of measured, single-change fixes to get from a 10+-term design down to this one, precisely because the overlapping-components problem this entry warns about was real and had to be resolved. Kept here only as a pointer: if you're looking for the reward's current design and rationale, read `_compute_reward()`'s inline comments and `finalresults.md` directly, not this entry.
 
 ---
 
-## O10 — gamma = 0.995 Gives Only ~200-Step Effective Horizon (4 Sim-Hours)
+## O10 — gamma Effective Horizon *(STALE VALUE — gamma changed)*
 
-**Reality:** At `gamma = 0.995` and `dt = 0.02h`, the discounted return at step 7200 (end of 144h episode) is `0.995^7200 ≈ 10^{-16}`. The effective horizon (where discount weight > 1/e) is about 200 steps ≈ 4 hours of sim time. This means the policy cannot plan growth curves that span multiple days — it optimises proximal growth rate, not final batch OD. A terminal bonus (`tanh(OD/0.05) × 10`) was added to partially anchor the value function at episode end, but does not fully replace long-horizon planning.
-
-**Why kept:** Dense proxy rewards (DO₂, nutrient consumption, pH drift, OD growth rate) are designed to fire within the 4-hour horizon. Higher gamma without this scaffolding would produce sparse reward and unstable gradients.
-
-**Fix trigger:** Once a stable D2 policy achieves peak OD > 0.10 consistently. At that point experiment with `gamma = 0.998–0.999` and verify the agent doesn't destabilise. Simultaneously remove or reduce proxy reward scaffolding so the higher gamma doesn't over-weight them.
+**This entry's `gamma = 0.995` no longer matches the code.** PPO's actual `gamma` is **0.9995** (`training/recurrent_ppo.py`), changed by Fix #13 specifically because 0.995's ~200-step (4h) effective horizon couldn't reach the reward-relevant OD dynamics — see `finalresults.md`'s run history. At 0.9995, the effective horizon is roughly 2000 steps (~40h), long enough to span multiple harvest events (`HARVEST_INTERVAL_STEPS=600`). There is no `tanh(OD/0.05) × 10` terminal bonus in the current reward — that also predates the current design. The general point (short-horizon PPO can't credit delayed OD/harvest tradeoffs) is real and still discussed in this session's reward-cliff findings (`finalresults.md`, TD-MPC2/PPO v28-31 sections), but the specific numbers here are from a prior version of the code.
 
 ---
 
@@ -97,20 +89,12 @@ o2_sat = 8.0 * (o2_frac / self.ambient_o2_frac) * np.exp(-0.02 * (self.temp - 25
 
 ---
 
-## O13 — No Harvest / Dilution Mechanism
+## O13 — No Harvest / Dilution Mechanism *(RESOLVED — harvest exists and is central to the project)*
 
-**Reality:** Real continuous PBRs dilute the culture at regular intervals (dilution rate D, typically 0.05–0.2 /day) to maintain log-phase growth and prevent self-shading. Without dilution, density-dependent inhibition eventually limits productivity even when nutrients are abundant.
-
-**Why kept:** The current env models a batch culture. Adding a dilution action would change the action space dimension (requiring a fresh checkpoint) and substantially alter the reward landscape — the agent would need to learn a feeding vs. harvesting trade-off. This is a separate experiment from the current batch optimisation goal.
-
-**Fix trigger:** When batch-mode OD control is mastered and the goal shifts to continuous-mode productivity (g/L/day). At that point add a 5th action (dilution rate 0–0.2 /h) and reformulate the reward around volumetric productivity rather than terminal OD.
+**This entry is factually wrong about the current environment.** A periodic semi-continuous harvest/dilution mechanism has existed for the entire history of this session's work and is the third action dimension (`stir, light, harvest`). Every `HARVEST_INTERVAL_STEPS` (600 steps = 12h), the interval-averaged harvest action removes a per-cell Bernoulli-sampled fraction of standing biomass (up to `F_MAX=0.5`) and dilutes dissolved-phase state toward fresh medium — see `_compute_reward()`'s harvest handling and the harvest event block in `step()`. `cumulative_harvested_mg` and `time_avg_od` (averaged over the episode's back half) are the two headline curriculum-gate metrics, and essentially all of this project's reward-design history (`finalresults.md`) is about the harvest-vs-OD tradeoff this mechanism creates — including two fixes from this session (#28, #29) directly addressing how the reward and training loop handle harvest-fraction dynamics. Left here as a historical marker only: this entry described a genuinely batch-only, pre-harvest version of the env that predates all of the project's curriculum/RL work.
 
 ---
 
-## O14 — Population Cap Creates Density Ceiling Without Dilution
+## O14 — Population Cap Creates Density Ceiling Without Dilution *(STALE — dilution exists)*
 
-**Reality:** With `max_cells = 7500` super-agents and no harvest, the population hits the array ceiling within ~50–70 hours (episode midpoint). Post-ceiling, growth continues via cell mass accumulation (1.4×10⁸ → 5×10⁸ pg/cell), but the culture is in a non-physiological over-dense state. Real cultures at this density would self-shade severely and undergo stationary-phase entry.
-
-**Why kept:** Removing the ceiling requires either larger arrays (memory) or a dilution action (scope change). Post-ceiling mass growth still produces OD rewards and is mechanistically consistent with self-shading through the Beer-Lambert attenuation model. The `reward_od` high-water-mark and `reward_growth_rate` terms continue to fire during mass accumulation, keeping the reward signal dense.
-
-**Fix trigger:** When implementing the dilution action (O13). At that point the ceiling becomes a soft constraint enforced by the dilution rate rather than a hard array limit.
+**Also describes the pre-harvest environment.** With harvest active (see O13), the population is periodically diluted rather than growing to an unbounded ceiling; `max_cells=7500` is a computational cap on the agent-array size (matched across PPO, TD-MPC2, and the diagnostics — see this session's `MAX_CELLS` cost-probe finding, which measured actual active population staying around 2,990-3,000 cells at multiple cap sizes, far below 7500, so the cap is not typically a binding constraint in practice). The "density ceiling without dilution" scenario this entry describes does not apply to the current environment.

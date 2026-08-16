@@ -890,7 +890,10 @@ def train_td_mpc2(resume: bool = False, use_privileged_distill: bool = False,
     CHUNK_STEPS = 100_000  # matches recurrent_ppo.py's CHUNK_STEPS convention
     # Fix (v27): mastery window/streak now match curriculum_schedule.py's PPO defaults so a
     # TD-MPC2 run's gate is not just the SAME metric as PPO's, it fires on the SAME cadence.
-    from curriculum_schedule import MASTERY_WINDOW, MASTERY_REQUIRED_STREAK
+    from curriculum_schedule import (
+        MASTERY_WINDOW, MASTERY_REQUIRED_STREAK, DEMOTION_CRASH_RATE,
+        DEMOTION_STREAK_REQUIRED, CAPABILITY_DEMOTION_CHUNKS,
+    )
     MASTERY_MIN_EPISODES = PPO_MASTERY_MIN_EPISODES
     DET_EVAL_EPISODES_PER_CHUNK = 3
     DET_MASTERY_MIN_EPISODES = 9
@@ -1023,8 +1026,21 @@ def train_td_mpc2(resume: bool = False, use_privileged_distill: bool = False,
     # does, rather than resetting evidence every chunk.
     history_by_diff = defaultdict(lambda: deque(maxlen=MASTERY_WINDOW))
     demotion_streak = 0
+    # Ported from recurrent_ppo.py's Fix #15 + Fix #29 (crash-floor corrected, v31-validated).
+    # Without this, sustained det-gate failure at 0% crash rate has NO corrective response here
+    # — only stats["crash_rate"] >= DEMOTION_CRASH_RATE ever changes next_difficulty. v27 already
+    # showed the precursor: D1 held for the rest of its 8M-step budget with time_avg_od
+    # oscillating 0.0051-0.0071 against a 0.008 target, never sustaining a crossing, and nothing
+    # would have caught it had it instead REGRESSED the way PPO's v17 did (48 straight chunks
+    # failing the same criterion at exactly 0.00% crash, never demoted, until Fix #15 existed to
+    # catch it). See recurrent_ppo.py's capability_fail_streak/d0_capability_abort for the full
+    # rationale, including why D0's abort branch requires the crash-rate floor (v30's false
+    # positive) while D1/D2's demotion deliberately does not (that branch exists specifically to
+    # catch v17-style 0%-crash quality regression from a proven prior-good baseline).
+    capability_fail_streak = 0
+    d0_capability_abort = False
 
-    while global_step < TOTAL_TRAINING_STEPS:
+    while global_step < TOTAL_TRAINING_STEPS and not d0_capability_abort:
         train_diff = _sample_training_difficulty(current_difficulty)
         start_cfg = choose_episode_start(
             train_diff,
@@ -1249,14 +1265,46 @@ def train_td_mpc2(resume: bool = False, use_privileged_distill: bool = False,
                 next_difficulty = min(2, current_difficulty + 1)
                 mastery_streak = 0
 
-            if current_difficulty > 0 and stats["crash_rate"] >= 0.35:
+            if current_difficulty > 0 and stats["crash_rate"] >= DEMOTION_CRASH_RATE:
                 demotion_streak += 1
             else:
                 demotion_streak = 0
-            if demotion_streak >= 2:
+            if demotion_streak >= DEMOTION_STREAK_REQUIRED:
                 next_difficulty = max(0, current_difficulty - 1)
                 mastery_streak = 0
                 demotion_streak = 0
+
+            # Capability-based demotion/abort (ported Fix #15 + Fix #29) — tracks sustained
+            # deterministic-gate failure at ANY tier, independent of crash rate.
+            capability_failing = (
+                det_stats["episodes"] >= DET_MASTERY_MIN_EPISODES
+                and not det_criteria_passed
+            )
+            if capability_failing:
+                capability_fail_streak += 1
+            else:
+                capability_fail_streak = 0
+
+            if capability_fail_streak >= CAPABILITY_DEMOTION_CHUNKS:
+                if current_difficulty > 0:
+                    print(f"  [CAPABILITY DEMOTION] deterministic gate failed "
+                          f"{capability_fail_streak} consecutive chunks at D{current_difficulty} "
+                          f"(crash rate {stats['crash_rate']:.2%}, so crash-based demotion never "
+                          f"fired) — dropping a tier to restore a solvable task")
+                    next_difficulty = max(0, current_difficulty - 1)
+                    mastery_streak = 0
+                    demotion_streak = 0
+                    capability_fail_streak = 0
+                elif stats["crash_rate"] >= DEMOTION_CRASH_RATE:
+                    # D0 has no tier to demote to. Only abort when crash rate is ALSO elevated
+                    # (v30's false-positive lesson on the PPO side) — "never yet passed" and
+                    # "regressed from passing" are different signals at the floor tier.
+                    print(f"  [CAPABILITY ABORT] deterministic gate failed "
+                          f"{capability_fail_streak} consecutive chunks at D0 (crash rate "
+                          f"{stats['crash_rate']:.2%}) — no tier to demote to, stopping run.")
+                    d0_capability_abort = True
+                # else: sustained det-gate failure at D0 but crash rate is healthy — slow but
+                # not broken. Keep training.
 
         if next_difficulty != current_difficulty:
             direction = "ADVANCED" if next_difficulty > current_difficulty else "DEMOTED"
@@ -1266,15 +1314,24 @@ def train_td_mpc2(resume: bool = False, use_privileged_distill: bool = False,
                 f"p25={stats['p25_harvested_mg']:.1f} time_avg_od={stats['median_time_avg_od']:.4f} "
                 f"crash={stats['crash_rate']:.2%}"
             )
+            # Fix #15's per-tier reset: a tier change makes prior det-gate failures moot.
+            capability_fail_streak = 0
         else:
             print(
                 f"  Curriculum hold D{current_difficulty} | chunk_eps={episodes_this_chunk} "
                 f"eps={stats['episodes']} harvest_mg={stats['median_harvested_mg']:.1f} "
                 f"p25={stats['p25_harvested_mg']:.1f} time_avg_od={stats['median_time_avg_od']:.4f} "
                 f"crash={stats['crash_rate']:.2%} adv={mastery_streak}/{MASTERY_REQUIRED_STREAK} "
-                f"dem={demotion_streak}/2"
+                f"dem={demotion_streak}/{DEMOTION_STREAK_REQUIRED} "
+                f"capfail={capability_fail_streak}/{CAPABILITY_DEMOTION_CHUNKS}"
             )
         current_difficulty = next_difficulty
+
+        if d0_capability_abort:
+            print(
+                f"\n[EARLY STOP] D0 capability abort at step {global_step:,} — see "
+                f"[CAPABILITY ABORT] above."
+            )
 
     os.makedirs("model_data", exist_ok=True)
     agent.save("model_data/tdmpc2_genetic_ibm.pth")

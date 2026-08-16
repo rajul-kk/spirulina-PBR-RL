@@ -152,6 +152,46 @@ the 0.004 gate in both deterministic and stochastic mode** — consistent, ~10% 
 claim does not independently replicate.** Same failure class as v14/v17/v26, with the tightest
 margin of any RL run in this project — see `finalresults.md` for full detail.
 
+## Reward fix (Fix #28) and D0 capability-abort (Fix #29) — in progress
+
+A constant-harvest-fraction sweep of the raw env found a structural reward-landscape problem
+common to *both* algorithm families: `harvested_mg` saturates almost immediately past the
+physically-optimal fraction (~0.12-0.15) while `time_avg_od` collapses steeply over that same
+range, and `reward_harvest` gives no signal distinguishing the two — a low-gradient plateau on
+one side, a steep unpunished cliff on the other. **Fix #28** adds an immediate, harvest-event-
+local penalty when post-harvest OD falls below a floor fraction of `OD_TARGET`, replacing what
+was previously only a delayed, hard-to-credit-assign signal via `reward_od`'s per-step decay. A
+companion fix (a rolling-window OD-average reward term, meant to close the gap between
+`reward_od`'s instantaneous-peak reward and the gate's time-*averaged* metric) was tried and
+**reverted** after direct verification showed it reintroduced the "never harvest" exploit
+Fix #10 had already closed — a non-oscillating never-harvest trajectory's rolling average
+trivially equals its own instantaneous value, so it rewarded the unharvested baseline more than
+a real harvesting policy. Verified via the same sweep before any training: Fix #28 alone
+correctly restores "harvesting beats never-harvesting" at D1/D2 (unaffected either way) without
+touching D0's separate, pre-existing weak bias toward never-harvesting (present in the
+*original* reward, not introduced by this fix).
+
+Live monitoring of the first full-budget test run (v29) surfaced a second, independent gap:
+PPO's deterministic policy actively collapsed at D0 (crash rate 0%→80% over 5 chunks) with
+**no safety mechanism watching for it** — the existing capability-demotion logic (Fix #15) is
+gated on `current_difficulty > 0`, since demotion has nowhere to go from the floor tier, but
+that guard also meant D0 had zero active response to an in-place collapse. **Fix #29** extends
+the failure-streak counter to track at D0 too; since there's no tier to demote to, it stops the
+run cleanly with a diagnostic instead. The first version of this fix (v30) then hit its own
+false-positive: it aborted a run that was healthy the entire time (0% crash, growing harvest)
+purely because `time_avg_od` hadn't cleared its threshold in 12 chunks — `capability_failing`
+measures "hasn't passed yet," not "is getting worse," and D0 runs commonly take many chunks to
+first clear the OD bar even when nothing is wrong. **Corrected**: D0's abort now additionally
+requires `crash_rate >= DEMOTION_CRASH_RATE`, so it only fires on genuine collapse, matching the
+signal (elevated crash rate) that actually distinguished the two cases. The D1/D2 demotion path
+deliberately keeps no crash floor — Fix #15 exists specifically to catch 0%-crash quality
+regression there (v17's documented collapse), which has a proven prior-good baseline to regress
+from; a D0 run stuck below the bar from the start has no such baseline, so the same floor-free
+logic doesn't transfer.
+
+`v31_d0_abort_crash_floor` (both fixes together) is running as of this writing — not yet
+concluded. Update this section with the result once it reaches a verdict.
+
 ## Known issue: observation-space versioning
 
 The observation went 6 → 8 channels (Fix #18), then was **reverted to 6 as the default**

@@ -1,5 +1,18 @@
 # PBR Environment — Parameter Calibration Notes
 
+> **⚠ STALE — describes a discontinued organism/medium configuration.** This entire document
+> was written for a **Chlorella vulgaris on BG-11 medium** configuration (5D observation space,
+> 4-action stir/CO₂/nutrient/light control, no harvest mechanism). The current environment
+> models **Spirulina (Arthrospira) platensis on Zarrouk medium** — 6D observations, 3-action
+> stir/light/harvest control with a periodic semi-continuous harvest mechanism central to the
+> entire curriculum/RL design (see `docs/known_limitations.md`'s O13 correction and
+> `finalresults.md`). Essentially every organism-specific parameter below (mu_max, T_opt, pH
+> optimum, shear tolerance, osmotic threshold, stoichiometry) is for the wrong organism and
+> does not describe the current `genetic_env.py`. Kept as a historical record of the prior
+> configuration and the calibration-correction discipline used at the time — **for current
+> parameter values and their citations, see `docs/literature.md` (Spirulina-specific,
+> up to date) and `genetic_env.py` directly, not this file.**
+
 Tracks which parameters are physically grounded vs deliberate training compromises, and why.
 
 ---

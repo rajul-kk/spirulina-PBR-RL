@@ -643,7 +643,21 @@ def train_recurrent_agent(resume=False):
                     mastery_streak = 0
                     demotion_streak = 0
                     capability_fail_streak = 0
-                else:
+                elif stats["crash_rate"] >= DEMOTION_CRASH_RATE:
+                    # Fix #29 correction (v30 retry): capability_failing alone means "hasn't
+                    # cleared the det gate yet", not "is collapsing" — live-verified this fires
+                    # on a run with 0.00% crash rate and steadily growing harvest (38.8/30.0,
+                    # p25 29.8/15.0, both passing; only time_avg_od lagging, 0.0007/0.0040) just
+                    # as readily as on genuine collapse (the original v29 trigger: crash rate
+                    # climbing 0%->80% with harvest/od both declining). The D1/D2 demotion
+                    # branch above deliberately does NOT require a crash floor (Fix #15 exists
+                    # specifically to catch v17-style quality regression at 0% crash), but that
+                    # rationale doesn't transfer to D0: D1/D2 demotion had a proven prior-good
+                    # baseline to fall back to, while a D0 run stuck below the OD bar from the
+                    # start has no such baseline to compare against — "never yet passed" and
+                    # "regressed from passing" are not the same signal at the floor tier. Only
+                    # abort D0 when crash rate is ALSO elevated, the same threshold and
+                    # rationale used for D1/D2's crash-based demotion_streak.
                     print(f"  [CAPABILITY ABORT] deterministic gate failed "
                           f"{capability_fail_streak} consecutive chunks at D0 (crash rate "
                           f"{stats['crash_rate']:.2%}) — no tier to demote to, stopping run. "
@@ -652,6 +666,10 @@ def train_recurrent_agent(resume=False):
                           f"worth spending on a policy that has structurally failed its own "
                           f"gate for {capability_fail_streak} straight chunks.")
                     d0_capability_abort = True
+                # else: sustained det-gate failure at D0 but crash rate is healthy — this is
+                # "slow but not broken" (the v30 case above), not the collapse pattern this
+                # exists to catch. Keep training; capability_fail_streak stays pinned at/above
+                # threshold and is silently re-checked each subsequent chunk at no real cost.
 
             if demotion_streak >= DEMOTION_STREAK_REQUIRED:
                 next_difficulty = max(0, current_difficulty - 1)

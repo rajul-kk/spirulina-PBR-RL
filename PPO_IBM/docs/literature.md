@@ -237,6 +237,36 @@ Cells cycle through light/dark zones at high mixing — `z_effective = (1 − tu
 - **Grimm, V., et al. (2006).** A standard protocol for describing individual-based and agent-based models. *Ecological Modelling*, 198(1–2), 115–126.
 - **DeAngelis, D.L., & Mooij, W.M. (2005).** Individual-based modeling of ecological and evolutionary processes. *Annual Review of Ecology, Evolution, and Systematics*, 36, 147–168.
 
+### Behaviour Cloning
+
+- **Pomerleau, D.A. (1988).** ALVINN: An autonomous land vehicle in a neural network. *NeurIPS 1988*.
+  - Foundational imitation-learning result; establishes behaviour cloning as direct supervised regression from state to expert action.
+- **Ross, S., Gordon, G., & Bagnell, D. (2011).** A reduction of imitation learning and structured prediction to no-regret online learning. *AISTATS 2011* (DAgger).
+  - Analyses compounding-error / distribution-shift failure modes in pure behaviour cloning — relevant context for why this project's BC clone is validated on held-out cold starts, not just training-distribution episodes.
+
+### Model Predictive Path Integral Control (MPPI) and TD-MPC2
+
+- **Williams, G., Aldrich, A., & Theodorou, E.A. (2017).** Model predictive path integral control: from theory to parallel computation. *Journal of Guidance, Control, and Dynamics*, 40(2), 344–357.
+  - Original MPPI formulation: sampling-based receding-horizon control via importance-weighted trajectory rollouts, the planning algorithm `legacy/TD_MPC2.py`'s `agent.plan()` implements.
+- **Hansen, N., Su, H., & Wang, X. (2024).** TD-MPC2: Scalable, robust world models for continuous control. *ICLR 2024* / *arXiv:2310.16828*.
+  - The algorithm this project's second implementation (Fix #27) targets: latent world model + MPPI planning + policy-prior-guided sampling, Q-ensemble, and two-hot reward/value regression.
+- **Hafner, D., Pasukonis, J., Ba, J., & Lillicrap, T. (2023).** Mastering diverse domains through world models (DreamerV3). *arXiv:2301.04104*.
+  - Source of the symlog transform and two-hot categorical regression scheme both DreamerV3 and TD-MPC2 use for reward/value prediction, adopted in this project's TD-MPC2 upgrade; also documents the technique's sensitivity to bin-range calibration relative to a domain's actual reward magnitudes, directly relevant to a bug found and fixed in this project's `TwoHotEncoder`.
+
+### Evaluation-Aware / Train-Eval Mismatch in RL
+
+- ***Evaluation-aware reinforcement learning*** (2025). *arXiv:2509.19464*.
+  - Documents exactly the deterministic/stochastic train-eval mismatch this project's PPO series (v11-v26) independently discovered and mechanistically confirmed via the std-annealing intervention (Fix #22): a policy trained on stochastic rollouts can look competent under sampling noise while its deterministic (actually-deployed) behaviour is degenerate. Notes the gap widens on long-horizon tasks, consistent with this project's 7200-step episodes.
+
+### Constrained / Safe Reinforcement Learning
+
+- **Altman, E. (1999).** *Constrained Markov Decision Processes*. Chapman and Hall/CRC.
+  - Formal foundation for treating a secondary objective (e.g. a minimum sustained OD) as an explicit constraint rather than folding it into a single scalar reward via a hand-tuned weight — the alternative to this project's current additive-weighted-sum reward design, discussed as a candidate fix for the harvest-fraction reward-cliff finding (`finalresults.md`).
+- **Achiam, J., Held, D., Tamar, A., & Abbeel, P. (2017).** Constrained policy optimization. *ICML 2017*.
+  - Practical trust-region method for constrained RL; one concrete route to a Lagrangian-style harvest-vs-OD formulation.
+- **Stooke, A., Achiam, J., & Abbeel, P. (2020).** Responsive safety in reinforcement learning by PID Lagrangian methods. *ICML 2020*.
+  - Addresses oscillation/overshoot in naively-tuned Lagrange multipliers — relevant given this project's own history of overshooting fixed reward weights (harvest weight revised 0.25 → 2.0 → 0.5).
+
 ---
 
 ## 13. Sensor Models
@@ -255,4 +285,4 @@ Cells cycle through light/dark zones at high mixing — `z_effective = (1 − tu
 
 ---
 
-*Last updated: 2026-06-08*
+*Last updated: 2026-08-16*

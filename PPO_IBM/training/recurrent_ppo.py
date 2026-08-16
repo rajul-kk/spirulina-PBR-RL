@@ -150,6 +150,19 @@ def train_recurrent_agent(resume=False):
     best_det_score = -1.0
     best_det_dir = "model_data/best_det_checkpoint"
     d2_mastery_achieved = False  # early-stop signal once D2 (terminal tier) is mastered
+    # Fix #29: early-stop signal for a sustained deterministic-gate failure streak AT D0.
+    # capability_fail_streak below is gated on current_difficulty>0 for the DEMOTION branch
+    # (there is no tier below D0 to demote to), but that guard also meant D0 had NO active
+    # response to an in-place policy collapse at all. Confirmed live in v29: PPO's det crash
+    # rate climbed 0%->80% over 5 chunks while capability_fail_streak sat structurally stuck
+    # at 0 (the guard prevented it from ever incrementing) and the already-active plateau-kick
+    # mechanism (entropy bumps, unrelated to this failure mode) kept firing on its own schedule
+    # without arresting the decline. Rather than attempt a live mid-training weight reload
+    # (risky: SB3 optimizer/rollout-buffer state can desync from a hot-swapped policy), this
+    # stops the run cleanly with a clear diagnostic once the same failure signal that would
+    # demote at D1/D2 sustains at D0 — burning the rest of an 8M-step budget on a policy known
+    # to be failing its own gate is worse than stopping and deciding explicitly what to do next.
+    d0_capability_abort = False
     entropy_multiplier = 1.0
 
     latest_checkpoint, latest_step = (None, None)
@@ -342,7 +355,7 @@ def train_recurrent_agent(resume=False):
     det_eval_history = defaultdict(lambda: deque(maxlen=DET_EVAL_WINDOW))
     det_eval_seed_counter = 0
 
-    while steps_done < TOTAL_TRAINING_STEPS and not d2_mastery_achieved:
+    while steps_done < TOTAL_TRAINING_STEPS and not d2_mastery_achieved and not d0_capability_abort:
         chunk_idx += 1
         # Difficulty is now sampled per-episode in CurriculumStartWrapper.reset().
         # train_diff here equals mastery level and is used only for the streak
@@ -602,9 +615,12 @@ def train_recurrent_agent(resume=False):
             # actually use. Threshold is deliberately long (CAPABILITY_DEMOTION_CHUNKS) so
             # ordinary chunk-to-chunk noise or a normal pre-advance plateau cannot trigger it —
             # only a sustained inability to perform at the current tier.
+            # Fix #29: no longer gated on current_difficulty>0 — see d0_capability_abort's
+            # definition above for why. The counter now tracks sustained det-gate failure at
+            # ANY tier, including D0; only the RESPONSE differs below (demote vs. abort),
+            # since D0 has no tier to demote to.
             capability_failing = (
-                current_difficulty > 0
-                and det_stats["episodes"] >= DET_MASTERY_MIN_EPISODES
+                det_stats["episodes"] >= DET_MASTERY_MIN_EPISODES
                 and not det_criteria_passed
             )
             if capability_failing:
@@ -618,14 +634,24 @@ def train_recurrent_agent(resume=False):
                 demotion_streak = 0
 
             if capability_fail_streak >= CAPABILITY_DEMOTION_CHUNKS:
-                print(f"  [CAPABILITY DEMOTION] deterministic gate failed "
-                      f"{capability_fail_streak} consecutive chunks at D{current_difficulty} "
-                      f"(crash rate {stats['crash_rate']:.2%}, so crash-based demotion never "
-                      f"fired) — dropping a tier to restore a solvable task")
-                next_difficulty = max(0, current_difficulty - 1)
-                mastery_streak = 0
-                demotion_streak = 0
-                capability_fail_streak = 0
+                if current_difficulty > 0:
+                    print(f"  [CAPABILITY DEMOTION] deterministic gate failed "
+                          f"{capability_fail_streak} consecutive chunks at D{current_difficulty} "
+                          f"(crash rate {stats['crash_rate']:.2%}, so crash-based demotion never "
+                          f"fired) — dropping a tier to restore a solvable task")
+                    next_difficulty = max(0, current_difficulty - 1)
+                    mastery_streak = 0
+                    demotion_streak = 0
+                    capability_fail_streak = 0
+                else:
+                    print(f"  [CAPABILITY ABORT] deterministic gate failed "
+                          f"{capability_fail_streak} consecutive chunks at D0 (crash rate "
+                          f"{stats['crash_rate']:.2%}) — no tier to demote to, stopping run. "
+                          f"Best deterministic checkpoint so far (score {best_det_score:.1f}) "
+                          f"is preserved at {best_det_dir}; this run's remaining budget is not "
+                          f"worth spending on a policy that has structurally failed its own "
+                          f"gate for {capability_fail_streak} straight chunks.")
+                    d0_capability_abort = True
 
             if demotion_streak >= DEMOTION_STREAK_REQUIRED:
                 next_difficulty = max(0, current_difficulty - 1)
@@ -718,6 +744,12 @@ def train_recurrent_agent(resume=False):
                 f"\n[EARLY STOP] D2 mastery confirmed ({MASTERY_REQUIRED_STREAK} consecutive "
                 f"passing chunks at full difficulty) at step {steps_done:,} — stopping before "
                 f"the {TOTAL_TRAINING_STEPS:,}-step budget. Saving final checkpoint below."
+            )
+        if d0_capability_abort:
+            print(
+                f"\n[EARLY STOP] D0 capability abort at step {steps_done:,} — see "
+                f"[CAPABILITY ABORT] above. Saving final checkpoint below (not the deployable "
+                f"artifact — use {best_det_dir} for that)."
             )
 
         checkpoint_path = os.path.join(checkpoint_dir, f"recurrent_ppo_ibm_{steps_done}_steps")

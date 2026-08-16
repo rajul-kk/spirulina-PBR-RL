@@ -840,8 +840,13 @@ def finetune_recurrent_agent(extra_steps: int = 500_000):
 
     # Load the saved model and hot-swap to the new env
     model = RecurrentPPO.load(model_path, env=vec_env, device="auto")
-    # Lower LR for fine-tuning: avoids catastrophic forgetting of curriculum knowledge
-    model.learning_rate = 1e-4
+    # Lower LR for fine-tuning: avoids catastrophic forgetting of curriculum knowledge.
+    # Setting model.learning_rate here is a no-op — SB3 reads model.lr_schedule during
+    # training, not the raw attribute, and lr_schedule is already fixed at load time to
+    # _lr_schedule_fn (re-pickled from the checkpoint), which reads the module-level
+    # _lr_state dict instead. Update that directly so the value actually takes effect.
+    _lr_state["value"] = 1e-4
+    model.lr_schedule = _lr_schedule_fn
     print("  ✔ Model loaded — learning_rate set to 1e-4 for fine-tune")
 
     checkpoint_cb = CheckpointCallback(

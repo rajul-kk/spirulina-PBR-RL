@@ -1,0 +1,50 @@
+{
+  "tag": "v29_harvest_collapse_penalty_full",
+  "resume": null,
+  "note": "Fix #28 full validation run: harvest-event OD-collapse penalty",
+  "started": "2026-08-16 01:51:00",
+  "config": {
+    "gate_mode": "dual",
+    "run_seed": 0,
+    "env_debug": "",
+    "total_training_steps": 8000000,
+    "chunk_steps": 100000,
+    "advance_targets": {
+      "0": {
+        "min_median_harvested_mg": 30.0,
+        "min_p25_harvested_mg": 15.0,
+        "max_crash_rate": 0.15,
+        "min_median_time_avg_od": 0.004
+      },
+      "1": {
+        "min_median_harvested_mg": 60.0,
+        "min_p25_harvested_mg": 30.0,
+        "max_crash_rate": 0.1,
+        "min_median_time_avg_od": 0.008
+      },
+      "2": {
+        "min_median_harvested_mg": 90.0,
+        "min_p25_harvested_mg": 50.0,
+        "max_crash_rate": 0.08,
+        "min_median_time_avg_od": 0.011
+      }
+    },
+    "plateau_chunks": 6,
+    "max_plateau_kicks_per_difficulty": 2,
+    "capability_demotion_chunks": 12,
+    "entropy_init": 0.02,
+    "entropy_min": 0.003,
+    "std_band_low": 0.08,
+    "std_band_high": 0.65,
+    "std_anneal_start_frac": 0.4,
+    "std_anneal_end_frac": 0.85,
+    "std_anneal_final": 0.12,
+    "env_obs_dim": 6,
+    "env_harvest_interval_steps": null,
+    "env_target_mg_per_event": 12.32,
+    "env_light_fouling_coef": 0.0002,
+    "env_turb_fouling_coef": 0.0,
+    "env_harvest_pump_error": 0.0,
+    "env_use_episode_phase": true
+  }
+}

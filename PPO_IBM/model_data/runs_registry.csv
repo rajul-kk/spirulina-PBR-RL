@@ -1,3 +1,5 @@
 tag,started,pid,resume,obs_dim,total_steps,turb_foul,pump_err,ep_phase,std_anneal_final,note,best_harvest,best_p25,best_od,best_crash,result
 v26_obs6_stochastic_gate,2026-08-09 02:31:46,23324,,6,8000000,0.0,0.0,True,0.12,"PPO on reverted 6D obs, GATE_MODE=stochastic; validate with held_out_sweep --stochastic",,,,,RUNNING
 v26_obs6_stochastic_gate_seed0,2026-08-09 07:48:38,18928,,stochastic,0,6,8000000,0.0,0.0,True,76.6,49.8,0.0049,0.0000,D2 early-stop on stochastic gate at step 6.9M; needs held-out validation,,RUNNING
+v28_harvest_collapse_penalty,2026-08-15 11:38:41,26172,,dual,0,6,8000000,0.0,0.0,True,0.12,"Fix #28 smoke test: harvest-event OD-collapse penalty, short run",,,,,RUNNING
+v29_harvest_collapse_penalty_full,2026-08-16 01:51:10,1996,,dual,0,6,8000000,0.0,0.0,True,0.12,Fix #28 full validation run: harvest-event OD-collapse penalty,,,,,RUNNING

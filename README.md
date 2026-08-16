@@ -6,17 +6,21 @@ RecurrentPPO (SB3-contrib) on `GeneticPhotobioreactorEnv`, with a difficulty cur
 upgraded this session to a genuine TD-MPC2 spec (Q-ensemble, two-hot regression,
 macro-timestep world model) and wired to the same project gate.
 
-**Results and history: [`finalresults.md`](finalresults.md)** (full detail in
+All code, scripts, and supporting docs referenced below live in [`PPO_IBM/`](PPO_IBM/), the
+project directory this README describes.
+
+**Results and history: [`finalresults.md`](PPO_IBM/finalresults.md)** (full detail in
 `finalresults_full_archive.md`). Read that before changing anything — it records 24 PPO runs
 through v24, the fixes that worked, and several that were measured and refuted. **v25, v26,
 and the TD-MPC2 upgrade postdate that writeup and are summarized below** until they're folded
 in.
 
-## Run everything from the repo root
+## Run everything from PPO_IBM/
 
 Scripts hardcode relative paths (`model_data/...`), which resolve against the **working
-directory**, not the file location. Modules in subdirectories carry a small `sys.path`
-bootstrap so flat imports keep working, but the cwd requirement stands.
+directory**, not the file location — `cd PPO_IBM` before running anything below. Modules in
+subdirectories carry a small `sys.path` bootstrap so flat imports keep working, but the cwd
+requirement stands.
 
 ```
 python scripts/run_training.py --tag v25_my_change --note "what this tests"

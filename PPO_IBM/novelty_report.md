@@ -84,20 +84,34 @@ gate" ablation Fix #23 already ran (v25/v26) is a start, not a full case for the
 growth-condition setpoints like light/temperature/nutrients), with a semi-continuous
 harvest-and-dilute mechanism every 12h.
 
-**What the literature comparison shows:** the UNIST MARL paper controls light, temperature,
-nutrients, CO2, and pH for growth-rate/yield optimization — not harvest timing or dilution
-fraction. The 2021 LSTM-RL Spirulina paper optimizes yield via environmental setpoints, not
-harvest control. The BC+RL PBR paper controls pH, not harvest. **No comparator controlling harvest
-fraction via RL in a microalgae/cyanobacteria context surfaced in this search.**
+**Follow-up bioprocess-engineering search (closes the gap flagged in the first draft of this
+report).** RL control of chemostat/bioreactor dilution *is* an established line of work — most
+directly, [Deep reinforcement learning for the control of microbial co-cultures in bioreactors](https://journals.plos.org/ploscompbiol/article?id=10.1371%2Fjournal.pcbi.1007783)
+(Treloar et al., PLOS Comp Bio) uses Neural Fitted Q-learning (bang-bang nutrient-inflow control,
+not continuous harvest fraction) to hold a two-strain *E. coli* co-culture at a target ratio in a
+chemostat, and other work in this space ([arXiv:2503.22409](https://arxiv.org/pdf/2503.22409))
+covers multi-setpoint bioprocess trajectory tracking more generally. **So "RL controls a
+bioreactor's dilution/removal dynamics" is not novel** — that claim should not be made.
 
-**Novelty tier: plausible but the weakest-evidenced claim in this report.** Harvest/dilution
-control is well studied in bioprocess engineering generally (chemostat/turbidostat control theory
-predates RL by decades), so "novel" here can only mean "novel as an RL action space for this
-specific organism/system," which is a much narrower and less defensible claim than it sounds —
-and this search is the least likely of the five to have found a matching paper, since
-harvest-scheduling work is more likely to sit in bioprocess-engineering venues this search didn't
-specifically target (e.g. *Biotechnology and Bioengineering*, *Journal of Process Control*).
-Treat this as "worth a targeted follow-up literature search before claiming it," not as settled.
+What remains genuinely underexplored, and is now backed by an independent secondary source rather
+than just this search's own gaps: a 2024 systematic review of AI/ML in microalgae bioprocesses
+([Bioengineering, PMC11592280](https://pmc.ncbi.nlm.nih.gov/articles/PMC11592280/)) surveys
+supervised/deep-learning applications throughout microalgae cultivation and harvesting and
+**cites no RL-based harvest-control work at all** — its only mention of reinforcement learning is
+a one-line general definition, with nothing tying it to any specific microalgae study. Combined
+with the UNIST MARL paper (growth-condition control, not harvest) and the 2021 LSTM-RL Spirulina
+paper (yield via environmental setpoints, not harvest) both missing harvest control specifically,
+the narrower claim — **RL applied to microalgae *harvest/biomass-removal fraction* specifically
+(as opposed to bioreactor dilution rate in bacterial chemostats generally, or microalgae
+growth-condition control)** — is better supported than the first draft of this report gave it
+credit for, precisely because an independent review's *absence* of citations is stronger evidence
+than one more search finding nothing.
+
+**Novelty tier: novel scope within an established sub-field, not a novel control paradigm.** Any
+writeup must state the RL-bioreactor-dilution precedent explicitly (the PLOS paper above) so the
+claim reads as "the harvest-fraction/microalgae combination is underexplored" rather than
+"RL-controlled bioreactor dilution is new" — the latter would be an easy, embarrassing rejection
+at review. The former is a defensible, appropriately narrow scope claim.
 
 ### C5 — The BC-clone-beats-every-RL-run negative result
 
@@ -120,11 +134,17 @@ helps vs. hurts a BC baseline — it's a real, useful negative result. Framed as
 
 Three gaps would be raised by any competent reviewer, regardless of venue:
 
-1. **No statistical treatment across seeds.** Most run-to-run comparisons in `finalresults.md`
-   are single-run point estimates (one seed per configuration), with only one deliberate
-   replication check (v21 vs v23, which itself demonstrated why this matters — v23 replicated at
-   od 0.0066, not v21's 0.0094). A publishable version needs multiple seeds per configuration and
-   either confidence intervals or a explicit variance report, not point comparisons.
+1. **No statistical treatment across seeds — partially addressed.** See
+   `statistical_validation.md`: a 10,000-resample bootstrap now puts 95% CIs on the two held-out
+   sweeps with saved raw per-seed logs (TD-MPC2 v27 D0, PPO v26 D2, 40 seeds each). Result: PPO
+   v26's D2 failure is statistically robust (CI fully below gate); **TD-MPC2 v27's D0 near-miss is
+   not** — its CI straddles the gate, so "consistent, narrow miss, not noise" (the original
+   `finalresults.md` phrasing) overstated the certainty the data supports and has been corrected
+   there. This only covers **evaluation-time** variance (same trained policy, 40 held-out seeds).
+   It does **not** cover **training-time** variance (would a different training seed produce a
+   meaningfully different policy) — that requires multiple full training runs per configuration
+   (15–25h each) and remains unaddressed; the existing v21/v23 replication (same config, 0.0094 vs
+   0.0066 od) shows this source of variance can be large enough to matter on its own.
 2. **No real-world or cross-simulator validation.** Every number in this report comes from one
    custom simulator. That's normal for a first paper in an applied-RL line of work, but it caps
    the ceiling: reviewers at a bioprocess-engineering venue will ask whether any of this
@@ -132,10 +152,14 @@ Three gaps would be raised by any competent reviewer, regardless of venue:
    findings are simulator-specific artifacts (e.g. is the exploitability of `reward_od`'s early
    shape, or the harvest-clip-induced upward bias, an artifact of this particular reward
    engineering rather than a general phenomenon?).
-3. **Related-work depth.** This report and `docs/literature.md` are based on a handful of targeted
-   searches, not a systematic review. Bioprocess-control venues (chemical/biochemical engineering
-   journals) were only lightly covered — the harvest-control novelty claim (C4) in particular needs
-   a dedicated pass through that literature, not the ML/RL-focused search this audit ran.
+3. **Related-work depth — bioprocess-engineering pass now done for C4, general coverage still
+   thin.** A follow-up search specifically targeting chemostat/bioreactor RL control literature
+   found the PLOS Comp Bio co-culture paper and related work (see C4 above), and cross-checked
+   the harvest-specific claim against an independent 2024 systematic review rather than relying
+   on this project's own search gaps. That closes the most urgent hole. Still open: this remains
+   a handful of targeted searches, not a systematic review with defined inclusion criteria — a
+   real submission would need a proper related-work section built the normal way (backward/forward
+   citation chasing from the papers found here, not just search-engine queries).
 
 ## Recommended framing and venue tier, if pursued
 
@@ -154,5 +178,8 @@ Three gaps would be raised by any competent reviewer, regardless of venue:
 - **C3 (the dual-gate methodology)** is better positioned as a *tooling/methods section* inside
   that paper than as its own contribution, unless it's separately generalized to another
   environment first.
-- **C4 (harvest-specific RL)** should not be a headline novelty claim until the targeted
-  bioprocess-engineering literature search described above has actually been run.
+- **C4 (harvest-specific RL)** can now be stated, narrowly: RL-controlled bioreactor dilution is
+  established (cite the PLOS co-culture paper to pre-empt an obvious reviewer objection), but
+  RL-controlled microalgae *harvest fraction* specifically is absent from a 2024 systematic
+  review of AI/ML in microalgae bioprocesses. Useful as a supporting scope claim in the C2-anchored
+  paper, not strong enough alone to anchor a paper by itself.

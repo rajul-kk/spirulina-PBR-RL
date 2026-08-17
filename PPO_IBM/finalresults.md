@@ -302,11 +302,19 @@ crossing — closest on the very last chunk (0.0077, 0.0003 short) before the bu
 **Held-out validation of the D0 claim** (`diagnostics/tdmpc2_held_out_sweep.py`, 40 fresh
 seeds, using the *fixed* initial_cells sampling so the check isn't subject to finding #2
 above): harvest and crash comfortably clear D0's targets in both modes, but `time_avg_od`
-median is **0.0036 vs the 0.004 target in both deterministic and stochastic mode** — a
-consistent, narrow miss (~10% short), not noise. **The D0 mastery claim does not independently
-replicate.** Same failure class as v14/v17/v26 (in-training pass, held-out fail), with a
-notably tighter margin than any of those — the closest any RL run in this project has come to
-a genuinely held-out-validated result, and still short.
+median is **0.0036 vs the 0.004 target in both deterministic and stochastic mode**. **The D0
+mastery claim does not independently replicate** — `HOLDS ON HELD-OUT SAMPLE: NO` in both modes,
+since the gate requires the observed median to clear 0.004 and it doesn't. Same failure class as
+v14/v17/v26 (in-training pass, held-out fail), with a notably tighter margin than any of those —
+the closest any RL run in this project has come to a genuinely held-out-validated result.
+**Statistical caveat (see `statistical_validation.md`):** a 10,000-resample bootstrap 95% CI on
+the median across the 40 seeds is [0.00295, 0.00405] deterministic / [0.00310, 0.00405]
+stochastic — both intervals *include* the 0.004 gate. At this sample size the data cannot
+distinguish "the true median is just under the gate" from "it's at or slightly above it and this
+sample landed low." Describe this as a genuine near-miss whose margin is not statistically
+resolved, not as a confirmed sub-gate result — narrowing that would need more held-out seeds or
+a second training run at a different seed (see the v21/v23 precedent below for why seed variance
+alone cannot be assumed away).
 
 **Consequence**: TD-MPC2, with a corrected architecture, a corrected cost model, and a
 corrected gate, still could not produce a policy whose gate-passing performance survives fresh

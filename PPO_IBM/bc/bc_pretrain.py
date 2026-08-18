@@ -109,7 +109,7 @@ EXPERT_LIGHT_RANGE = (900.0, 1000.0)
 # genetic_env's OD_TARGET=0.012 (the peak of reward_od), so the controller holds the
 # culture in the band the reward function itself pays most for.
 EXPERT_OD_SETPOINT = 0.015
-EXPERT_GAIN = 1.0
+EXPERT_GAIN = 1.05
 EXPERT_FRAC_CAP = 0.30
 
 # Must match recurrent_ppo.py's gamma (Fix #13, v18) — returns computed at a different

@@ -1,0 +1,91 @@
+─── Behaviour-Cloning Warm Start ───
+Expert      : stir(60.0, 80.0) light(900.0, 1000.0), harvest = clip(1.0*(od/0.015 - 1), 0, 0.3)
+Demo mix    : {0: 0.4, 1: 0.4, 2: 0.2}
+Episodes    : 24 | BC epochs: 10
+
+  Calibrating VecNormalize with 2000 random steps...
+  Calibration complete. Obs mean: [2.610000e+00 8.920000e+00 5.970000e+00 1.092778e+04 3.377000e+01
+ 5.090418e+04]
+
+  Collecting expert demonstrations...
+  demo ep   1/24  D1  stir=  65.4 light=  904.1 mean_frac=0.120  steps=7200  harvested=  151.7mg  time_avg_od=0.0188
+  demo ep   2/24  D0  stir=  76.3 light=  991.3 mean_frac=0.094  steps=7200  harvested=  119.4mg  time_avg_od=0.0179
+  demo ep   3/24  D1  stir=  74.6 light=  954.4 mean_frac=0.158  steps=7200  harvested=  198.9mg  time_avg_od=0.0182
+  demo ep   4/24  D2  stir=  76.3 light=  900.3 mean_frac=0.238  steps=7200  harvested=  351.6mg  time_avg_od=0.0188
+  demo ep   5/24  D2  stir=  60.7 light=  973.0 mean_frac=0.098  steps=7200  harvested=  115.3mg  time_avg_od=0.0180
+  demo ep   6/24  D0  stir=  77.3 light=  954.1 mean_frac=0.131  steps=7200  harvested=  177.1mg  time_avg_od=0.0187
+  demo ep   7/24  D0  stir=  68.5 light=  902.8 mean_frac=0.125  steps=7200  harvested=  160.7mg  time_avg_od=0.0184
+  demo ep   8/24  D0  stir=  73.4 light=  964.7 mean_frac=0.098  steps=7200  harvested=  115.8mg  time_avg_od=0.0178
+  demo ep   9/24  D1  stir=  67.7 light=  999.7 mean_frac=0.287  steps=7200  harvested=  541.0mg  time_avg_od=0.0207
+  demo ep  10/24  D2  stir=  73.7 light=  965.0 mean_frac=0.144  steps=7200  harvested=  196.3mg  time_avg_od=0.0193
+  demo ep  11/24  D1  stir=  67.8 light=  913.5 mean_frac=0.140  steps=7200  harvested=  189.1mg  time_avg_od=0.0181
+  demo ep  12/24  D1  stir=  70.5 light=  931.0 mean_frac=0.195  steps=7200  harvested=  266.8mg  time_avg_od=0.0185
+  demo ep  13/24  D1  stir=  77.8 light=  993.4 mean_frac=0.100  steps=7200  harvested=  127.8mg  time_avg_od=0.0183
+  demo ep  14/24  D0  stir=  71.4 light=  932.2 mean_frac=0.110  steps=7200  harvested=  133.2mg  time_avg_od=0.0186
+  demo ep  15/24  D1  stir=  66.8 light=  939.2 mean_frac=0.101  steps=7200  harvested=  122.7mg  time_avg_od=0.0181
+  demo ep  16/24  D2  stir=  64.5 light=  962.3 mean_frac=0.097  steps=7200  harvested=  112.6mg  time_avg_od=0.0180
+  demo ep  17/24  D0  stir=  76.7 light=  978.7 mean_frac=0.133  steps=7200  harvested=  169.8mg  time_avg_od=0.0184
+  demo ep  18/24  D0  stir=  77.5 light=  905.9 mean_frac=0.172  steps=7200  harvested=  237.5mg  time_avg_od=0.0188
+  demo ep  19/24  D0  stir=  63.0 light=  945.0 mean_frac=0.102  steps=7200  harvested=  127.4mg  time_avg_od=0.0179
+  demo ep  20/24  D1  stir=  64.6 light=  905.2 mean_frac=0.063  steps=7200  harvested=   68.1mg  time_avg_od=0.0159
+  demo ep  21/24  D1  stir=  64.0 light=  909.1 mean_frac=0.101  steps=7200  harvested=  124.7mg  time_avg_od=0.0183
+  demo ep  22/24  D1  stir=  66.0 light=  967.2 mean_frac=0.111  steps=7200  harvested=  145.8mg  time_avg_od=0.0189
+  demo ep  23/24  D0  stir=  78.8 light=  936.5 mean_frac=0.129  steps=7200  harvested=  164.0mg  time_avg_od=0.0189
+  demo ep  24/24  D0  stir=  72.6 light=  992.7 mean_frac=0.117  steps=7200  harvested=  153.7mg  time_avg_od=0.0189
+
+  ============================================================================
+  EXPERT PERFORMANCE on the real training start distribution (n=24)
+  ============================================================================
+    median harvested_mg :    152.7   p25:   124.2   min: 68.1  max: 541.0
+    median time_avg_od  :   0.0184
+    crash_rate          :     0.0%
+    vs D1 gate: PASS   [h+ p25+ od+ crash+]
+    vs D2 gate: PASS   [h+ p25+ od+ crash+]
+  ============================================================================
+
+  Collected 172,800 (obs, action) pairs.
+
+  Behaviour cloning (actor + critic, gamma=0.9995, return range 0.0..137.1)...
+  BC epoch  1/10  action MSE = 0.068314   value MSE = 7823.03
+  BC epoch  2/10  action MSE = 0.017831   value MSE = 6358.00
+  BC epoch  3/10  action MSE = 0.011907   value MSE = 5405.23
+  BC epoch  4/10  action MSE = 0.008914   value MSE = 4568.59
+  BC epoch  5/10  action MSE = 0.007468   value MSE = 3829.46
+  BC epoch  6/10  action MSE = 0.006926   value MSE = 3185.32
+  BC epoch  7/10  action MSE = 0.006631   value MSE = 2630.11
+  BC epoch  8/10  action MSE = 0.006380   value MSE = 2163.48
+  BC epoch  9/10  action MSE = 0.006178   value MSE = 1776.86
+  BC epoch 10/10  action MSE = 0.005976   value MSE = 1462.28
+  critic-only epoch  1/20  value MSE =   1187.40  (RMSE  34.46 on returns 0.0..137.1)
+  critic-only epoch  2/20  value MSE =    937.78  (RMSE  30.62 on returns 0.0..137.1)
+  critic-only epoch  3/20  value MSE =    712.31  (RMSE  26.69 on returns 0.0..137.1)
+  critic-only epoch  4/20  value MSE =    548.69  (RMSE  23.42 on returns 0.0..137.1)
+  critic-only epoch  5/20  value MSE =    447.17  (RMSE  21.15 on returns 0.0..137.1)
+  critic-only epoch  6/20  value MSE =    379.00  (RMSE  19.47 on returns 0.0..137.1)
+  critic-only epoch  7/20  value MSE =    335.06  (RMSE  18.30 on returns 0.0..137.1)
+  critic-only epoch  8/20  value MSE =    307.60  (RMSE  17.54 on returns 0.0..137.1)
+  critic-only epoch  9/20  value MSE =    287.79  (RMSE  16.96 on returns 0.0..137.1)
+  critic-only epoch 10/20  value MSE =    273.02  (RMSE  16.52 on returns 0.0..137.1)
+  critic-only epoch 11/20  value MSE =    260.52  (RMSE  16.14 on returns 0.0..137.1)
+  critic-only epoch 12/20  value MSE =    249.08  (RMSE  15.78 on returns 0.0..137.1)
+  critic-only epoch 13/20  value MSE =    241.42  (RMSE  15.54 on returns 0.0..137.1)
+  critic-only epoch 14/20  value MSE =    235.34  (RMSE  15.34 on returns 0.0..137.1)
+  critic-only epoch 15/20  value MSE =    229.14  (RMSE  15.14 on returns 0.0..137.1)
+  critic-only epoch 16/20  value MSE =    225.01  (RMSE  15.00 on returns 0.0..137.1)
+  critic-only epoch 17/20  value MSE =    220.43  (RMSE  14.85 on returns 0.0..137.1)
+  critic-only epoch 18/20  value MSE =    214.11  (RMSE  14.63 on returns 0.0..137.1)
+  critic-only epoch 19/20  value MSE =    209.59  (RMSE  14.48 on returns 0.0..137.1)
+  critic-only epoch 20/20  value MSE =    206.16  (RMSE  14.36 on returns 0.0..137.1)
+
+  Verification — deterministic rollouts at D1 (expect mean frac ~0.04-0.15, first600 ~0, last600 higher):
+    ep 1: frac mean=0.103 std=0.105 first600=0.000 last600=0.222 | harvested=  133.1mg time_avg_od=0.0191
+    ep 2: frac mean=0.124 std=0.111 first600=0.000 last600=0.228 | harvested=  172.3mg time_avg_od=0.0202
+    ep 3: frac mean=0.070 std=0.091 first600=0.000 last600=0.214 | harvested=   78.1mg time_avg_od=0.0178
+
+  Saved warm start:
+    model : model_data/bc_warmstart\recurrent_ppo_genetic_ibm.zip
+    norm  : model_data/bc_warmstart\recurrent_vec_normalize.pkl
+    state : model_data/bc_warmstart\recurrent_training_state.pkl
+
+  Hand off with:
+    python recurrent_ppo.py --resume model_data/bc_warmstart\recurrent_ppo_genetic_ibm.zip

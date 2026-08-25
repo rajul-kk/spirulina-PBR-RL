@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>config_studio — Spirulina PBR</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: -apple-system, Segoe UI, sans-serif; max-width: 980px; margin: 2rem auto; padding: 0 1rem; }
+  h1 { font-size: 1.3rem; margin-bottom: 0; }
+  .sub { color: #888; margin-top: 0.2rem; margin-bottom: 1.5rem; font-size: 0.9rem; }
+  h2 { font-size: 1.05rem; border-bottom: 1px solid #8883; padding-bottom: 0.3rem; margin-top: 2rem; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 0.5rem; }
+  td, th { padding: 0.35rem 0.5rem; text-align: left; font-size: 0.92rem; }
+  th { color: #888; font-weight: 500; }
+  input[type=number] { width: 7rem; padding: 0.2rem; }
+  button { cursor: pointer; padding: 0.3rem 0.8rem; border-radius: 4px; border: 1px solid #8886; background: #6668; }
+  button:hover { background: #6669; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  .row-saved { color: #2a2; font-size: 0.85rem; }
+  .row-dirty { color: #c90; font-size: 0.85rem; }
+  .row-error { color: #e33; font-size: 0.85rem; }
+  .pass { color: #2a2; font-weight: 600; }
+  .fail { color: #e33; font-weight: 600; }
+  #preview-controls { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
+  #preview-result { font-size: 0.92rem; }
+  pre.log { background: #8881; padding: 0.6rem; border-radius: 4px; font-size: 0.8rem; max-height: 8rem; overflow-y: auto; }
+  .field-desc { color: #888; font-size: 0.8rem; }
+</style>
+</head>
+<body>
+  <h1>config_studio</h1>
+  <div class="sub">Visual editor for the Spirulina PBR curriculum gates + scripted-expert control law.
+    Edits write directly to the source files and create a git commit. Preview runs real episodes
+    against <code>genetic_env.py</code> with whatever values are currently in the fields below
+    (saved or not).</div>
+
+  <h2>Curriculum gates</h2>
+  <table id="gate-table"></table>
+
+  <h2>Demotion / capability-abort tuning</h2>
+  <table id="demotion-table"></table>
+
+  <h2>Scripted-expert control law</h2>
+  <table id="expert-table"></table>
+
+  <h2>Live preview</h2>
+  <div id="preview-controls">
+    <label>Difficulty
+      <select id="preview-difficulty"><option value="0">D0</option><option value="1">D1</option><option value="2" selected>D2</option></select>
+    </label>
+    <label>Episodes <input type="number" id="preview-n" value="8" min="1" max="40" style="width:4rem"></label>
+    <button id="preview-run">Run preview</button>
+    <span id="preview-status"></span>
+  </div>
+  <div id="preview-result"></div>
+
+  <h2>Recent config commits</h2>
+  <div style="display:flex; gap:1rem;">
+    <div style="flex:1"><div class="field-desc">training/curriculum_schedule.py</div><pre class="log" id="log-curriculum"></pre></div>
+    <div style="flex:1"><div class="field-desc">bc/bc_pretrain.py</div><pre class="log" id="log-expert"></pre></div>
+  </div>
+
+<script src="/app.js"></script>
+</body>
+</html>

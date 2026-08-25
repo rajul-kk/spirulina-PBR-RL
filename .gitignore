@@ -20,7 +20,9 @@
 **/contaminated_v16_dual_process/
 *.zip
 *.pkl
+*.pth
 *.backup_*
+*.bak
 
 # Per-run training logs copied into each archive directory alongside its checkpoint. Multi-MB
 # each and dominated by per-step [EnvDebug] output; the findings are summarised in
@@ -32,6 +34,7 @@ PPO_IBM/model_data/archive_*/*.log
 **/rsac_tensorboard/
 **/sac_tensorboard/
 **/ppo_pbr_tensorboard/
+**/*_tensorboard/
 **/events.out.tfevents.*
 
 # ── Bulk run logs ──────────────────────────────────────────────────────────────────────

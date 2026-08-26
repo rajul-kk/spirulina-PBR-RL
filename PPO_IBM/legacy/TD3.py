@@ -67,10 +67,7 @@ POLICY_NOISE = 0.2                   # target policy smoothing (Fujimoto et al. 
 NOISE_CLIP = 0.5
 
 # TD3+BC actor regularization (Fujimoto & Gu 2021):
-#   actor_loss = -lambda * Q1(s, pi(s)) + BC_COEF * MSE(pi(s_demo), a_demo)
-#   lambda = TD3BC_ALPHA / mean(|Q1(s, pi(s))|).detach()  (normalizes Q-term to MSE's scale)
-# BC term is evaluated on a fresh demo-only batch, not the mixed batch, so it never clones
-# this run's own online actions.
+# (full rationale: docs/decision_history.md#--legacy-TD3-py-69)
 TD3BC_ALPHA = 2.5    # paper default
 BC_COEF = 1.0
 EXPLORATION_NOISE_START = 0.25
@@ -90,9 +87,7 @@ EXPERT_GAIN = 1.0
 EXPERT_FRAC_CAP = 0.30
 
 # Default budget is smaller than PPO/TD-MPC2's 8M-step convention: this file's per-step
-# recurrent actor+twin-critic update measured well under 10 it/s on this CPU-only machine
-# (>1 week for 8M steps). Override via TD3_STEPS. The dual-gate apparatus is chunk-based,
-# so a smaller budget still produces a valid, honestly-reported outcome.
+# (full rationale: docs/decision_history.md#--legacy-TD3-py-92)
 TOTAL_TRAINING_STEPS = int(os.environ.get("TD3_STEPS", "2000000"))
 CHUNK_STEPS = 100_000
 DET_EVAL_EPISODES_PER_CHUNK = 3
@@ -105,8 +100,7 @@ BUFFER_PATH = "model_data/td3_checkpoints/online_buffer.pkl"
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-#  NETWORKS
-# ═════════════════════════════════════════════════════════════════════════════
+# (full rationale: docs/decision_history.md#--legacy-TD3-py-107)
 
 class RecurrentActor(nn.Module):
     """LSTM encoder + tanh-squashed deterministic head. Exploration noise is added
@@ -179,13 +173,11 @@ class RecurrentCritic(nn.Module):
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-#  SEQUENCE REPLAY BUFFER (episode-based, truncated-BPTT sampling)
-# ═════════════════════════════════════════════════════════════════════════════
+# (full rationale: docs/decision_history.md#--legacy-TD3-py-181)
 
 class SequenceReplayBuffer:
     # Harvest fires every HARVEST_INTERVAL_STEPS; uniform window sampling gives a
-    # SEQ_LEN=25 window only ~4% odds of containing one at all (v33's collapse). Bias
-    # sampling toward windows that include a harvest step.
+    # (full rationale: docs/decision_history.md#--legacy-TD3-py-186)
     HARVEST_INTERVAL_STEPS = 600
     HARVEST_BIAS_PROB = 0.7  # rest sampled uniformly, for ordinary-transition coverage
 
@@ -270,8 +262,7 @@ def sample_mixed_batch(demo_buffer, online_buffer, batch_size, demo_fraction):
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-#  SCRIPTED-EXPERT DEMONSTRATION COLLECTION
-# ═════════════════════════════════════════════════════════════════════════════
+# (full rationale: docs/decision_history.md#--legacy-TD3-py-272)
 
 def expert_harvest_frac(od):
     surplus = (float(od) / EXPERT_OD_SETPOINT) - 1.0
@@ -333,8 +324,7 @@ def build_demo_buffer(n_episodes, seed=0):
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-#  DETERMINISTIC EVAL EPISODE (dual-gate — noise-free rollout)
-# ═════════════════════════════════════════════════════════════════════════════
+# (full rationale: docs/decision_history.md#--legacy-TD3-py-335)
 
 def run_td3_eval_episode(actor, difficulty, seed):
     """Noise-free rollout for the project's dual gate (see deterministic_eval.py /
@@ -366,8 +356,7 @@ def run_td3_eval_episode(actor, difficulty, seed):
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-#  TD3 UPDATE
-# ═════════════════════════════════════════════════════════════════════════════
+# (full rationale: docs/decision_history.md#--legacy-TD3-py-368)
 
 def soft_update(net, target_net, tau=TAU):
     for p, tp in zip(net.parameters(), target_net.parameters()):
@@ -392,9 +381,7 @@ def td3_update(actor, actor_target, critic, critic_target, actor_opt, critic_opt
 
     q1, q2, _, _ = critic(obs, actions)
     # Huber, not MSE: genetic_env.py's crash penalty (-100) is a ~700x outlier against
-    # typical per-step reward (experiments/env_diagnosis/), and GAMMA's long bootstrap
-    # horizon spreads it across many Q-targets. Huber caps that outlier's gradient
-    # contribution to linear instead of quadratic; identical to MSE for normal TD-errors.
+    # (full rationale: docs/decision_history.md#--legacy-TD3-py-394)
     critic_loss = F.huber_loss(q1, q_target, delta=1.0) + F.huber_loss(q2, q_target, delta=1.0)
     critic_opt.zero_grad()
     critic_loss.backward()
@@ -430,8 +417,7 @@ def td3_update(actor, actor_target, critic, critic_target, actor_opt, critic_opt
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-#  CHECKPOINTING
-# ═════════════════════════════════════════════════════════════════════════════
+# (full rationale: docs/decision_history.md#--legacy-TD3-py-432)
 
 def save_checkpoint(actor, actor_target, critic, critic_target, actor_opt, critic_opt,
                     online_buffer, state):
@@ -485,8 +471,7 @@ def load_checkpoint(actor, actor_target, critic, critic_target, actor_opt, criti
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-#  MAIN TRAINING LOOP
-# ═════════════════════════════════════════════════════════════════════════════
+# (full rationale: docs/decision_history.md#--legacy-TD3-py-487)
 
 def train(resume=False):
     from tqdm import tqdm

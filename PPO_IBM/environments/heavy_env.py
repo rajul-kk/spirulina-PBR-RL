@@ -26,8 +26,7 @@ class HeavyPhotobioreactorEnv(gym.Env):
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(4,), dtype=np.float32)
         
         # Observation Space (6 Dims)
-        # 1. OD  2. pH  3. Nutrients  4. Temp  5. Conductivity  6. RGB
-        # Note: dissolved_co2 and DO2 remain internal state only.
+        # (full rationale: docs/decision_history.md#--environments-heavy_env-py-28)
         self.observation_space = spaces.Box(
             low=np.array( [0.0, 0.0,    0.0, 0.0,     0.0, 0.0]),
             high=np.array([5000.0,14.0,5000.0,50.0,10000.0,20.0]),
@@ -283,9 +282,7 @@ class HeavyPhotobioreactorEnv(gym.Env):
         self.temp = np.clip(self.temp, 15.0, 45.0)
 
         # --- Physics (Chaotic Turbulence) ---
-        # Apply only to active cells
-        # We replace simple Brownian motion with structured "Swirls"
-        # Flow V(z, t) = Sum( A * sin(k*z - w*t) )
+        # (full rationale: docs/decision_history.md#--environments-heavy_env-py-285)
         
         dt_sec = self.dt * 3600
         self.time_t += self.dt
@@ -300,8 +297,7 @@ class HeavyPhotobioreactorEnv(gym.Env):
             v_macro = 0.005 * mix_intensity * np.sin(100.0 * self.cells_z[self.active_mask] - 5.0 * self.time_t)
             
             # Turbulent fluctuations (Small Eddies)
-            # We use randomized phases based on cell index to simulate spatial decorrelation without full spatial grid
-            # This is a "Lagrangian Particle" trick: each particle has a unique phase offset
+            # (full rationale: docs/decision_history.md#--environments-heavy_env-py-302)
             indices = np.where(self.active_mask)[0]
             v_micro = 0.002 * mix_intensity * np.sin(500.0 * self.cells_z[self.active_mask] - 20.0 * self.time_t + indices)
             
@@ -320,8 +316,7 @@ class HeavyPhotobioreactorEnv(gym.Env):
             self.cells_z[self.active_mask] += dz
         
         # Boundary Conditions
-        # Note: Vectorized logical ops on masked arrays can be tricky, 
-        # so we modify the whole array but valid data is only at active_mask.
+        # (full rationale: docs/decision_history.md#--environments-heavy_env-py-322)
         self.cells_z = np.abs(self.cells_z)
         over_bottom = self.cells_z > self.reactor_depth
         self.cells_z[over_bottom] = 2*self.reactor_depth - self.cells_z[over_bottom]
@@ -349,8 +344,7 @@ class HeavyPhotobioreactorEnv(gym.Env):
             I_effective = I_surface * np.exp(-self.fouling_factor)
             
             # Spirulina Extinction: Gentler attenuation matching genetic_env
-            # Allows deep biological growth past early population walls
-            # (Matches k_red from genetic_env)
+            # (full rationale: docs/decision_history.md#--environments-heavy_env-py-351)
             k_ext = 0.5 + (3.5 * od) + k_scatter 
             # prevent overflow in exp if z is huge (unlikely but safe)
             exponent = -k_ext * self.cells_z
@@ -362,23 +356,19 @@ class HeavyPhotobioreactorEnv(gym.Env):
             temp_factor = np.exp(-0.5 * ((self.temp - params['T_opt'])/5.0)**2)
             
             # --- Photo-Acclimation (Hysteresis) ---
-            # Cells adapt to current light intensity over time
-            # dA/dt = (I - A) / tau
+            # (full rationale: docs/decision_history.md#--environments-heavy_env-py-364)
             current_acclim = self.cells_acclimation[self.active_mask]
             tau_acclim = params['tau_acclim']
             
             # Update Acclimation State
-            # Simple Euler integration
-            # cells_I is (MaxCells,), current_acclim is (NumActive,)
+            # (full rationale: docs/decision_history.md#--environments-heavy_env-py-370)
             cells_I_active = cells_I[self.active_mask]
             
             d_acclim = (cells_I_active - current_acclim) * (self.dt / tau_acclim)
             self.cells_acclimation[self.active_mask] += d_acclim
             
             # Photo-Inhibition / Shock
-            # Growth is penalized if current light is very different from acclimated state
-            # "Light Shock" factor
-            # Normalized difference: delta = (I - A) / (A + 10)
+            # (full rationale: docs/decision_history.md#--environments-heavy_env-py-378)
             diff = (cells_I_active - current_acclim)
             shock_factor = np.exp(-0.000003 * (diff**2))  # 3e-6: matches genetic_env/total_env
             # Asymmetrical: Moving to dark is just low energy (handled by f_I), 
@@ -405,9 +395,7 @@ class HeavyPhotobioreactorEnv(gym.Env):
             f_Q = np.maximum(0.0, 1.0 - params['Q_min'] / (current_quotas + 1e-6))
             
             # pH Inhibition (Asymmetric Gaussian — Spirulina alkaliphile)
-            # Peak at 9.5 (true optimum per Richmond 1988; Vonshak 1997; Habib FAO 2008)
-            # Acid side: steep drop (σ=1.2) — Spirulina intolerant of low pH
-            # Alkaline side: gentle drop (σ=2.0) — obligate alkaliphile tolerates high pH well
+            # (full rationale: docs/decision_history.md#--environments-heavy_env-py-407)
             if self.ph <= 9.5:
                 f_pH = np.exp(-0.5 * ((self.ph - 9.5) / 1.2) ** 2)
             else:
@@ -430,8 +418,7 @@ class HeavyPhotobioreactorEnv(gym.Env):
             # ---------------------------
             
             # Clamp mu to prevent explosion
-            # --- Shear Repair Tax (sigmoid, centered at 195 RPM for Medium) ---
-            # Max 25% penalty at sustained >200 RPM.
+            # (full rationale: docs/decision_history.md#--environments-heavy_env-py-432)
             repair_factor = 1.0 / (1.0 + np.exp(-0.12 * (stir_rpm - 195.0)))
             repair_tax = 1.0 - (0.25 * repair_factor)
             
@@ -506,8 +493,7 @@ class HeavyPhotobioreactorEnv(gym.Env):
             self.ext_nutrients = max(0, self.ext_nutrients - total_uptake_mg + (nut_flow * self.dt))
             
             # --- CELL DIVISION (Reproduction) ---
-            # Threshold: 1.4e7 pg (12% above init mass of 1.25e7)
-            # Use >= to avoid edge case where cells hover exactly at boundary.
+            # (full rationale: docs/decision_history.md#--environments-heavy_env-py-508)
             ready_to_divide = (self.active_mask) & (self.cells_mass >= 1.4e7)
             n_dividing = np.sum(ready_to_divide)
             
@@ -547,12 +533,7 @@ class HeavyPhotobioreactorEnv(gym.Env):
         # --- Environmental Dynamics (Macro) ---
 
         # 2. Gas Exchange (O2 & CO2)
-        # k_La determines how fast gases exchange with air.
-        # Stirring increases surface area and turbulence -> Higher k_La
-        # Base transfer + Mixing enhancement
-        # Mass Transfer Efficiency (Viscosity): High biomass = thick soup = poor mixing
-        # Bug fix: Use cached self.od instead of calling _get_obs() which
-        # would fire the sensor pipeline (and pH lag buffer) mid-step.
+        # (full rationale: docs/decision_history.md#--environments-heavy_env-py-549)
         od = self.od
         viscosity_penalty = max(0.1, 1.0 - (od * 0.01)) # Drops to 0.1 at OD=90
         
@@ -562,9 +543,7 @@ class HeavyPhotobioreactorEnv(gym.Env):
         k_La = base_kLa * viscosity_penalty
 
         # Dissolved Oxygen Dynamics
-        # Production: Proportional to Growth (approx 1.5g O2 per g Biomass)
-        # Respiration: Proportional to maintenance (approx 1.0g O2 per g Biomass lost)
-        # Calculate net biomass change from biology step
+        # (full rationale: docs/decision_history.md#--environments-heavy_env-py-564)
         total_mass_mg = np.sum(self.cells_mass[self.active_mask]) * 1e-9  # pg to mg
 
         # Simplify: Delta Mass roughly tracks O2
@@ -597,8 +576,7 @@ class HeavyPhotobioreactorEnv(gym.Env):
             self.dissolved_co2 + co2_inject - co2_degas - co2_consumed, 0.0, 20.0))
         
         # pH driven by DIC concentration (log-linear carbonate chemistry)
-        # Add a small carbonate-buffer reserve so low-CO2 behavior is smooth,
-        # avoiding the hard 10.9 pH pin from a clamped log-floor.
+        # (full rationale: docs/decision_history.md#--environments-heavy_env-py-599)
         dic_buffer_reserve = 0.03  # mg/L effective DIC from alkalinity buffer
         effective_dic = self.dissolved_co2 + dic_buffer_reserve
         ph_from_co2 = 8.5 - 1.2 * np.log10(effective_dic / 0.6)
@@ -625,9 +603,7 @@ class HeavyPhotobioreactorEnv(gym.Env):
         self.pigment = np.clip(self.pigment, 0.2, 1.0) # Min 20% pigment
         
         # 5. Salinity Accumulation
-        # Salt added by Nutrients (1:1) and Decay (0.5:1)
-        # We assume nutrient inflow is proportional to consumption (implicitly replenished) 
-        # OR explicitly added? For now, let's say "Makeup Water" adds salt
+        # (full rationale: docs/decision_history.md#--environments-heavy_env-py-627)
         nutrient_uptake = total_uptake_mg  # mg consumed this step
         salt_inflow_mg = nutrient_uptake * 0.1  # impurity carryover from feed salts
         lysis_mg = max(0.0, -delta_mass_mg)
@@ -637,9 +613,7 @@ class HeavyPhotobioreactorEnv(gym.Env):
         # --- Sensors ---
         
         # OD ~ Mass^0.8 (Self-Shading effect)
-        # 1e11 cells ~ 1g/L ~ OD 1.0
-        # density_gL = (total_mass_mg * 1e-9) / self.volume_L # BUG: 1e-9 is wrong units (pg->mg happened already)
-        # turbidity = 1.0 * (density_gL ** 0.8)
+        # (full rationale: docs/decision_history.md#--environments-heavy_env-py-639)
         
         turbidity = self.od # Use the Linear Physics OD
         
@@ -670,15 +644,13 @@ class HeavyPhotobioreactorEnv(gym.Env):
         self.last_mass = total_mass
         
         # --- Sim-to-Real: Intra-Episode Genetic Micro-Drift ---
-        # Simulate slow natural evolution/mutation of the strain over weeks of deployment.
-        # Every ~5 hours (500 steps), strain parameters wander by ±1%.
+        # (full rationale: docs/decision_history.md#--environments-heavy_env-py-672)
         if self.difficulty >= 2 and self.step_count > 0 and self.step_count % 500 == 0:
             self.strain_params['mu_max'] *= np.random.uniform(0.99, 1.01)
             self.strain_params['Ks'] *= np.random.uniform(0.99, 1.01)
         
         # 1. Productivity: Scale by 1e-8 (1e8 pg = 0.1 mg growth -> Reward 1.0)
-        # 2. Spawns: Scale by 0.1 (10 spawns -> Reward 1.0)
-        # 3. Stress Shaping: Photoinhibition penalty
+        # (full rationale: docs/decision_history.md#--environments-heavy_env-py-679)
         mean_shock = np.mean(shock_factor) if self.num_active > 0 else 1.0
         mean_clump = np.mean(self.clump_mass[self.active_mask]) if self.num_active > 0 else 1.0
         penalty_shock = (1.0 - mean_shock) * -0.05

@@ -36,16 +36,13 @@ def check_two_hot_roundtrip():
     print("── TwoHotEncoder round-trip ──")
     enc = TwoHotEncoder(vmin=-6.0, vmax=6.0, num_bins=101, device="cpu")
     # Values chosen to span this domain's actual measured magnitude: per-block rewards and
-    # bootstrapped Q values are order single-to-double-digits (see the vmin/vmax comment in
-    # TD_MPC2.py), not the thousands the wider Dreamer-style range would target.
+    # (full rationale: docs/decision_history.md#--diagnostics-tdmpc2_cost_probe-py-38)
     test_values = torch.tensor([-15.3, -1.0, -0.01, 0.0, 0.01, 0.5, 3.7, 12.9, 19.9], dtype=torch.float32)
     dist = enc.encode(test_values)
     assert torch.allclose(dist.sum(dim=-1), torch.ones(len(test_values)), atol=1e-5), \
         "two-hot rows must sum to 1.0"
     # Decode the ENCODING directly via _expected_value (skipping decode()'s softmax, which is
-    # only correct for raw network LOGITS — applying it to an already-normalised distribution
-    # distorts it and is not a fair round-trip check; this was a real bug in an earlier version
-    # of this test that masked the vmin/vmax miscalibration this file's git history fixed).
+    # (full rationale: docs/decision_history.md#--diagnostics-tdmpc2_cost_probe-py-45)
     recovered = enc._expected_value(dist)
     max_err = (recovered - test_values).abs().max().item()
     print(f"  values:    {test_values.tolist()}")

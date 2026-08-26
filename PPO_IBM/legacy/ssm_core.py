@@ -67,17 +67,13 @@ class LinearSSMBlock(nn.Module):
         dB = torch.einsum('bld,bln->bldn', dt, B) # (B, L, D, N)
         
         # 3. Parallel Vectorized Scan (replaces the slow Python for-loop)
-        # We want to compute: h_t = dA_t * h_{t-1} + dB_t * x_t
-        # This is a first-order linear recurrence. We can solve it in parallel 
-        # using the general formula:
-        # h_t = \sum_{i=0}^t ( \prod_{j=i+1}^t dA_j ) * (dB_i * x_i)
+        # (full rationale: docs/decision_history.md#--legacy-ssm_core-py-69)
         
         # Multiply dB and x to get the inputs at each step
         inputs = dB * x.unsqueeze(-1) # (B, L, D, N)
         
         # We need to compute the cumulative product of dA. 
-        # Since dA is strictly positive (it's exp(something)), we can use cumsum in log-space 
-        # for numerical stability and massive speedup.
+        # (full rationale: docs/decision_history.md#--legacy-ssm_core-py-78)
         
         # log(dA) = dt_A
         # cumulative sum of log(dA)
@@ -87,8 +83,7 @@ class LinearSSMBlock(nn.Module):
         # So h_t = exp(log_dA_cumsum[t]) * \sum_{i=0}^t exp(-log_dA_cumsum[i]) * inputs_i
         
         # To avoid exp() exploding, we factor it out:
-        # h_t = \sum_{i=0}^t exp( log_dA_cumsum[t] - log_dA_cumsum[i] + log(inputs_i) ) -> wait, inputs can be negative.
-        # Better: h_t = exp(log_dA_cumsum[t]) * \cumsum( exp(-log_dA_cumsum_i) * inputs_i )
+        # (full rationale: docs/decision_history.md#--legacy-ssm_core-py-89)
         
         # Shift log_dA_cumsum right by 1 to represent the product starting from index 0
         log_dA_cumsum_shifted = F.pad(log_dA_cumsum[:, :-1], (0, 0, 0, 0, 1, 0)) # (B, L, D, N)

@@ -38,8 +38,7 @@ def run_deterministic_eval_episode(model, obs_rms, difficulty, seed=None):
 
     obs = vec.reset()
     # .unwrapped (not .env) — Monitor wraps HarvestFixedWrapper wraps the raw env here,
-    # one layer deeper than the original deterministic_eval.py's Monitor(raw env), so a
-    # single .env unwrap lands on HarvestFixedWrapper, not GeneticPhotobioreactorEnv.
+    # (full rationale: docs/decision_history.md#--experiments-harvest_ablation-deterministic_eval_harvest_fixed-py-40)
     max_steps = vec.venv.envs[0].env.unwrapped.max_steps
     lstm_states = None
     ep_starts = np.ones((1,), dtype=bool)

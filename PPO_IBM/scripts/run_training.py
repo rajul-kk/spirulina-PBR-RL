@@ -85,8 +85,7 @@ def snapshot_config():
 
     cfg = {
         # Fix #24: gate mode and seed are part of a run's identity. Without the seed recorded,
-        # a replication cannot distinguish a configuration effect from an RNG draw — which is
-        # exactly the ambiguity that weakened the v21-vs-v23 comparison.
+        # (full rationale: docs/decision_history.md#--scripts-run_training-py-87)
         "gate_mode": os.environ.get("GATE_MODE", "dual"),
         "run_seed": int(os.environ.get("RUN_SEED", "0")),
         "env_debug": os.environ.get("ENV_DEBUG", ""),
@@ -164,8 +163,7 @@ def main():
         archive_previous(args.archive_prev)
 
     # Reset the checkpoint dir by MOVING it aside, never deleting: overlapping step numbers
-    # across runs already made 'highest step wins' unsafe, and the old files are the only
-    # record of the previous run's trajectory.
+    # (full rationale: docs/decision_history.md#--scripts-run_training-py-166)
     if os.path.isdir(CKPT_DIR) and os.listdir(CKPT_DIR):
         aside = os.path.join(MODEL_DATA, f"recurrent_checkpoints_pre_{args.tag}")
         if not os.path.exists(aside):

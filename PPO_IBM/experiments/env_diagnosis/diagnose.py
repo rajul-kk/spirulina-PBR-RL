@@ -69,8 +69,7 @@ def run_episode(difficulty, init_cells, seed, policy, fixed_frac=None, fixed_sti
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  SWEEP 1 — REWARD MAGNITUDE / OUTLIER AUDIT
-# ═══════════════════════════════════════════════════════════════════════════
+# (full rationale: docs/decision_history.md#--experiments-env_diagnosis-diagnose-py-71)
 
 def sweep_reward():
     print("\n" + "=" * 78)
@@ -110,8 +109,7 @@ def sweep_reward():
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  SWEEP 2 — ENVIRONMENT: CRASH RATE BY INIT-POPULATION BUCKET x DIFFICULTY
-# ═══════════════════════════════════════════════════════════════════════════
+# (full rationale: docs/decision_history.md#--experiments-env_diagnosis-diagnose-py-112)
 
 BUCKETS = {"low (100-400)": (100, 400), "mid (600-1500)": (600, 1500), "high (2000-5000)": (2000, 5000)}
 
@@ -140,8 +138,7 @@ def sweep_environment(n_per_cell=8):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  SWEEP 3 — ACTIONS: HARVEST-FRACTION CRASH BOUNDARY
-# ═══════════════════════════════════════════════════════════════════════════
+# (full rationale: docs/decision_history.md#--experiments-env_diagnosis-diagnose-py-142)
 
 def sweep_actions(n_seeds=5):
     print("\n" + "=" * 78)

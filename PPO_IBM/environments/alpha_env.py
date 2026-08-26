@@ -41,9 +41,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(4,), dtype=np.float32)
         
         # Observation Space (6 Dims)
-        # 1. Turbidity  2. pH  3. Nutrients  4. Temp  5. Conductivity  6. RGB
-        # Note: dissolved_co2 is internal state only — agent reads it indirectly via pH
-        # DO2 remains internal state in this observation design.
+        # (full rationale: docs/decision_history.md#--environments-alpha_env-py-43)
         self.observation_space = spaces.Box(
             low=np.array( [0.0, 0.0,    0.0, 0.0,     0.0, 0.0]),
             high=np.array([5000.0,14.0,5000.0,50.0,10000.0,20.0]),
@@ -97,9 +95,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         self.max_steps = 7200  # 7200 steps × 0.02h = 144h episode; 1 rollout = 1 episode
 
         # --- DAY/NIGHT CYCLE ---
-        # lights_off_hour: hour of day (0-24) when lights turn off. None = always on (default).
-        # lights_on_hour:  hour of day (0-24) when lights come back on.
-        # Example: lights_off_hour=20, lights_on_hour=6  ->  14h light / 10h dark.
+        # (full rationale: docs/decision_history.md#--environments-alpha_env-py-99)
         self.lights_off_hour = lights_off_hour
         self.lights_on_hour  = lights_on_hour
         self.enable_fouling  = enable_fouling
@@ -141,9 +137,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         self.cells_z[:self.num_active] = np.random.uniform(0, self.reactor_depth, self.num_active)
         self.cells_x[:self.num_active] = np.random.uniform(0, self.reactor_width, self.num_active)
         # Super-Agent Scaling: 1 Agent = 2,500,000 Cells (~500pg each)
-        # Density-dependent starting mass:
-        # At 300 cells, mass is ~1.25e8. At 15,000 cells (Log Ladder limit),
-        # mass drops to ~0.8e8 (starving) due to immediate shelf-shading/nutrient competition.
+        # (full rationale: docs/decision_history.md#--environments-alpha_env-py-143)
         density_ratio = np.clip(self.initial_cells / 15000.0, 0.0, 1.0)
         starting_mass = 1.25e8 - (density_ratio * 0.45e8)
         self.cells_mass[:self.num_active] = np.random.normal(starting_mass, 1e6, self.num_active)
@@ -267,8 +261,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         jitter = np.random.uniform(1.0 - jitter_mag, 1.0 + jitter_mag, size=(6,))
         
         # Dynamic RPM-coupled sensor lag for pH and temperature (D1+ only).
-        # Better mixing (high RPM) -> faster response (~2-step effective lag).
-        # Poor mixing (low RPM) -> slower response (up to ~8-step effective lag).
+        # (full rationale: docs/decision_history.md#--environments-alpha_env-py-269)
         if self.difficulty >= 1:
             rpm = float(np.clip(getattr(self, 'current_stir_rpm', 50.0), 50.0, 200.0))
             mix_quality = (rpm - 50.0) / 150.0
@@ -377,17 +370,14 @@ class GeneticPhotobioreactorEnv(gym.Env):
         self.temp = np.clip(self.temp, 15.0, 45.0)
 
         # --- Biofouling Accumulation ---
-        # Cells adhere to surfaces at low mixing and high biomass density.
-        # exp(-0.5) ≈ 60% light transmission at full fouling (cap 0.5).
+        # (full rationale: docs/decision_history.md#--environments-alpha_env-py-379)
         if self.enable_fouling:
             fouling_rate = max(0.0, 1.0 - stir_rpm / 200.0) * self.od * 0.0002
             self.fouling_factor += fouling_rate * self.dt
             self.fouling_factor = float(np.clip(self.fouling_factor, 0.0, 0.5))
 
         # --- Physics (Chaotic Turbulence) ---
-        # Apply only to active cells
-        # We replace simple Brownian motion with structured "Swirls"
-        # Flow V(z, t) = Sum( A * sin(k*z - w*t) )
+        # (full rationale: docs/decision_history.md#--environments-alpha_env-py-387)
         
         dt_sec = self.dt * 3600
         self.time_t += self.dt
@@ -398,17 +388,11 @@ class GeneticPhotobioreactorEnv(gym.Env):
         # --- FLOCCULATION PHYSICS (Mean-Field) ---
         if self.num_active > 0:
             # 1. Aggregation (Sticking) - Orthokinetic + Perikinetic
-            # Orthokinetic: Stirring INCREASES collision frequency (Smoluchowski)
-            # Sticking = Base (Brownian) + Shear-Induced (RPM)
-            # Fix scaling bug: Use true physical OD, not an assumption based on cell count!
+            # (full rationale: docs/decision_history.md#--environments-alpha_env-py-400)
             od_approx = self.od  # Use internal OD, not obs[0] (now turbidity!)
             
             # --- New Physics: 
-            # - Base chance: 1e-3 (Stronger - 5x boost)
-            # - RPM Boost: Increases linearly with Mixing (more collisions)
-            # --- Flocculation: Stirring BREAKS clumps (shear dispersal dominates at moderate RPM)
-            # rpm_factor now REDUCES sticking — higher RPM = more shear = less aggregation
-            # At 0 RPM: rpm_factor=1.0 (max sticking). At 200 RPM: rpm_factor=0.2 (80% less sticking)
+            # (full rationale: docs/decision_history.md#--environments-alpha_env-py-406)
             rpm_factor = max(0.1, 1.0 - (stir_rpm / 250.0))
             prob_stick = (od_approx * 1e-3) * rpm_factor
             
@@ -423,8 +407,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             clump_shear = max(0.0, (stir_rpm - 80.0) / 120.0) ** 2
 
             # Brownian/diffusive breakup (always active, weak)
-            # Prevents runaway aggregation at low RPM
-            # Small clumps (1-5) barely affected, large clumps (50+) slowly erode
+            # (full rationale: docs/decision_history.md#--environments-alpha_env-py-425)
             brownian_breakup = 0.005 * (self.clump_mass[self.active_mask] - 1.0) ** 0.5
 
             # Total breakup rate: shear + Brownian diffusion
@@ -439,16 +422,13 @@ class GeneticPhotobioreactorEnv(gym.Env):
         
         if self.num_active > 0 and mix_intensity > 0.01:
             # --- 2D Kinematic Turbulence (Airlift / Convection Loop) ---
-            # Center (x=0.5): Upward Flow (-z)
-            # Walls (x=0,1): Downward Flow (+z)
-            # Top/Bottom: Turnaround (Horizontal Flow)
+            # (full rationale: docs/decision_history.md#--environments-alpha_env-py-441)
             
             x_pos = self.cells_x[self.active_mask]
             z_pos = self.cells_z[self.active_mask]
             
             # 1. Vertical Velocity (Vz)
-            # Cosine profile: Max Up at 0.5, Max Down at 0, 1.
-            # Scale: 0.01 m/s * intensity
+            # (full rationale: docs/decision_history.md#--environments-alpha_env-py-449)
             v_max_z = 0.01 * mix_intensity 
             # Damping at top/bottom walls (z close to 0 or D)
             # damp_z = 1.0 - (2.0 * (z_pos / self.reactor_depth) - 1.0)**4
@@ -515,9 +495,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         # --- BIOLOGY ---
         
         # 1. Shear Stress (RPM > 400)
-        # Random death probability for cells if mixing is too violent
-        # Note: We already have this logic downstream at line 550, but let's keep the flow clean.
-        # Actually, let's just fall through to the Biology block.
+        # (full rationale: docs/decision_history.md#--environments-alpha_env-py-517)
 
         prev_num_active = self.num_active
         total_uptake_mg = 0.0
@@ -526,8 +504,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             params = self.strain_params
             
             # 1. Spectral Light Field (RGB Physics)
-            # Action 'light' sets Total Surface Intensity (PAR)
-            # I_surface is already calculated at top of step()
+            # (full rationale: docs/decision_history.md#--environments-alpha_env-py-528)
             
             # Split Spectrum (Grow Light logic: High Red/Blue, Low Green)
             I_s_red = I_surface * 0.4
@@ -539,8 +516,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             current_od = (total_mass_mg / self.volume_L) / 300.0
             
             # Attenuation Coefficients (k)
-            # Red: Absorbed STRONGLY by Chlorophyll (Growth)
-            # k_red boosted to 3.5 (was 10.0) to allow deep biological growth past 12k cells
+            # (full rationale: docs/decision_history.md#--environments-alpha_env-py-541)
             
             # Bubble Scattering (0.004 * RPM)
             k_scatter = stir_rpm * 0.004
@@ -552,13 +528,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             k_green = 0.05 + (0.5 * current_od) + k_scatter
             
             # ── Turbulent Flash-Light Effect (Biologically Accurate) ──────────
-            # In real Spirulina PBRs, turbulent mixing causes cells to cycle
-            # between the photic zone (surface) and dark zone (deep) rapidly.
-            # This "flash-light effect" dramatically increases photosynthetic
-            # efficiency (Kok effect): brief intense surface flashes > sustained dim light.
-            #
-            # At 0 RPM  : cells see only their actual static depth (fully stratified).
-            # At 500 RPM: cells see a near-random depth distribution each step (fully mixed).
+            # (full rationale: docs/decision_history.md#--environments-alpha_env-py-554)
             static_z = self.cells_z[self.active_mask]
             turbulent_z = np.random.uniform(0.0, self.reactor_depth, size=static_z.shape)
             # Turbulent fraction scales with mix_intensity (0 → rest, 0.95 → 500 RPM max mixing)
@@ -586,8 +556,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             cells_I_growth = I_red 
             
             # --- Photo-Acclimation (Hysteresis) ---
-            # Cells adapt to the TOTAL light they see
-            # k_accum = 0.1 (Fast integration)
+            # (full rationale: docs/decision_history.md#--environments-alpha_env-py-588)
             self.cells_acclimation[self.active_mask] += 0.1 * (cells_I_total - self.cells_acclimation[self.active_mask])
             I_effective = self.cells_acclimation[self.active_mask]
             
@@ -595,9 +564,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             temp_factor = np.exp(-0.5 * ((self.temp - params['T_opt'])/5.0)**2)
             
             # Photo-Inhibition / Shock
-            # Cells experience stress when light changes suddenly
-            # Scalar reduced from 0.0001 to 0.000001 to prevent startup death
-            # At diff=300: Old penalty=99.99%, New penalty=9% (survivable!)
+            # (full rationale: docs/decision_history.md#--environments-alpha_env-py-597)
             diff = (cells_I_total - I_effective)
             shock_factor = np.exp(-0.000003 * (diff**2))  # 3e-6: 24% penalty at diff=300 (was 9%)
 
@@ -610,9 +577,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
                 f_O2 = 1.0
             
             # 3. Growth Rate (Haldane)
-            # Growth is driven by RED light availability
-            # Inhibition is driven by TOTAL light intensity
-            # f_I = I_growth / (Ks + I_growth + I_total^2/Ki)
+            # (full rationale: docs/decision_history.md#--environments-alpha_env-py-612)
             
             # Parameters
             Ks_I = params['Ks_light'] # Use dynamic param (avg 100.0)
@@ -638,9 +603,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             f_Q = np.maximum(0.0, 1.0 - params['Q_min'] / (current_quotas + 1e-6))
             
             # pH Inhibition (Asymmetric Gaussian — Spirulina alkaliphile)
-            # Peak at 9.5 (true optimum per Richmond 1988; Vonshak 1997; Habib FAO 2008)
-            # Acid side: steep drop (σ=1.2) — Spirulina intolerant of low pH
-            # Alkaline side: gentle drop (σ=2.0) — obligate alkaliphile tolerates high pH well
+            # (full rationale: docs/decision_history.md#--environments-alpha_env-py-640)
             if self.ph <= 9.5:
                 f_pH = np.exp(-0.5 * ((self.ph - 9.5) / 1.2) ** 2)
             else:
@@ -671,17 +634,12 @@ class GeneticPhotobioreactorEnv(gym.Env):
             limit_factor = 1.0 
             
             # Calculate Rate
-            # --- Shear Repair Tax (sigmoid, centered at 175 RPM) ---
-            # Steep onset above 175 RPM matches real shear fragmentation threshold.
-            # Max 35% penalty at sustained >200 RPM.
+            # (full rationale: docs/decision_history.md#--environments-alpha_env-py-673)
             repair_factor = 1.0 / (1.0 + np.exp(-0.12 * (stir_rpm - 175.0)))
             repair_tax = 1.0 - (0.35 * repair_factor)
             
             # --- Cell Wall Fatigue (Accumulative Membrane Integrity) ---
-            # Hydrodynamic shear stress on Spirulina trichomes accumulates over time.
-            # Onset at ~80 RPM (Kolmogorov eddy scale for 30L tank).
-            # ~5h time constant: equilibrium integrity ≈ 0.5 at sustained 150 RPM.
-            # 15% max growth penalty at full degradation (0.0 integrity).
+            # (full rationale: docs/decision_history.md#--environments-alpha_env-py-680)
             shear_stress = float(np.clip((stir_rpm - 80.0) / 70.0, 0.0, 1.0))
             self.membrane_integrity -= shear_stress * 0.001          # ~5h to degrade at max shear
             self.membrane_integrity += (1.0 - self.membrane_integrity) * 0.002  # ~5h to recover
@@ -694,8 +652,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             f_P = float(np.clip(f_P, 0.0, 1.0))
 
             # Carbon-Limited Growth (Monod saturation on dissolved CO2)
-            # At dissolved_co2 = 0.5 mg/L: f_carbon = 0.50
-            # At dissolved_co2 = 2.0 mg/L: f_carbon = 0.80
+            # (full rationale: docs/decision_history.md#--environments-alpha_env-py-696)
             Kc_CO2   = 0.5
             f_carbon = getattr(self, 'dissolved_co2', 2.0) / (Kc_CO2 + getattr(self, 'dissolved_co2', 2.0))
 
@@ -723,9 +680,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             self.cells_mass[self.active_mask] *= growth_mult
             
             # --- PROBABILISTIC LYSIS DEATH (replaces dead-code hard starvation check) ---
-            # Background lysis: ~0.5%/day (realistic Spirulina batch culture baseline).
-            # Stress lysis: scales up to ~5%/day when mean current_mu < m_respiration.
-            # Never a hard cliff — always a smooth gradient signal for the RL agent.
+            # (full rationale: docs/decision_history.md#--environments-alpha_env-py-725)
             mean_mu       = float(np.mean(current_mu))
             stress_factor = np.clip(
                 (m_respiration - mean_mu) / (m_respiration + 1e-9), 0.0, 1.0
@@ -779,8 +734,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             self.ext_nutrients = max(0.0, self.ext_nutrients                      + (nut_flow * 0.10 * self.dt))
             
             # --- CELL DIVISION (Reproduction) ---
-            # Threshold: 1.4e8 pg (12% above init mass of 1.25e8)
-            # Use >= to avoid edge case where cells hover exactly at boundary.
+            # (full rationale: docs/decision_history.md#--environments-alpha_env-py-781)
             ready_to_divide = (self.active_mask) & (self.cells_mass >= 1.4e8)
             n_dividing = np.sum(ready_to_divide)
             
@@ -836,10 +790,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         # Note: True lethal shear max RPM bounded to 200, so immediate death removed.
 
         # 2. Gas Exchange (O2 & CO2)
-        # Closed-tank model: gas composition is set by baseline air + injected pure CO2.
-        # kLa scales with agitation, gas throughput, and broth resistance at high biomass.
-        # Bug fix: Use cached self.od instead of calling _get_obs() which
-        # would corrupt the pH lag buffer by appending mid-step.
+        # (full rationale: docs/decision_history.md#--environments-alpha_env-py-838)
         od = self.od
         avg_clump = np.mean(self.clump_mass[self.active_mask]) if self.num_active > 0 else 1.0
         
@@ -861,9 +812,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         self.kLa = k_La
         
         # Dissolved Oxygen Dynamics
-        # Production: Proportional to Growth (approx 1.5g O2 per g Biomass)
-        # Respiration: Proportional to maintenance (approx 1.0g O2 per g Biomass lost)
-        # Calculate net biomass change from biology step (approx)
+        # (full rationale: docs/decision_history.md#--environments-alpha_env-py-863)
         total_mass_mg = np.sum(self.cells_mass[self.active_mask]) * 1e-9 # pg * 1e-9 = mg? 
         # 1 pg = 10^-12 g. 1 mg = 10^-3 g. So 1 pg = 10^-9 mg. Correct.
 
@@ -895,11 +844,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         self.do2 = np.clip(self.do2, 0.0, 30.0) # Cap at realistic supersaturation
         
         # 3. DIC-Driven pH (alkaline carbonate model)
-        #
-        # O1: In alkaline Zarrouk medium (pH 9.5-11), virtually all injected CO2 converts
-        # to bicarbonate/carbonate immediately.  The equilibrium DIC scales with CO2 partial
-        # pressure but with square-root dampening from the high-alkalinity buffer capacity.
-        # At atmospheric CO2: co2_sat ≈ 2 mg/L DIC.  At max injection (~29% CO2): ≈ 52 mg/L.
+        # (full rationale: docs/decision_history.md#--environments-alpha_env-py-897)
         co2_ppm_factor = co2_frac / self.ambient_co2_frac   # enrichment relative to atmosphere
         co2_sat = float(np.clip(2.0 * (co2_ppm_factor ** 0.5), 0.5, 60.0))
         co2_transfer = k_La * (co2_sat - self.dissolved_co2) * self.dt
@@ -913,8 +858,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             self.dissolved_co2 + co2_transfer + co2_bio_delta, 0.0, 80.0))
 
         # O2: pH driven by Henderson-Hasselbalch — replaces the ad hoc blend.
-        # Higher DIC → more bicarbonate → pH drops from alkaline baseline.
-        # No CO2 + active photosynthesis → DIC depletes → pH rises naturally.
+        # (full rationale: docs/decision_history.md#--environments-alpha_env-py-915)
         ph_from_dic = self.buffer_equilibrium_ph - 0.8 * np.log10(max(self.dissolved_co2, 0.01) / 2.0)
         ph_rise     = max(0.0,  delta_mass_mg / self.volume_L) * 0.015   # photosynthesis → pH↑
         ph_drop_resp= max(0.0, -delta_mass_mg / self.volume_L) * 0.010   # respiration    → pH↓
@@ -947,9 +891,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         # --- Sensors ---
         
         # OD ~ Mass^0.8 (Self-Shading effect)
-        # 1e11 cells ~ 1g/L ~ OD 1.0
-        # density_gL = (total_mass_mg * 1e-9) / self.volume_L # BUG: 1e-9 is wrong units (pg->mg happened already)
-        # turbidity = 1.0 * (density_gL ** 0.8)
+        # (full rationale: docs/decision_history.md#--environments-alpha_env-py-949)
         
         turbidity = self.od # Use the Linear Phsyics OD
         
@@ -958,9 +900,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         rgb_absorbance = turbidity * self.pigment
         
         # --- Sim-to-Real: Intra-Episode Genetic Micro-Drift ---
-        # At D2, simulate slow natural evolution/mutation of the strain over weeks of deployment.
-        # Every ~5 hours (250 steps at dt=0.02h), strain parameters wander by ±1%.
-        # This forces the internal LMU to constantly adapt its latent state tracking.
+        # (full rationale: docs/decision_history.md#--environments-alpha_env-py-960)
         if self.difficulty >= 2 and self.step_count > 0 and self.step_count % 250 == 0:
             self.strain_params['mu_max'] *= np.random.uniform(0.99, 1.01)
             self.strain_params['Ks'] *= np.random.uniform(0.99, 1.01)
@@ -978,13 +918,10 @@ class GeneticPhotobioreactorEnv(gym.Env):
         self.conductivity = conductivity
         
         # --- Reward (Sim2Real Proxy Tuning) ---
-        # In a real physical PBR, we cannot measure true mass on every step.
-        # The RL agent must learn to optimize growth using *only* high-frequency sensor proxies.
+        # (full rationale: docs/decision_history.md#--environments-alpha_env-py-980)
         
         # 1. DO2 Production Proxy (Photosynthesis)
-        # We calculated 'o2_production' on line 602 as the raw biological O2 exhaust.
-        # In reality, the agent reads `self.do2` and subtracts expected `k_La` off-gassing.
-        # Here we directly use the simulated O2 production to train the proxy behavior.
+        # (full rationale: docs/decision_history.md#--environments-alpha_env-py-984)
         reward_do2 = o2_production * 0.1  # Scale to ~0.01 to 0.1 per step during growth
         
         # 2. Nitrogen Consumption Proxy (near-instant growth signal)
@@ -993,16 +930,13 @@ class GeneticPhotobioreactorEnv(gym.Env):
         self._prev_n_pool = self.n_pool
         
         # 2. pH Drift Proxy (Carbon Uptake)
-        # If CO2 is OFF, and pH rises, cells are actively growing.
-        # Base pH drift without biology is 0. Biological growth adds delta_ph_bio (calculated line 629)
-        # Keep legacy magnitude while making the scale explicitly volume-normalised.
+        # (full rationale: docs/decision_history.md#--environments-alpha_env-py-995)
         delta_ph_bio = (delta_mass_mg / max(self.volume_L, 1e-9)) * 0.02
         co2_scale = np.clip(1.0 - (co2_flow / (self.max_co2_flow_lpm * 1000.0 + 1e-9)), 0.0, 1.0)
         reward_ph = delta_ph_bio * 50.0 * co2_scale
 
         # 2b. Carbon transfer progress proxy (fractions-aware)
-        # Gives short-horizon credit when dissolved CO2 moves toward a soft target band,
-        # helping credit assignment through gas-fraction and kLa transfer delays.
+        # (full rationale: docs/decision_history.md#--environments-alpha_env-py-1003)
         dic_target = float(np.clip(2.0 + 0.25 * co2_sat, 1.5, 12.0))
         dic_err = abs(self.dissolved_co2 - dic_target)
         prev_dic_err = self._prev_dic_err if self._prev_dic_err is not None else dic_err
@@ -1059,8 +993,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         
         reward_stagnation = 0.0
         # Proportional stagnation: severity scales with how much mass is lost, not binary.
-        # Floor of 0.1 ensures any decline is noticed; ceiling of 1.0 caps at -0.15 for large crashes.
-        # Threshold 0.5 mg/step ≈ 1.3% of a healthy 300-agent culture at full mass.
+        # (full rationale: docs/decision_history.md#--environments-alpha_env-py-1061)
         if delta_mass_mg < -0.0001:
             severity = float(np.clip(abs(delta_mass_mg) / 0.5, 0.1, 1.0))
             reward_stagnation = -0.15 * severity
@@ -1081,8 +1014,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         reward -= action_smooth_penalty
         
         # 5. Potential-Based Reward Shaping (PBRS)
-        # Φ(s) = future growth capacity — maintained nutrient/DIC buffers + O2 headroom + quota
-        # F(s,s') = γΦ(s') - Φ(s)  — provably policy-invariant, reshapes landscape without bias
+        # (full rationale: docs/decision_history.md#--environments-alpha_env-py-1083)
         gamma_pbrs = 0.99
         mean_f_Q_cur = float(np.mean(np.maximum(0.0, 1.0 - 0.5 / (self.cells_quota[self.active_mask] + 1e-6)))) if self.num_active > 0 else 0.0
         phi_cur = (
@@ -1100,10 +1032,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             reward += penalty_shock + penalty_clump
 
         # ── Phase 0 Soft Reward Shaping (Difficulty 0 only) ──────────────────
-        # At Difficulty 0, add small Gaussian bonuses proportional to sensor
-        # proximity to known Spirulina optima. This scaffolds early learning by
-        # giving the agent dense micro-signal without a single correct answer.
-        # These bonuses are DISABLED at Difficulty 1+ so the agent generalises.
+        # (full rationale: docs/decision_history.md#--environments-alpha_env-py-1102)
         if self.difficulty == 0:
             # pH shaping: Gaussian peak at pH 9.5 (Spirulina optimum), σ=1.0
             # ↓ 10x scaling: D0 shaping is scaffolding only, not a primary reward source
@@ -1123,9 +1052,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
 
         elif self.difficulty in (1, 2):
             # Weaker pH shaping persists at D1/D2 so agent never fully loses
-            # the pH→growth gradient signal across curriculum phases.
-            # DO2 and temp shaping are omitted: O2 toxicity (f_O2) and f_pH
-            # in the growth model already provide implicit signals for those.
+            # (full rationale: docs/decision_history.md#--environments-alpha_env-py-1125)
             ph_shape = np.exp(-0.5 * ((self.ph - 9.5) / 1.0) ** 2) * 0.005  # ↓ 10x: weak tie-breaker gradient only
             reward += ph_shape
         # ──────────────────────────────────────────────────────────────────────

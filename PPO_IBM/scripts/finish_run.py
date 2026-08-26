@@ -24,8 +24,7 @@ BEST_DET_INFO = os.path.join(MODEL_DATA, "best_det_checkpoint", "best_det_info.t
 REGISTRY = os.path.join(MODEL_DATA, "runs_registry.csv")
 
 # The behaviour-cloned controller: the only artefact in this project that passes held-out D2,
-# and it uses no RL. Printed alongside every result so "did this beat what we already have?"
-# is answered without cross-referencing.
+# (full rationale: docs/decision_history.md#--scripts-finish_run-py-26)
 BC_REF = {"harvest": 109.4, "p25": 63.8, "od": 0.0191, "crash": 0.0}
 
 

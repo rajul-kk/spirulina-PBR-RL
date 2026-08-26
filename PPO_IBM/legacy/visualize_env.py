@@ -52,8 +52,7 @@ C_WIDGET    = ( 18,  28,  46)
 
 
 # ══════════════════════════════════════════════════════════════════════
-#  CO2 Bubble particle system
-# ══════════════════════════════════════════════════════════════════════
+# (full rationale: docs/decision_history.md#--legacy-visualize_env-py-54)
 
 class BubbleSystem:
     MAX = 150
@@ -95,8 +94,7 @@ class BubbleSystem:
 
 
 # ══════════════════════════════════════════════════════════════════════
-#  Stirring vortex flow particle
-# ══════════════════════════════════════════════════════════════════════
+# (full rationale: docs/decision_history.md#--legacy-visualize_env-py-97)
 
 class FlowParticle:
     def __init__(self):
@@ -141,8 +139,7 @@ class FlowParticle:
 
 
 # ══════════════════════════════════════════════════════════════════════
-#  Inline sparkline graph widget
-# ══════════════════════════════════════════════════════════════════════
+# (full rationale: docs/decision_history.md#--legacy-visualize_env-py-143)
 
 class Sparkline:
     def __init__(self, rect: pygame.Rect, label: str, color: tuple,
@@ -192,8 +189,7 @@ class Sparkline:
 
 
 # ══════════════════════════════════════════════════════════════════════
-#  Slider bar helper
-# ══════════════════════════════════════════════════════════════════════
+# (full rationale: docs/decision_history.md#--legacy-visualize_env-py-194)
 
 def draw_slider(surface, font_sm, x, y, w, value, lo, hi, label, unit, hint, col):
     norm = float(np.clip((value - lo) / max(1e-9, hi - lo), 0, 1))
@@ -213,8 +209,7 @@ def draw_slider(surface, font_sm, x, y, w, value, lo, hi, label, unit, hint, col
 
 
 # ══════════════════════════════════════════════════════════════════════
-#  Main visualiser
-# ══════════════════════════════════════════════════════════════════════
+# (full rationale: docs/decision_history.md#--legacy-visualize_env-py-215)
 
 class PBRVisualizer:
 

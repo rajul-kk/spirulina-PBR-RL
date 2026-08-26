@@ -8,11 +8,7 @@ Read-only physics probe — no model, no training.
 """
 
 # --- path bootstrap (added by _refactor_layout.py) -------------------------------------
-# This module lives in a subdirectory but imports project modules flatly (e.g.
-# `from env_utils import ...`) and expects `environments/` importable. Add the repo root,
-# training/ and environments/ to sys.path so those imports resolve regardless of which
-# directory this file sits in. Run all scripts FROM THE REPO ROOT: relative paths like
-# "model_data/..." are resolved against the working directory, not against __file__.
+# (full rationale: docs/decision_history.md#--diagnostics-dynamic_profile_sweep_od-py-10)
 import os as _os, sys as _sys
 _ROOT = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
 for _p in (_ROOT, _os.path.join(_ROOT, "training"), _os.path.join(_ROOT, "environments")):
@@ -32,8 +28,7 @@ DIFFICULTY = 1
 INITIAL_CELLS = 300
 
 # Two operating points: the reference one used for the original sweep, and the one the v15
-# trained policy actually converged to (measured via test_actions.py on both v15 archives:
-# stir 55-63rpm — near the 50rpm floor — and light 875-930umol).
+# (full rationale: docs/decision_history.md#--diagnostics-dynamic_profile_sweep_od-py-34)
 OPERATING_POINTS = [
     ("reference", 80.0, 1000.0),
     ("v15-policy", 60.0, 900.0),

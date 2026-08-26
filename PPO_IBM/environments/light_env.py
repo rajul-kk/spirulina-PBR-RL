@@ -172,8 +172,7 @@ class LightPhotobioreactorEnv(gym.Env):
         ], dtype=np.float32)
 
         # RPM-coupled EMA sensor lag for pH (idx 1) and DO2 (idx 3).
-        # High RPM -> fast mixing -> short lag (2 steps).
-        # Low RPM  -> slow mixing -> long lag  (6 steps).
+        # (full rationale: docs/decision_history.md#--environments-light_env-py-174)
         rpm = float(np.clip(getattr(self, 'current_stir_rpm', 50.0), 50.0, 200.0))
         mix_quality = (rpm - 50.0) / 150.0
         lag_steps = max(2, int(round(6 - (4 * mix_quality))))
@@ -323,17 +322,14 @@ class LightPhotobioreactorEnv(gym.Env):
             f_Q = np.maximum(0.0, 1.0 - params['Q_min'] / (current_quotas + 1e-6))
 
             # pH Inhibition (Asymmetric Gaussian — Spirulina alkaliphile)
-            # Peak at 9.5 (true optimum per Richmond 1988; Vonshak 1997; Habib FAO 2008)
-            # Acid side: steep drop (σ=1.2) — Spirulina intolerant of low pH
-            # Alkaline side: gentle drop (σ=2.0) — obligate alkaliphile tolerates high pH well
+            # (full rationale: docs/decision_history.md#--environments-light_env-py-325)
             if self.ph <= 9.5:
                 f_pH = np.exp(-0.5 * ((self.ph - 9.5) / 1.2) ** 2)
             else:
                 f_pH = np.exp(-0.5 * ((self.ph - 9.5) / 2.0) ** 2)
             
             # --- Nutrient Inhibition (Osmotic Stress) ---
-            # Safe zone: 0 - 2000 mg/L
-            # Penalty starts above 2000. Simplified, no salinity tracking.
+            # (full rationale: docs/decision_history.md#--environments-light_env-py-334)
             if self.ext_nutrients > 2000.0:
                 f_Osmosis = np.exp(-0.5 * ((self.ext_nutrients - 2000.0)/500.0)**2)
             else:
@@ -343,9 +339,7 @@ class LightPhotobioreactorEnv(gym.Env):
             f_CO2 = self.dissolved_co2 / (0.5 + self.dissolved_co2)  # Kc_CO2=0.5 matches genetic_env calibration
             
             # Clamp mu to prevent explosion
-            # --- Shear Repair Tax (150 to 200 RPM) ---
-            # 0.0 at 150 RPM, 1.0 at 200 RPM
-            # Models the metabolic cost of cellular repair under mechanical stress
+            # (full rationale: docs/decision_history.md#--environments-light_env-py-345)
             repair_factor = np.clip((stir_rpm - 150.0) / 50.0, 0.0, 1.0)
             repair_tax = 1.0 - (0.25 * repair_factor)
 
@@ -394,9 +388,7 @@ class LightPhotobioreactorEnv(gym.Env):
             total_uptake_mg = (np.sum(uptake_amount) * self.num_active) * 0.005
             self.ext_nutrients = max(0.0, self.ext_nutrients - total_uptake_mg + (nut_flow * self.dt))
             # --- CELL DIVISION (Reproduction) ---
-            # Threshold: 1.4e7 pg (12% above init mass of 1.25e7)
-            # Rationale: Doubling (2.5e7) was too slow; deaths outpaced births.
-            # 12% growth allows cells to rapidly divide before respiration starvation.
+            # (full rationale: docs/decision_history.md#--environments-light_env-py-396)
             ready_to_divide = (self.active_mask) & (self.cells_mass > 1.4e7)
             n_dividing = np.sum(ready_to_divide)
             

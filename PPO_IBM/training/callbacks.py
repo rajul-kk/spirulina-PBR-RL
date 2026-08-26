@@ -1,11 +1,7 @@
 """SB3 callbacks used by the recurrent PPO curriculum trainer."""
 
 # --- path bootstrap (added by _refactor_layout.py) -------------------------------------
-# This module lives in a subdirectory but imports project modules flatly (e.g.
-# `from env_utils import ...`) and expects `environments/` importable. Add the repo root,
-# training/ and environments/ to sys.path so those imports resolve regardless of which
-# directory this file sits in. Run all scripts FROM THE REPO ROOT: relative paths like
-# "model_data/..." are resolved against the working directory, not against __file__.
+# (full rationale: docs/decision_history.md#--training-callbacks-py-3)
 import os as _os, sys as _sys
 _ROOT = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
 for _p in (_ROOT, _os.path.join(_ROOT, "training"), _os.path.join(_ROOT, "environments")):
@@ -167,8 +163,7 @@ class EpisodeMetricsCallback(BaseCallback):
 
             crashed = final_pop < 10
             # episode_train_diff is injected by CurriculumStartWrapper.step() on done,
-            # ensuring we record the difficulty this episode actually ran at (not the
-            # next episode's difficulty, which the env has already reset to).
+            # (full rationale: docs/decision_history.md#--training-callbacks-py-169)
             ep_train_diff = int(info.get("episode_train_diff", -1))
             record = {
                 "reward": reward_per_step,

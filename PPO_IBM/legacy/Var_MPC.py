@@ -111,14 +111,12 @@ class LMUHistoryCompressor(nn.Module):
         delta = self.delta_fixed.to(obs.device)
         
         # A_curr shape: (obs_dim, order, order)
-        # B_curr shape: (obs_dim, order)
-        # self.A_base is (16, 16). self.B_base is (16, 1)
+        # (full rationale: docs/decision_history.md#--legacy-Var_MPC-py-113)
         A_curr = self.A_base.unsqueeze(0) * delta.unsqueeze(-1)
         B_curr = self.B_base.transpose(0, 1) * delta
 
         # (Note: Using simple Forward Euler discretisation here for dynamic stability)
-        # A_discrete = I + A_curr * dt (where dt=1 in simulation steps)
-        # B_discrete = B_curr * dt
+        # (full rationale: docs/decision_history.md#--legacy-Var_MPC-py-119)
         device = obs.device
         I = torch.eye(self.order, device=device).unsqueeze(0)
         A_d = I + A_curr.to(device)
@@ -164,9 +162,7 @@ class Encoder(nn.Module):
     def forward(self, obs):
         x = self.net(obs)
         # ── Simplicial Normalization (SimNorm) ──
-        # Projects the unbounded latent vector onto a positive simplex.
-        # This provides a bounded state space for the dynamics model, vastly 
-        # improving sample efficiency and preventing exploding latents.
+        # (full rationale: docs/decision_history.md#--legacy-Var_MPC-py-166)
         x = F.elu(x) + 1.0  # Ensure strict positivity (using ELU to avoid dead neurons)
         return x / (x.norm(p=1, dim=-1, keepdim=True) + 1e-8)
 
@@ -387,8 +383,7 @@ class TDMPC2Agent:
                 
                 if explore_mode:
                     # ── Variance-Maximizing MPPI ──
-                    # Maximize: Mean(Q) + beta * Variance(Q)
-                    # We now have 2 critics to estimate epistemic uncertainty
+                    # (full rationale: docs/decision_history.md#--legacy-Var_MPC-py-389)
                     stacked_v = torch.stack([v1, v2], dim=0)
                     q_mean = stacked_v.mean(dim=0)
                     q_var  = stacked_v.var(dim=0, unbiased=False)
@@ -400,8 +395,7 @@ class TDMPC2Agent:
                 returns += terminal_val * (0.99 ** horizon)
 
                 # ── The Latent CBF (Guillotine) ──
-                # Cumulative sustainability check (Trajectory-wide)
-                # If sum < 0, culture is net dying across the horizon
+                # (full rationale: docs/decision_history.md#--legacy-Var_MPC-py-402)
                 trajectory_sums = trajectory_rewards.sum(dim=1)
                 returns[trajectory_sums < 0.0] = -1e9
 
@@ -570,9 +564,7 @@ class TDMPC2Agent:
             self.distil_step += 1
 
         # 4. Policy Prior Loss (Behavioral Cloning on actual env actions)
-        # We supervise the Prior to predict the action the agent actually took.
-        # Over time, 'actions' will increasingly be MPPI-elite actions,
-        # so the Prior learns to warm-start the planner from real experience.
+        # (full rationale: docs/decision_history.md#--legacy-Var_MPC-py-572)
         prior_pred = self.policy_prior(h.detach())  # Detach: don't backprop into encoder twice
         policy_loss = F.mse_loss(prior_pred, actions)
 

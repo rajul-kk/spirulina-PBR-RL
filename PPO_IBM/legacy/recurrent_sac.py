@@ -68,8 +68,7 @@ MIN_EPS_BEFORE_ADVANCE = 8   # Must complete this many eps before dual-gate chec
 WINDOW = 8                   # Rolling window for mean reward / pop
 
 # ═════════════════════════════════════════════════════════════════════════════
-#  NETWORKS
-# ═════════════════════════════════════════════════════════════════════════════
+# (full rationale: docs/decision_history.md#--legacy-recurrent_sac-py-70)
 
 LOG_STD_MIN, LOG_STD_MAX = -5.0, 2.0
 
@@ -214,8 +213,7 @@ class RecurrentCritic(nn.Module):
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-#  SEQUENCE REPLAY BUFFER
-# ═════════════════════════════════════════════════════════════════════════════
+# (full rationale: docs/decision_history.md#--legacy-recurrent_sac-py-216)
 
 class SequenceReplayBuffer:
     """
@@ -290,8 +288,7 @@ class SequenceReplayBuffer:
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-#  SAC UPDATE HELPERS
-# ═════════════════════════════════════════════════════════════════════════════
+# (full rationale: docs/decision_history.md#--legacy-recurrent_sac-py-292)
 
 def soft_update(net: nn.Module, target_net: nn.Module, tau: float = TAU):
     for p, tp in zip(net.parameters(), target_net.parameters()):
@@ -346,8 +343,7 @@ def load_checkpoint(actor, critic, critic_target, actor_opt, critic_opt,
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-#  TRAINING LOOP
-# ═════════════════════════════════════════════════════════════════════════════
+# (full rationale: docs/decision_history.md#--legacy-recurrent_sac-py-348)
 
 def train():
     """
@@ -396,8 +392,7 @@ def train():
     writer = SummaryWriter(LOG_DIR)
 
     # ══════════════════════════════════════════════════════════════════════════
-    #  CURRICULUM LOOP
-    # ══════════════════════════════════════════════════════════════════════════
+    # (full rationale: docs/decision_history.md#--legacy-recurrent_sac-py-398)
     for phase_idx, phase in enumerate(CURRICULUM):
         if phase_idx < start_phase:
             continue
@@ -585,8 +580,7 @@ def _sac_update(actor, critic, critic_target, _unused,
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-#  FINE-TUNE MODE
-# ═════════════════════════════════════════════════════════════════════════════
+# (full rationale: docs/decision_history.md#--legacy-recurrent_sac-py-587)
 
 def finetune(extra_steps: int = 500_000):
     """
@@ -653,8 +647,7 @@ def finetune(extra_steps: int = 500_000):
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-#  ENTRY POINT
-# ═════════════════════════════════════════════════════════════════════════════
+# (full rationale: docs/decision_history.md#--legacy-recurrent_sac-py-655)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Recurrent SAC for GeneticPBR")

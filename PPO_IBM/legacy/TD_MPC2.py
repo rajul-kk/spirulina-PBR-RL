@@ -19,8 +19,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "environments")
 from curriculum_starts import apply_saved_population, choose_episode_start, mastery_metrics_view
 from training_state import find_latest_checkpoint, load_state, replay_buffer_state, restore_replay_buffer, save_state
 # Project curriculum gate — this file used to keep its own local ADVANCE_TARGETS keyed on
-# median_od only. Rewired to the same gate PPO uses (harvest_mg / p25 / time_avg_od / crash)
-# so a TD-MPC2 result is directly comparable to every PPO run in finalresults.md.
+# (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-21)
 from curriculum_schedule import ADVANCE_TARGETS, MASTERY_MIN_EPISODES as PPO_MASTERY_MIN_EPISODES, _compute_curriculum_stats
 from deterministic_eval import run_deterministic_eval_episode
 
@@ -28,40 +27,20 @@ from deterministic_eval import run_deterministic_eval_episode
 ORDER = 16         # LMU memory depth
 OBS_DIM      = 6   # Raw observation dimension
 # Fix (v27): action space was 4D [Stir, Light, Nutrient, CO2] — written against a pre-redesign
-# env with manual CO2/nutrient dosing. The live env (genetic_env.py) has automated PID N/P
-# dosing, no CO2 injection, and a 3D action space [stir, light, harvest]. This file could not
-# construct the env at all with ACTION_DIM=4.
+# (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-30)
 ACTION_DIM  = 3   # 3D action space [Stir, Light, Harvest] — matches genetic_env.py
 PRIV_DIM    = 4   # Privileged state dim [dissolved_co2, mean_fQ, mu_max, Ks_light]
 
 # Fix (v27): world-model MACRO-TIMESTEP. Each MPPI horizon step previously corresponded to one
-# RAW env step (dt=0.02h), so horizon=24 saw only 0.48h ahead — the harvest event fires every
-# HARVEST_INTERVAL_STEPS=600 raw steps (12h), so the planner was structurally blind to the one
-# decision that has failed in every PPO run in this project (v4 through v24). Extending raw
-# horizon to 600 was measured and rejected: cost scales ~linearly-to-superlinear with horizon,
-# so h=600 vs h=24 projects to roughly 25x the already-measured 13h planning cost alone.
-# Instead the dynamics/reward model is trained on MACRO-transitions spanning MACRO_STEPS raw
-# steps (action held constant across the block, reward = discounted sum over the block). A
-# planner horizon of 12 macro-steps then sees 12*MACRO_STEPS raw steps ahead. At MACRO_STEPS=50,
-# horizon=12 -> 600 raw steps = exactly one harvest interval, at unchanged per-call planning
-# cost. This also cuts the (measured, dominant) update() cost: replay stores ~1.5M/50=30,000
-# macro-transitions instead of 1.5M raw ones, since update() is called once per macro-transition
-# now rather than once per raw step.
+# (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-37)
 MACRO_STEPS = 50
 
 # Module-level (not local to train_td_mpc2) because TDMPC2Agent.update() also needs it for the
-# block-length-adjusted Bellman bootstrap (GAMMA ** MACRO_STEPS) — a class method can't see a
-# training-function-local variable.
+# (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-52)
 GAMMA = 0.99
 
 # Fix (v27): was 300_000 — measured directly (env.step() timing, not assumed) to cost 13.7ms/
-# call vs 4.6ms/call at 7_500, a 3x per-step physics overhead, while ACTUAL active population
-# in both cases never exceeded ~2,990 cells. max_cells is an array-allocation/masking cap, not
-# something that changes physics outcomes below the cap, so 300_000 was buying nothing while
-# tripling the dominant cost component (env.step() turned out to be far more expensive than
-# plan()+update()+compressor combined — a cost this project's first TD-MPC2 measurement missed
-# entirely by never timing env.step() in isolation). 7_500 matches max_cells everywhere else in
-# this project (PPO's env_factory.py, all diagnostics), for direct comparability.
+# (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-57)
 MAX_CELLS = 7_500
 
 
@@ -199,8 +178,7 @@ class LMUHistoryCompressor(nn.Module):
         self.register_buffer("delta_fixed", torch.full((obs_dim, 1), 1.0 / init_theta, dtype=torch.float32))
         
         # ── Learnable Readout Network ──
-        # Takes the raw observation (Dim) + the flattened LMU memory (Dim * Order)
-        # and projects it to the 64D feature map the rest of the model expects.
+        # (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-201)
         self.fc = nn.Sequential(
             nn.Linear(obs_dim + (obs_dim * order), 256),
             nn.Mish(),
@@ -220,14 +198,12 @@ class LMUHistoryCompressor(nn.Module):
         delta = self.delta_fixed.to(obs.device)
         
         # A_curr shape: (obs_dim, order, order)
-        # B_curr shape: (obs_dim, order)
-        # self.A_base is (16, 16). self.B_base is (16, 1)
+        # (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-222)
         A_curr = self.A_base.unsqueeze(0) * delta.unsqueeze(-1)
         B_curr = self.B_base.transpose(0, 1) * delta
 
         # (Note: Using simple Forward Euler discretisation here for dynamic stability)
-        # A_discrete = I + A_curr * dt (where dt=1 in simulation steps)
-        # B_discrete = B_curr * dt
+        # (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-228)
         device = obs.device
         I = torch.eye(self.order, device=device).unsqueeze(0)
         A_d = I + A_curr.to(device)
@@ -240,8 +216,7 @@ class LMUHistoryCompressor(nn.Module):
                 m_t = m_t.squeeze(0)
         else:
             # m_t_minus_1 shape: (BATCH, OBS_DIM, ORDER)
-            # A shape: (ORDER, ORDER)
-            # Deal with potential unbatched inputs (e.g. from single-step env interaction without unsqueeze)
+            # (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-242)
             if m_t_minus_1.dim() == 2:
                 # Shape: (OBS_DIM, ORDER) -> map inner J to outer Q with A(ORDER, ORDER)
                 m_t_A = torch.einsum('dj,dqj->dq', m_t_minus_1, A_d)
@@ -277,9 +252,7 @@ class Encoder(nn.Module):
     def forward(self, obs):
         x = self.net(obs)
         # ── Simplicial Normalization (SimNorm) ──
-        # Projects the unbounded latent vector onto a positive simplex.
-        # This provides a bounded state space for the dynamics model, vastly 
-        # improving sample efficiency and preventing exploding latents.
+        # (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-279)
         x = F.elu(x) + 1.0  # Ensure strict positivity (using ELU to avoid dead neurons)
         return x / (x.norm(p=1, dim=-1, keepdim=True) + 1e-8)
 
@@ -370,16 +343,7 @@ class TDMPC2Agent:
 
         self.num_bins = 101
         # vmin/vmax are in SYMLOG units, not raw units — symlog(x)=sign(x)*log(|x|+1), so
-        # +-20 symlog-units corresponds to raw values up to ~+-4.85e8. That range is standard
-        # in the TD-MPC2/Dreamer literature because THEIR reward/value magnitudes reach into
-        # the thousands; this project's per-block rewards and bootstrapped values are order
-        # single-to-double-digits (measured: full-episode PPO rewards up to ~1120 over ~144
-        # macro-blocks/episode -> ~5-8 per block, geometric Q-sum a low multiple of that). A
-        # +-20 range would waste nearly all 101 bins on magnitudes never seen and give
-        # terrible resolution exactly where this domain operates (verified directly: caught
-        # by diagnostics/tdmpc2_cost_probe.py's round-trip test, which showed >3.0 raw-unit
-        # decode error near symlog=3, i.e. raw~19, before this fix). +-6 symlog-units (raw
-        # ~+-400) keeps generous headroom while giving ~4x finer resolution in-range.
+        # (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-372)
         self.two_hot = TwoHotEncoder(vmin=-6.0, vmax=6.0, num_bins=self.num_bins, device=device)
         self.dynamics = DynamicsModel(self.latent_dim, action_dim).to(device)
         self.reward_model = RewardPredictor(self.latent_dim, action_dim, num_bins=self.num_bins).to(device)
@@ -388,10 +352,7 @@ class TDMPC2Agent:
         self.policy_prior = PolicyPrior(self.latent_dim, action_dim).to(device)
 
         # Fix (v27): Q-ENSEMBLE, replacing the twin-Q pair. This is the second of the two
-        # changes that make this genuinely "TD-MPC2" rather than "MPC with a learned model
-        # and 2 critics" — the paper's ensemble (5 critics, random-subset-of-2 for the Bellman
-        # target each update) reduces overestimation bias further than a fixed pair, since the
-        # SAME two critics never get to collude with each other update after update.
+        # (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-390)
         self.num_critics = 5
         self.qs = nn.ModuleList([
             ValueNetwork(self.latent_dim, num_bins=self.num_bins) for _ in range(self.num_critics)
@@ -475,8 +436,7 @@ class TDMPC2Agent:
             h0, _ = self._encode(obs_tensor, m_t_tensor)  # [1, Latent]
 
             # 2. Policy Prior warm-start: bias the distribution mean
-            # Without a prior: mean = zeros (blind search)
-            # With a prior: mean = pi(h) (informed search around best guess)
+            # (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-477)
             prior_action = self.policy_prior(h0)  # [1, ActionDim]
             # Expand mean across the horizon
             mean = prior_action.repeat(horizon, 1)  # [Horizon, ActionDim]
@@ -537,8 +497,7 @@ class TDMPC2Agent:
                 returns += q_terminal * (0.99 ** horizon)
 
                 # ── The Latent CBF (Guillotine) ──
-                # Cumulative sustainability check (Trajectory-wide)
-                # If sum < 0, culture is net dying across the horizon
+                # (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-539)
                 trajectory_sums = trajectory_rewards.sum(dim=1)
                 returns[trajectory_sums < 0.0] = -1e9
 
@@ -610,9 +569,7 @@ class TDMPC2Agent:
         self.dynamics.load_state_dict(checkpoint['dynamics'])
         self.reward_model.load_state_dict(checkpoint['reward_model'])
         # Fix (v27): 'qs'/'target_qs' is the current ModuleList format. Old checkpoints saved
-        # under the twin-Q ('q1'/'q2') format cannot be loaded here — the network shapes
-        # differ (num_bins-logit heads vs 1-scalar heads, 5 critics vs 2) — so this is a
-        # deliberate hard break, not silently-wrong weights.
+        # (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-612)
         if 'qs' in checkpoint:
             self.qs.load_state_dict(checkpoint['qs'])
             self.target_qs.load_state_dict(checkpoint.get('target_qs', checkpoint['qs']))
@@ -661,24 +618,20 @@ class TDMPC2Agent:
         mt       = torch.tensor(batch_mt,       dtype=torch.float32).to(self.device)
         actions  = torch.tensor(batch_actions,  dtype=torch.float32).to(self.device)
         # Fix (v27): rewards are now per-MACRO-BLOCK discounted sums (see the training loop's
-        # block_reward accumulation), not raw per-step rewards — MUCH wider dynamic range than
-        # before, which is exactly the regime two-hot/symlog regression is meant for.
+        # (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-663)
         rewards  = torch.tensor(batch_rewards,  dtype=torch.float32).to(self.device)
         next_obs = torch.tensor(batch_next_obs, dtype=torch.float32).to(self.device)
         next_mt  = torch.tensor(batch_next_mt,  dtype=torch.float32).to(self.device)
         dones    = torch.tensor(batch_dones,    dtype=torch.float32).to(self.device)
 
         # 1. Target Encoding (No Gradients). Fix (v27): random-subset-of-2 ensemble minimum
-        # from the 5 TARGET critics, decoded from two-hot logits, then re-encoded as the
-        # two-hot classification target for ALL 5 online critics (standard ensemble Bellman
-        # backup with random subsampling — TD-MPC2's overestimation-reduction mechanism).
+        # (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-671)
         with torch.no_grad():
             next_emb, _ = self.compressor(next_obs, next_mt)
             next_h_target = self.target_encoder(next_emb)
             next_q_min = self._q_min_decoded(next_h_target, self.target_qs, subset_size=2)
             # GAMMA here is the per-MACRO-BLOCK discount — the block reward already folds in
-            # GAMMA**t for t within the block, so bootstrapping the NEXT block needs GAMMA
-            # raised to the block length once more, i.e. GAMMA_BLOCK = GAMMA ** MACRO_STEPS.
+            # (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-679)
             target_q_scalar = rewards + (GAMMA ** MACRO_STEPS) * (1.0 - dones) * next_q_min
 
         # 2. Forward Pass
@@ -715,9 +668,7 @@ class TDMPC2Agent:
             self.distil_step += 1
 
         # 4. Policy Prior Loss (Behavioral Cloning on actual env actions)
-        # We supervise the Prior to predict the action the agent actually took.
-        # Over time, 'actions' will increasingly be MPPI-elite actions,
-        # so the Prior learns to warm-start the planner from real experience.
+        # (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-717)
         prior_pred = self.policy_prior(h.detach())  # Detach: don't backprop into encoder twice
         policy_loss = F.mse_loss(prior_pred, actions)
 
@@ -822,10 +773,7 @@ def run_tdmpc2_eval_episode(agent, difficulty, seed=None, horizon=12, num_sample
         np.random.seed(seed)
 
     # Fix (v27 diagnostic): was hardcoded to 3000, giving this side of the gate a large,
-    # policy-independent time_avg_od advantage over the stochastic side's curriculum-sampled
-    # starts (100-1400 typical at D0) — a no-op policy alone clears D0's OD threshold at
-    # init_cells=3000 (0.217 vs the 0.004 target). Sample the same way training does so both
-    # sides of the dual gate are evaluated on comparable initial conditions.
+    # (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-824)
     init_cells = _sample_init_cells("random", difficulty)
     env = GeneticPhotobioreactorEnv(max_cells=MAX_CELLS, initial_cells=init_cells, difficulty=difficulty)
     obs_buf = ObservationBuffer(obs_dim=OBS_DIM, order=16)
@@ -870,22 +818,13 @@ def train_td_mpc2(resume: bool = False, use_privileged_distill: bool = False,
     device = "cuda" if torch.cuda.is_available() else "cpu"
     BATCH_SIZE = 512
     # Fix (v27): ACTION_REPEAT == MACRO_STEPS by construction — the plan() replan cadence and
-    # the world-model macro-transition size are the SAME thing. Replanning more often than the
-    # model's own timestep resolution would be replanning on stale/unlearned dynamics; less
-    # often would waste the model's resolution. horizon=12 * MACRO_STEPS=50 = 600 raw steps =
-    # exactly one HARVEST_INTERVAL_STEPS, so the planner can now see across a harvest event.
+    # (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-872)
     ACTION_REPEAT = MACRO_STEPS
     PLANNING_HORIZON = 12
     MPPI_SAMPLES = 64
 
     # Fix (v27): TOTAL_TRAINING_STEPS was 1_500_000 (~1.9 days measured pre-macro-transition
-    # cost, dominated by update() at 1 call/raw-step). With macro-transitions update() now
-    # fires once per MACRO_STEPS raw steps, so cost drops accordingly — re-measured before this
-    # number is trusted (see diagnostics/tdmpc2_cost_probe.py). Overridable via total_steps= /
-    # TDMPC2_STEPS env var so a run's budget doesn't require a source edit.
-    # 8,000,000 matches every PPO run's budget in finalresults.md, for direct comparability.
-    # Measured cost at this budget (diagnostics/tdmpc2_cost_probe.py): ~13.0h, under PPO's
-    # own ~17h — affordable now that macro-transitions cut the update()-call count ~30x.
+    # (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-881)
     TOTAL_TRAINING_STEPS = total_steps or int(os.environ.get("TDMPC2_STEPS", "8000000"))
     CHUNK_STEPS = 100_000  # matches recurrent_ppo.py's CHUNK_STEPS convention
     # Fix (v27): mastery window/streak now match curriculum_schedule.py's PPO defaults so a
@@ -919,8 +858,7 @@ def train_td_mpc2(resume: bool = False, use_privileged_distill: bool = False,
     agent  = TDMPC2Agent(OBS_DIM, ACTION_DIM, device=device,
                          use_privileged_distill=use_privileged_distill)
     # Capacity in MACRO-transitions now, not raw steps — each entry already spans MACRO_STEPS
-    # raw steps, so 25,000 macro-transitions covers 1.25M raw steps of experience, comparable
-    # coverage to the old raw-step buffer at a fraction of the memory.
+    # (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-921)
     buffer = ReplayBuffer(25_000, OBS_DIM, ACTION_DIM)
     print(f"Privileged distillation: {'ON' if use_privileged_distill else 'OFF'}")
 
@@ -981,9 +919,7 @@ def train_td_mpc2(resume: bool = False, use_privileged_distill: bool = False,
         print(f"  [CONTINUE] Replay restored ({buffer.size:,} samples). Skipping random prefill.")
     else:
         # Fix (v27): prefill also produces MACRO-transitions (random action held for
-        # MACRO_STEPS raw steps each), not raw single-step transitions. Mixing 1-raw-step and
-        # 50-raw-step transitions in the same buffer would teach the dynamics model two
-        # different, contradictory timestep resolutions.
+        # (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-983)
         n_prefill_blocks = 2000 // MACRO_STEPS
         print(f"  Pre-filling buffer with {n_prefill_blocks} macro-transitions "
               f"({n_prefill_blocks * MACRO_STEPS} raw steps)...")
@@ -1017,26 +953,11 @@ def train_td_mpc2(resume: bool = False, use_privileged_distill: bool = False,
                 obs_buf.set_state(m_t)
 
     # Persistent per-difficulty rolling episode history — mirrors recurrent_ppo.py's
-    # EpisodeMetricsCallback (metrics_cb.history_by_diff), NOT the original file's
-    # chunk-local `chunk_metrics.clear()` — a chunk-local window under-samples badly here:
-    # CHUNK_STEPS=100,000 raw steps / MACRO_STEPS=50 ~= 2,000 macro-decisions/chunk, and a
-    # ~7200-step episode is ~144 macro-transitions, so a chunk holds only ~14 episodes —
-    # below MASTERY_MIN_EPISODES=20 on its own. A persistent window (matching PPO's
-    # MASTERY_WINDOW=40) lets the gate accumulate across chunk boundaries the same way PPO's
-    # does, rather than resetting evidence every chunk.
+    # (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-1019)
     history_by_diff = defaultdict(lambda: deque(maxlen=MASTERY_WINDOW))
     demotion_streak = 0
     # Ported from recurrent_ppo.py's Fix #15 + Fix #29 (crash-floor corrected, v31-validated).
-    # Without this, sustained det-gate failure at 0% crash rate has NO corrective response here
-    # — only stats["crash_rate"] >= DEMOTION_CRASH_RATE ever changes next_difficulty. v27 already
-    # showed the precursor: D1 held for the rest of its 8M-step budget with time_avg_od
-    # oscillating 0.0051-0.0071 against a 0.008 target, never sustaining a crossing, and nothing
-    # would have caught it had it instead REGRESSED the way PPO's v17 did (48 straight chunks
-    # failing the same criterion at exactly 0.00% crash, never demoted, until Fix #15 existed to
-    # catch it). See recurrent_ppo.py's capability_fail_streak/d0_capability_abort for the full
-    # rationale, including why D0's abort branch requires the crash-rate floor (v30's false
-    # positive) while D1/D2's demotion deliberately does not (that branch exists specifically to
-    # catch v17-style 0%-crash quality regression from a proven prior-good baseline).
+    # (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-1029)
     capability_fail_streak = 0
     d0_capability_abort = False
 
@@ -1078,10 +999,7 @@ def train_td_mpc2(resume: bool = False, use_privileged_distill: bool = False,
         block_start_obs, block_start_mt = raw_obs, obs_buf.get_state()
         block_reward, block_discount = 0.0, 1.0
         # Forces a fresh plan()+block at the NEXT loop iteration regardless of the raw
-        # step % MACRO_STEPS alignment. Needed after an episode reset: `step` is the
-        # CHUNK-level counter and does not reset per episode, so without this an episode
-        # could start mid-way through what the accumulator thinks is an old block, applying
-        # a stale action (planned for the previous episode's last state) to a brand-new one.
+        # (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-1080)
         force_new_block = False
 
         def _start_block(cur_raw_obs, cur_step):
@@ -1130,9 +1048,7 @@ def train_td_mpc2(resume: bool = False, use_privileged_distill: bool = False,
             if done:
                 episodes_this_chunk += 1
                 # Fix (v27): read the PROJECT's own harvest_mg / time_avg_od metrics from the
-                # step info dict (genetic_env.py always populates these) rather than the
-                # original file's ad-hoc "peak_od" / "population < 10" proxies. This is what
-                # makes stats directly comparable against ADVANCE_TARGETS and every PPO run.
+                # (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-1132)
                 crashed = bool(getattr(raw_env, "step_count", 0) < raw_env.max_steps)
                 ep_len = int(getattr(raw_env, 'step_count', 0))
                 reward_per_step = float(episode_reward) / max(ep_len, 1)
@@ -1181,8 +1097,7 @@ def train_td_mpc2(resume: bool = False, use_privileged_distill: bool = False,
                 _, m_t = agent.compressor(obs_tensor, obs_buf.get_state())
                 obs_buf.set_state(m_t)
                 # See the force_new_block comment above the loop: `step` does not reset per
-                # episode, so this is what makes the NEXT iteration replan on the fresh state
-                # instead of continuing a block that belonged to the episode that just ended.
+                # (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-1183)
                 force_new_block = True
 
                 last_rec = history_by_diff[train_diff][-1] if history_by_diff[train_diff] else {}
@@ -1194,11 +1109,7 @@ def train_td_mpc2(resume: bool = False, use_privileged_distill: bool = False,
                 episode_reward = 0.0
 
             # Fix (v27 diagnostic): was every 2,000 raw steps (4,000 saves over an 8M-step
-            # budget), each one pickling the FULL 25,000-transition replay buffer on top of
-            # network weights — ~7MB/save, ~15GB and rising over the v27 run, and a plausible
-            # contributor to the chunk-time variance observed all session under CPU contention.
-            # PPO's CheckpointCallback saves every 10,000 steps and weights only (no persistent
-            # buffer to dump). Widened 25x; still ~320 saves over the full budget.
+            # (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-1196)
             if global_step % 50_000 == 0:
                 os.makedirs(checkpoint_dir, exist_ok=True)
                 agent.save(f"{checkpoint_dir}/tdmpc2_{global_step}_steps.pth")
@@ -1223,8 +1134,7 @@ def train_td_mpc2(resume: bool = False, use_privileged_distill: bool = False,
                                           mastery_diff=current_difficulty)
 
         # Deterministic side: a handful of noise-free planning episodes per chunk, same
-        # project rationale as recurrent_ppo.py's det_eval_history — a policy that only
-        # "looks like" it works under exploration noise should not be able to advance alone.
+        # (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-1225)
         for _ in range(DET_EVAL_EPISODES_PER_CHUNK):
             rec = run_tdmpc2_eval_episode(agent, current_difficulty,
                                           seed=100_000 + global_step + _,
@@ -1297,8 +1207,7 @@ def train_td_mpc2(resume: bool = False, use_privileged_distill: bool = False,
                     capability_fail_streak = 0
                 elif stats["crash_rate"] >= DEMOTION_CRASH_RATE:
                     # D0 has no tier to demote to. Only abort when crash rate is ALSO elevated
-                    # (v30's false-positive lesson on the PPO side) — "never yet passed" and
-                    # "regressed from passing" are different signals at the floor tier.
+                    # (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-1299)
                     print(f"  [CAPABILITY ABORT] deterministic gate failed "
                           f"{capability_fail_streak} consecutive chunks at D0 (crash rate "
                           f"{stats['crash_rate']:.2%}) — no tier to demote to, stopping run.")
@@ -1360,10 +1269,7 @@ def finetune_td_mpc2(extra_steps: int = 500_000, use_privileged_distill: bool = 
     more heavily and MPPI focuses on refinement rather than exploration.
     """
     # Fix (v27): NOT YET UPDATED for the macro-timestep/ensemble/two-hot rewrite below this
-    # function still uses the pre-Fix#27 4D action, raw-step transitions, and the removed
-    # q1/q2 attributes — it would fail with a confusing AttributeError deep in agent.load()/
-    # update() rather than a clear one here. Failing loudly at the entry point instead of
-    # leaving it silently inconsistent with train_td_mpc2().
+    # (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-1362)
     raise NotImplementedError(
         "finetune_td_mpc2() predates Fix #27 (3D action space, macro-timestep world model, "
         "5-critic ensemble, two-hot regression, project curriculum gate) and has not been "

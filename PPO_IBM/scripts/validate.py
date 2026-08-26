@@ -40,10 +40,7 @@ def run(cmd, log_path):
 
 def parse_sweep(text):
     # Surface the specific failure that WILL recur: a checkpoint saved under a different
-    # observation dimension than the current env. The observation space has changed once
-    # already (6 -> 8 channels, Fix #18), which silently orphaned every earlier checkpoint —
-    # including model_data/BEST_bc_clone_D2_validated, the project's best artefact. Reporting
-    # "parse failed" for this would bury a hard incompatibility as a formatting problem.
+    # (full rationale: docs/decision_history.md#--scripts-validate-py-42)
     m = re.search(r"spaces must have the same shape: \((\d+),\) != \((\d+),\)", text)
     if m:
         return {"error": f"OBS-SPACE MISMATCH: checkpoint expects {m.group(1)} channels, "

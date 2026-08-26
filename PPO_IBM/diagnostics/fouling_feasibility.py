@@ -22,11 +22,7 @@ bc_pretrain.py clones) at a range of fixed stir settings, with fouling off vs on
 """
 
 # --- path bootstrap (added by _refactor_layout.py) -------------------------------------
-# This module lives in a subdirectory but imports project modules flatly (e.g.
-# `from env_utils import ...`) and expects `environments/` importable. Add the repo root,
-# training/ and environments/ to sys.path so those imports resolve regardless of which
-# directory this file sits in. Run all scripts FROM THE REPO ROOT: relative paths like
-# "model_data/..." are resolved against the working directory, not against __file__.
+# (full rationale: docs/decision_history.md#--diagnostics-fouling_feasibility-py-24)
 import os as _os, sys as _sys
 _ROOT = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
 for _p in (_ROOT, _os.path.join(_ROOT, "training"), _os.path.join(_ROOT, "environments")):

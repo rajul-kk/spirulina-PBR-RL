@@ -43,11 +43,7 @@ Usage:
 """
 
 # --- path bootstrap (added by _refactor_layout.py) -------------------------------------
-# This module lives in a subdirectory but imports project modules flatly (e.g.
-# `from env_utils import ...`) and expects `environments/` importable. Add the repo root,
-# training/ and environments/ to sys.path so those imports resolve regardless of which
-# directory this file sits in. Run all scripts FROM THE REPO ROOT: relative paths like
-# "model_data/..." are resolved against the working directory, not against __file__.
+# (full rationale: docs/decision_history.md#--bc-bc_pretrain-py-45)
 import os as _os, sys as _sys
 _ROOT = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
 for _p in (_ROOT, _os.path.join(_ROOT, "training"), _os.path.join(_ROOT, "environments")):
@@ -83,31 +79,7 @@ EXPERT_STIR_RANGE = (60.0, 80.0)
 EXPERT_LIGHT_RANGE = (900.0, 1000.0)
 
 # HARVEST IS A FEEDBACK LAW, NOT A CONSTANT.
-#
-# A constant harvest fraction was the original plan, based on a sweep that scored
-# frac=0.18 at 139.9mg / time_avg_od 0.0131 / reward 1116.8. That sweep ran on the BARE
-# env at a FIXED initial_cells=300. Measured through the real training stack — where
-# CurriculumStartWrapper draws initial_cells log-uniformly (100-400 "low", 600-1500 "mid",
-# 2000-5000 "high") — the identical constant action produced:
-#
-#     30.7, 41.3, 46.3, 57.3, 63.4, 93.3, 95.8, 186.0, 248.3, 347.8, 368.2  mg
-#     (median ~93mg, a 12x spread, time_avg_od 0.0025-0.0326)
-#
-# i.e. the episode outcome is dominated by the cold-start draw, not by the action. A
-# constant fraction strips a small starting culture before it can establish (46mg at
-# od 0.0054) while under-harvesting a large one (368mg at od 0.0326). Cloning a
-# state-independent constant would therefore teach the policy to IGNORE its observation
-# on roughly half of all episodes — actively wrong, and a poor foundation for fine-tuning.
-#
-# Instead the expert harvests the SURPLUS above an OD setpoint, proportionally:
-#     frac = clip(GAIN * (od / OD_SETPOINT - 1), 0, FRAC_CAP)
-# Below setpoint it harvests nothing and lets the culture build; above it, it removes
-# roughly the excess. This drives time_avg_od toward OD_SETPOINT regardless of where the
-# episode started, which is exactly what the curriculum's time_avg_od criterion rewards.
-#
-# OD_SETPOINT sits above the D2 gate's time_avg_od>=0.011 with margin, and above
-# genetic_env's OD_TARGET=0.012 (the peak of reward_od), so the controller holds the
-# culture in the band the reward function itself pays most for.
+# (full rationale: docs/decision_history.md#--bc-bc_pretrain-py-85)
 EXPERT_OD_SETPOINT = 0.015
 EXPERT_GAIN = 1.0
 EXPERT_FRAC_CAP = 0.30
@@ -116,8 +88,7 @@ EXPERT_FRAC_CAP = 0.30
 # discount than the trainer uses would hand PPO a systematically miscalibrated critic.
 BC_GAMMA = 0.9995
 # Down-weights the value objective relative to the action objective during BC. Returns are
-# O(100s) and action targets O(1), so an unweighted sum lets the critic dominate the shared
-# trunk and degrade the actor clone.
+# (full rationale: docs/decision_history.md#--bc-bc_pretrain-py-118)
 VALUE_LOSS_COEF = 0.001
 
 # Difficulty mix for the demonstration set. Weighted toward D0/D1 since the curriculum
@@ -176,8 +147,7 @@ def collect_demonstrations(vec_env, n_episodes, rng):
         fracs = []
         while not done:
             # Feedback law: read the CURRENT od off the raw env each step, so the demo
-            # adapts to how the culture is actually developing rather than replaying a
-            # fixed number. This is the whole point of the redesign.
+            # (full rationale: docs/decision_history.md#--bc-bc_pretrain-py-178)
             frac = expert_harvest_frac(getattr(raw_env, "od", 0.0))
             action = expert_raw_action(stir, light, frac, f_max)
             fracs.append(frac)
@@ -186,10 +156,7 @@ def collect_demonstrations(vec_env, n_episodes, rng):
             act_buf.append(action)
             obs, reward, done_vec, info_list = vec_env.step(action.reshape(1, -1))
             # Fix #14: record the NORMALIZED reward stream so discounted returns can be
-            # computed for value-function pretraining. vec_env has norm_reward=True, so
-            # reward[0] is already on the same scale the critic will be trained against
-            # during PPO — using raw env rewards here would produce a critic calibrated to
-            # the wrong magnitude, which is worse than no pretraining at all.
+            # (full rationale: docs/decision_history.md#--bc-bc_pretrain-py-188)
             rew_ep.append(float(reward[0]))
             done = bool(done_vec[0])
             info = info_list[0] if info_list else {}
@@ -206,9 +173,7 @@ def collect_demonstrations(vec_env, n_episodes, rng):
         ret_buf.extend(ret_ep.tolist())
 
         # Read the episode outcome from the terminal INFO dict, not off the raw env:
-        # DummyVecEnv auto-resets on done, which zeroes cumulative_harvested_mg before
-        # any post-loop attribute read can see it. Same convention held_out_sweep.py and
-        # deterministic_eval.py already use.
+        # (full rationale: docs/decision_history.md#--bc-bc_pretrain-py-208)
         harvested = float(info.get("cumulative_harvested_mg", 0.0))
         time_avg_od = float(info.get("time_avg_od", 0.0))
         results.append((harvested, time_avg_od, steps))
@@ -306,14 +271,12 @@ def behaviour_clone(model, obs_arr, act_arr, ret_arr, epochs, batch_size, lr, rn
                 torch.zeros(n_layers, bs, hidden, device=device),
             )
             # NB: predict_values returns a BARE tensor (sb3_contrib policies.py:280-285), not
-            # the (value, states) tuple that get_distribution returns — unpacking it would
-            # silently split along the batch dimension instead.
+            # (full rationale: docs/decision_history.md#--bc-bc_pretrain-py-308)
             pred_v = policy.predict_values(obs_b, v_states, episode_starts)
             critic_loss = torch.nn.functional.mse_loss(pred_v.reshape(-1), ret_b)
 
             # VALUE_LOSS_COEF keeps the critic from dominating the shared trunk: returns are
-            # O(100s) while action targets are O(1), so an unweighted sum would let the value
-            # objective swamp the actor gradients and degrade the clone we actually need.
+            # (full rationale: docs/decision_history.md#--bc-bc_pretrain-py-314)
             loss = actor_loss + VALUE_LOSS_COEF * critic_loss
             optimizer.zero_grad()
             loss.backward()
@@ -328,12 +291,7 @@ def behaviour_clone(model, obs_arr, act_arr, ret_arr, epochs, batch_size, lr, rn
               f"   value MSE = {total_v / max(batches, 1):.2f}")
 
     # ── Critic-only refinement ────────────────────────────────────────────────────────
-    # The joint phase above deliberately throttles the value gradient by VALUE_LOSS_COEF
-    # (0.001) to stop the O(100s) return targets from dragging the shared trunk and degrading
-    # the actor clone. The side effect is an under-fit critic: the joint phase ends with value
-    # MSE still falling steeply. Since an uncalibrated critic is exactly what Fix #14 exists to
-    # prevent, refine it here at FULL weight with the actor's own parameters frozen — the value
-    # head cannot damage what it can no longer move.
+    # (full rationale: docs/decision_history.md#--bc-bc_pretrain-py-330)
     actor_params = []
     for name, p in policy.named_parameters():
         # Freeze everything the actor path uses; leave only the value head + critic LSTM free.
@@ -395,8 +353,7 @@ def verify(model, vec_env, n_episodes, f_max):
         raw_env.difficulty = 1
 
     # Expected shape for the FEEDBACK expert: episode-mean frac ~0.04-0.15 (it varies with
-    # how big the culture gets), first600 near ZERO while the culture establishes, rising
-    # thereafter. A high-then-decaying profile would be v16b's failure mode returning.
+    # (full rationale: docs/decision_history.md#--bc-bc_pretrain-py-397)
     print("\n  Verification — deterministic rollouts at D1 "
           "(expect mean frac ~0.04-0.15, first600 ~0, last600 higher):")
     for ep in range(n_episodes):
@@ -480,8 +437,7 @@ def main():
         return
 
     # Refuse to clone an expert that cannot clear the tier the curriculum starts working
-    # toward. Cloning a sub-D1 expert guarantees a sub-D1 policy, and the 8M-step run that
-    # would follow could only confirm that at great cost.
+    # (full rationale: docs/decision_history.md#--bc-bc_pretrain-py-482)
     if med_h < 60.0 or med_od < 0.008:
         raise SystemExit(
             f"\n  ABORT: expert fails the D1 gate on the real start distribution "

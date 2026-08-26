@@ -1,14 +1,7 @@
-"""
-preview_runner.py — the "live preview" half of config_studio. Runs the scripted
-expert controller directly against genetic_env.py (no NN, same law used in
-experiments/bc_scaffold/scripts/expert_sweep.py) using whatever values the UI has
-staged (which may not be saved to disk yet), and scores the result against a gate
-(either the file's current saved gate, or a staged one).
-
-Deliberately independent of experiments/bc_scaffold/scripts/expert_sweep.py's
-hardcoded constants — every parameter here is a function argument, because this is
-exactly what needs to vary as the user drags sliders in the UI.
-"""
+"""preview_runner.py — live-preview half of config_studio. Runs the scripted expert
+against genetic_env.py using whatever values the UI has staged (not necessarily saved),
+scored against a gate. Every parameter is a function argument (not a module constant,
+unlike expert_sweep.py) since these are exactly what the UI varies."""
 
 import os
 import sys

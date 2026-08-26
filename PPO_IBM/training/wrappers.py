@@ -40,15 +40,8 @@ class ActionSmoothnessWrapper(gym.Wrapper):
 
 class HarvestFixedWrapper(gym.Wrapper):
     """Overrides the harvest action dimension (index 2) with a fixed raw value before
-    it reaches the env, for the harvest-ablation experiment (experiments/harvest_ablation/):
-    does PPO cleanly solve stir+light control once the one dimension with 1-in-600-step
-    credit assignment (finalresults.md's own diagnosis of what PPO has struggled with
-    every run) is taken off the table entirely?
-
-    Deliberately does NOT shrink the action space to 2D — the policy network still
-    outputs a 3rd (harvest) value, it's just discarded here before env.step() ever sees
-    it, so the agent's architecture is unchanged from every other PPO run in this
-    project (only the environment-level consequence of that output changes)."""
+    it reaches the env (experiments/harvest_ablation/). Action space stays 3D — the
+    policy still outputs a harvest value, it's just discarded here."""
     def __init__(self, env, fixed_harvest_raw):
         super().__init__(env)
         self.fixed_harvest_raw = float(fixed_harvest_raw)

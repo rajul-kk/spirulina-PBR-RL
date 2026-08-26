@@ -1,15 +1,10 @@
 """
-td3_held_out_sweep.py — independent held-out validation for the TD3+BC actor (v35),
+td3_held_out_sweep.py — independent held-out validation for a TD3 actor checkpoint,
 mirroring diagnostics/held_out_sweep.py's role for PPO: 40 cold-start episodes on the
-SAME distribution the curriculum gate uses (90% lognormal(100,400), 10% adversarial
-30-80), deterministic policy, scored against the D2 gate.
-
-Why this is needed even though v35's in-training det-eval already looked like a D2 pass:
-this project's own methodology (novelty_report.md's C3) exists specifically because
-in-training eval has produced false positives before (v14/v17/v26/TD-MPC2 v27 all passed
-in-training and failed held-out). v35's in-training det-eval used only 12-18 episodes per
-chunk from curriculum_schedule's own sampling — this sweep is the same held-out
-methodology as every other checkpoint in finalresults.md, not a different, easier bar.
+curriculum gate's own distribution (90% lognormal(100,400), 10% adversarial 30-80),
+deterministic policy, scored against the D2 gate. In-training det-eval has produced
+false positives before (v14/v17/v26/TD-MPC2 v27), so results here are what actually
+counts, not the in-training numbers.
 
 Usage (from repo root, PPO_IBM/):
     python experiments/bc_scaffold/scripts/td3_held_out_sweep.py --n 40

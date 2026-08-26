@@ -1,55 +1,21 @@
 """
-TD3 (Twin Delayed DDPG) for GeneticPhotobioreactorEnv
-======================================================
+TD3 (Twin Delayed DDPG) for GeneticPhotobioreactorEnv.
 
-WHY THIS EXISTS
-----------------
-Every RL run in this project so far has been on-policy (RecurrentPPO) or planning-based
-(TD-MPC2) — neither is DDPG-family. Both got stuck well below the time_avg_od gate at
-D0/D1 (see runs_registry.csv v31/v32), while a hand-written proportional feedback law,
-cloned into a policy network with pure supervised learning and ZERO RL steps, clears
-D0/D1/D2 by 1.6-4.6x margins (experiments/bc_scaffold/). That raises a real question this
-project had not actually tested: is BC beating RL here specific to on-policy/planning
-methods, or does it generalize to off-policy actor-critic too?
+Tests whether the "BC beats RL" pattern (experiments/bc_scaffold/) is specific to
+on-policy/planning methods (PPO, TD-MPC2) or generalizes to off-policy actor-critic too.
+Reuses proven project infrastructure rather than building from scratch: LSTM actor/twin
+critic shape from legacy/recurrent_sac.py, and the dual-gate/capability-demotion
+curriculum apparatus from curriculum_schedule.py and legacy/TD_MPC2.py, so results are
+directly comparable to every other run in finalresults.md.
 
-Two structural reasons TD3 is a genuinely different bet, not just "another RL run":
-
-  1. PPO's failure mode (this project's own C2 finding, novelty_report.md) is that its
-     training signal comes from the STOCHASTIC rollout's own return — exploration noise
-     can make a broken deterministic policy look fine during training. TD3 trains its
-     (already-deterministic) actor against a separately-learned Q-function instead, so
-     it is not directly exposed to that specific decoupling (it trades it for Q-function
-     overestimation bias, which is exactly what TD3's twin critics + delayed actor
-     updates + target policy smoothing exist to control — Fujimoto et al. 2018).
-
-  2. Off-policy replay buffers can be seeded with the SAME scripted-expert demonstrations
-     already proven out in bc/bc_pretrain.py, and — unlike PPO's BC warm-start, which is a
-     one-time initialization that gradient updates drifted away from (v17/v19: harvest
-     113->103->113->98.9mg, time_avg_od 0.0215->0.0022 over the first four post-handoff
-     chunks) — those demonstrations stay in the replay buffer and keep getting sampled
-     for the entire run, not just at step 0. If BC's advantage was really about WHERE you
-     start rather than HOW you're trained, a persistent-demo off-policy method should hold
-     it; if it collapses anyway, that's evidence the reward function itself doesn't rank
-     the setpoint-tracking behavior highest under any of this project's training regimes.
-
-ARCHITECTURE (deliberately reuses proven project infrastructure, not built from scratch):
-  - RecurrentActor/RecurrentCritic : same LSTM-encoder shape as legacy/recurrent_sac.py's
-    twin-critic design (POMDP rationale identical — biofouling, O2 lag, pH inertia are
-    all invisible in a single observation). Actor is now deterministic (tanh output head,
-    no Gaussian sampling) per TD3's spec, not SAC's.
-  - SequenceReplayBuffer : same episode-based, truncated-BPTT buffer as recurrent_sac.py,
-    but split into two instances: `demo_buffer` (fixed, permanent, seeded once from the
-    scripted expert, never evicted) and `online_buffer` (grows during training). Every
-    training batch draws DEMO_FRACTION from the former, the rest from the latter.
-  - Curriculum / dual gate / demotion / capability-abort : reused VERBATIM from
-    curriculum_schedule.py's ADVANCE_TARGETS + _compute_curriculum_stats, and from
-    TD-MPC2's Fix #15/#29 capability-demotion port (legacy/TD_MPC2.py) — same gate,
-    same thresholds, same 12-chunk capability-abort logic, same MASTERY_WINDOW=40
-    persistent per-difficulty history. This is what makes a TD3 result directly
-    comparable to every PPO and TD-MPC2 run in finalresults.md, not a different yardstick.
+Replay buffer is split into a permanent `demo_buffer` (scripted-expert episodes, seeded
+once, never evicted) and a growing `online_buffer`; every batch mixes DEMO_FRACTION from
+the former. TD3+BC (Fujimoto & Gu 2021) adds an explicit imitation term to the actor loss
+on top of that, after v33/v34 showed replay-buffer mixing alone wasn't enough to prevent
+actor collapse (see git history / runs_registry.csv for v33-v36).
 
 Usage (from repo root, PPO_IBM/):
-    python legacy/TD3.py                 # fresh run, full 8M-step curriculum
+    python legacy/TD3.py                 # fresh run, full curriculum
     python legacy/TD3.py --resume        # resume from latest checkpoint
 """
 
@@ -82,85 +48,51 @@ OBS_DIM = 6
 ACTION_DIM = 3
 MAX_CELLS = 7_500
 
-# Fix #13's lesson (recurrent_ppo.py): harvest fires once every 600 raw steps
-# (HARVEST_INTERVAL_STEPS), so gamma must give the bootstrapped return an effective
-# horizon (1/(1-gamma)) past that or the harvest decision's credit assignment is
-# structurally invisible. PPO moved 0.995 -> 0.9995 for exactly this reason (effective
-# horizon 200 -> 2000 steps). TD3 operates at the same raw per-step resolution PPO does
-# (unlike TD-MPC2's 50-step macro-transitions, which get their long horizon a different
-# way), so it inherits the same constraint — use the same gamma.
+# Matches PPO's gamma (recurrent_ppo.py Fix #13): harvest fires every 600 raw steps, so
+# gamma needs an effective horizon (1/(1-gamma)) past that for credit assignment to reach it.
 GAMMA = 0.9995
 
 HIDDEN_DIM = 128
 LSTM_LAYERS = 1
 BATCH_SIZE = 24
-# v33 used SEQ_LEN=25 purely to cut compute, without accounting for the 600-step harvest
-# interval — see SequenceReplayBuffer's HARVEST_BIAS_PROB comment for the actual bug this
-# caused. 60 gives real pre/post context around a harvest step while staying far cheaper
-# than SEQ_LEN>=600 (which would be needed for a harvest event to appear under uniform
-# sampling alone, with no bias).
-SEQ_LEN = 60
+SEQ_LEN = 60  # long enough for real pre/post context around a harvest event; see HARVEST_BIAS_PROB
 ONLINE_BUFFER_CAPACITY = 5_000       # episodes
 LR_ACTOR = 3e-4
 LR_CRITIC = 3e-4
 TAU = 0.005
 GRAD_CLIP = 5.0
-# Smoke-tested at TRAIN_EVERY=1 (gradient update every raw env step, the recurrent_sac.py
-# convention this file started from): ~8-10 it/s on CPU (no CUDA in this environment),
-# which projects to >2 weeks wall-clock for an 8M-step budget — recurrent_sac.py itself
-# was apparently abandoned with zero logged runs in runs_registry.csv, and this is plausibly
-# why. Update every 4th env step instead: same total gradient-update count for a given
-# wall-clock budget, ~4x more environment transitions collected per hour.
-TRAIN_EVERY = 4
+TRAIN_EVERY = 4  # gradient update every 4th env step; CPU-only, per-step updates measured too slow
 POLICY_DELAY = 2                     # TD3: delayed actor + target updates
 POLICY_NOISE = 0.2                   # target policy smoothing (Fujimoto et al. 2018 default)
 NOISE_CLIP = 0.5
 
-# ── TD3+BC actor regularization (v35, after v33/v34 both collapsed to near-zero harvest) ──
-# v34 ruled out the SEQ_LEN/harvest-visibility bug and still saw deterministic harvest
-# pinned at EXACTLY 0.0mg from chunk 1 onward — the textbook DDPG/TD3 pathology of
-# collapsing to "never take the rare, high-variance action" (Fujimoto & Gu 2021 motivate
-# TD3+BC on exactly this kind of collapse). Demo transitions sitting in the replay buffer
-# only bias which TRANSITIONS the critic trains on; they don't constrain the actor's own
-# loss, so the actor is free to drift to the safe corner regardless. TD3+BC adds an
-# explicit imitation term directly to the actor's loss:
-#     actor_loss = -lambda * Q1(s, pi(s)) + BC_COEF * MSE(pi(s_demo), a_demo)
-# with lambda = TD3BC_ALPHA / mean(|Q1(s, pi(s))|).detach() — normalizes the Q-term to the
-# same scale as the MSE term (Q's magnitude drifts during training; MSE on tanh-squashed
-# actions in [-1,1] does not), the paper's own fix for the two losses being incomparable
-# units. UNLIKE the original (pure-offline) TD3+BC paper, the BC term here is evaluated
-# on a FRESH batch drawn only from the demo buffer, not the full mixed batch — the online
-# portion of the buffer contains this run's OWN past (partly collapsed) actions, and
-# behavior-cloning toward those would reinforce the collapse rather than fix it.
+# TD3+BC actor regularization (Fujimoto & Gu 2021):
+#   actor_loss = -lambda * Q1(s, pi(s)) + BC_COEF * MSE(pi(s_demo), a_demo)
+#   lambda = TD3BC_ALPHA / mean(|Q1(s, pi(s))|).detach()  (normalizes Q-term to MSE's scale)
+# BC term is evaluated on a fresh demo-only batch, not the mixed batch, so it never clones
+# this run's own online actions.
 TD3BC_ALPHA = 2.5    # paper default
 BC_COEF = 1.0
 EXPLORATION_NOISE_START = 0.25
 EXPLORATION_NOISE_END = 0.03
 EXPLORATION_NOISE_ANNEAL_FRAC = 0.3  # fraction of TOTAL_TRAINING_STEPS to anneal over
 
-# ── Demonstration replay (the actual hypothesis under test — see module docstring) ──
 N_DEMO_EPISODES = 24                 # matches bc/bc_pretrain.py's default episode count
 DEMO_FRACTION = 0.25                 # share of every training batch drawn from demos
 DEMO_DIFFICULTY_WEIGHTS = {0: 0.4, 1: 0.4, 2: 0.2}  # matches bc/bc_pretrain.py
 
-# Scripted-expert control law — same law and constants as bc/bc_pretrain.py (not imported,
-# to keep this file independent of the SB3-heavy bc_pretrain module; kept numerically
-# identical on purpose, see that file's docstring for the sweep that validated these values).
+# Scripted-expert control law, numerically identical to bc/bc_pretrain.py (not imported,
+# to avoid pulling in that module's SB3 dependency).
 EXPERT_STIR_RANGE = (60.0, 80.0)
 EXPERT_LIGHT_RANGE = (900.0, 1000.0)
 EXPERT_OD_SETPOINT = 0.015
 EXPERT_GAIN = 1.0
 EXPERT_FRAC_CAP = 0.30
 
-# 8,000,000 matches every PPO/TD-MPC2 run's budget in finalresults.md, but this file's
-# per-raw-step recurrent actor+twin-critic gradient update (even throttled to TRAIN_EVERY=4)
-# measured well under 10 it/s on this CPU-only machine under typical desktop load — at
-# that rate 8M steps would take on the order of a week+ unattended, versus PPO/TD-MPC2's
-# ~15-20h. Defaulting to a smaller, still-meaningful budget; override via TD3_STEPS if a
-# longer run is wanted. The dual-gate/demotion apparatus is chunk-based (100k-step chunks),
-# not total-step-based, so a partial budget still produces a valid, honestly-reported
-# curriculum outcome (hold/advance/demote at whatever difficulty it reaches), not a
-# meaningless truncation.
+# Default budget is smaller than PPO/TD-MPC2's 8M-step convention: this file's per-step
+# recurrent actor+twin-critic update measured well under 10 it/s on this CPU-only machine
+# (>1 week for 8M steps). Override via TD3_STEPS. The dual-gate apparatus is chunk-based,
+# so a smaller budget still produces a valid, honestly-reported outcome.
 TOTAL_TRAINING_STEPS = int(os.environ.get("TD3_STEPS", "2000000"))
 CHUNK_STEPS = 100_000
 DET_EVAL_EPISODES_PER_CHUNK = 3
@@ -177,10 +109,8 @@ BUFFER_PATH = "model_data/td3_checkpoints/online_buffer.pkl"
 # ═════════════════════════════════════════════════════════════════════════════
 
 class RecurrentActor(nn.Module):
-    """LSTM-based deterministic policy. Same encoder shape as recurrent_sac.py's
-    RecurrentActor, but a single tanh-squashed mean head — no Gaussian sampling, per
-    TD3's spec. Exploration comes from additive Gaussian noise applied OUTSIDE this
-    network during environment interaction, not from an internal stochastic policy."""
+    """LSTM encoder + tanh-squashed deterministic head. Exploration noise is added
+    externally during environment interaction, not sampled internally (unlike SAC)."""
 
     def __init__(self, obs_dim, action_dim, hidden_dim=HIDDEN_DIM, lstm_layers=LSTM_LAYERS):
         super().__init__()
@@ -209,8 +139,7 @@ class RecurrentActor(nn.Module):
 
 
 class RecurrentCritic(nn.Module):
-    """Twin independent-LSTM Q-networks. Identical to recurrent_sac.py's RecurrentCritic —
-    the twin-critic-min mechanism (Fujimoto et al. 2018) is shared by SAC and TD3."""
+    """Twin independent-LSTM Q-networks (Fujimoto et al. 2018 twin-critic-min)."""
 
     def __init__(self, obs_dim, action_dim, hidden_dim=HIDDEN_DIM, lstm_layers=LSTM_LAYERS):
         super().__init__()
@@ -254,16 +183,11 @@ class RecurrentCritic(nn.Module):
 # ═════════════════════════════════════════════════════════════════════════════
 
 class SequenceReplayBuffer:
-    # Bug found in v33 (see runs_registry.csv): with pure-uniform start-offset sampling,
-    # a SEQ_LEN=25 window has only ~25/600 =~ 4% chance of containing a harvest-event step
-    # at all (genetic_env.py: harvest fires only when step_count % HARVEST_INTERVAL_STEPS
-    # == 0, every 600 raw steps). That meant even the demo buffer's ~150mg/episode expert
-    # transitions almost never showed the critic a harvest-reward transition to bootstrap
-    # from, starving credit assignment for exactly the action dimension under test — v33's
-    # near-zero harvest collapse is more likely this sampling bug than a real TD3-vs-BC
-    # result. Bias sampling toward windows that DO contain a harvest-event step.
+    # Harvest fires every HARVEST_INTERVAL_STEPS; uniform window sampling gives a
+    # SEQ_LEN=25 window only ~4% odds of containing one at all (v33's collapse). Bias
+    # sampling toward windows that include a harvest step.
     HARVEST_INTERVAL_STEPS = 600
-    HARVEST_BIAS_PROB = 0.7  # rest sampled uniformly, for coverage of ordinary transitions too
+    HARVEST_BIAS_PROB = 0.7  # rest sampled uniformly, for ordinary-transition coverage
 
     def __init__(self, capacity, seq_len):
         self.capacity = capacity
@@ -320,9 +244,8 @@ class SequenceReplayBuffer:
 
 
 def sample_mixed_batch(demo_buffer, online_buffer, batch_size, demo_fraction):
-    """Draws demo_fraction of the batch from the permanent demo buffer and the rest from
-    the online buffer — falls back to all-demo if the online buffer can't fill its share
-    yet (early in training, before SEQ_LEN-length online episodes exist)."""
+    """demo_fraction of the batch from the permanent demo buffer, rest from online
+    (falls back to all-demo if online can't fill its share yet)."""
     n_demo = int(round(batch_size * demo_fraction))
     n_online = batch_size - n_demo
     if len(online_buffer) == 0:
@@ -356,11 +279,8 @@ def expert_harvest_frac(od):
 
 
 def collect_expert_demo_episode(difficulty, rng, seed):
-    """One full episode of the scripted proportional-harvest expert, raw per-step
-    transitions (obs, action, reward, next_obs, done) — same law as bc/bc_pretrain.py and
-    experiments/bc_scaffold/, both independently verified to clear D0/D1/D2's time_avg_od
-    gate with zero training. This is the buffer TD3's off-policy updates get to keep
-    sampling from for the entire run, not just as a one-time initialization."""
+    """One episode of the scripted proportional-harvest expert (same law validated in
+    experiments/bc_scaffold/). Feeds the permanent demo_buffer."""
     from curriculum_schedule import _sample_init_cells
     init_cells = _sample_init_cells("random", difficulty)
     env = GeneticPhotobioreactorEnv(max_cells=MAX_CELLS, initial_cells=init_cells, difficulty=difficulty)
@@ -417,11 +337,8 @@ def build_demo_buffer(n_episodes, seed=0):
 # ═════════════════════════════════════════════════════════════════════════════
 
 def run_td3_eval_episode(actor, difficulty, seed):
-    """No exploration noise: the actor's raw tanh output IS the deterministic policy for
-    TD3 (unlike SAC, there's no separate 'mean' to extract — the network never samples).
-    Same project rationale as deterministic_eval.py / TD-MPC2's run_tdmpc2_eval_episode:
-    a policy that only 'looks like' it works under exploration noise should not be able
-    to advance on that alone."""
+    """Noise-free rollout for the project's dual gate (see deterministic_eval.py /
+    TD-MPC2's run_tdmpc2_eval_episode for the same rationale)."""
     from curriculum_schedule import _sample_init_cells
     init_cells = _sample_init_cells("random", difficulty)
     env = GeneticPhotobioreactorEnv(max_cells=MAX_CELLS, initial_cells=init_cells, difficulty=difficulty)
@@ -474,14 +391,10 @@ def td3_update(actor, actor_target, critic, critic_target, actor_opt, critic_opt
         q_target = rewards + GAMMA * (1.0 - dones) * torch.min(q1_next, q2_next)
 
     q1, q2, _, _ = critic(obs, actions)
-    # Huber (v36, after v35's collapse): genetic_env.py's crash/extinction penalty is
-    # -100.0 against a mean per-step reward of ~0.15 (experiments/env_diagnosis/ measured
-    # this at 669x the mean, 761x the worst NON-crash step) and GAMMA=0.9995 gives that
-    # outlier a ~2000-step bootstrap horizon — a single crash transition entering the
-    # buffer can dominate the Q-target for a wide window of training data. Plain MSE
-    # amplifies that outlier's gradient contribution quadratically; Huber is identical to
-    # MSE for normal-sized TD-errors (delta=1.0, well above this env's non-crash reward
-    # scale) but caps outlier transitions to a linear, not quadratic, gradient contribution.
+    # Huber, not MSE: genetic_env.py's crash penalty (-100) is a ~700x outlier against
+    # typical per-step reward (experiments/env_diagnosis/), and GAMMA's long bootstrap
+    # horizon spreads it across many Q-targets. Huber caps that outlier's gradient
+    # contribution to linear instead of quadratic; identical to MSE for normal TD-errors.
     critic_loss = F.huber_loss(q1, q_target, delta=1.0) + F.huber_loss(q2, q_target, delta=1.0)
     critic_opt.zero_grad()
     critic_loss.backward()
@@ -492,8 +405,6 @@ def td3_update(actor, actor_target, critic, critic_target, actor_opt, critic_opt
     if update_idx % POLICY_DELAY == 0:
         pred_action, _ = actor(obs)
         q_pred = critic.q1_only(obs, pred_action)
-        # Clamp: early in training Q is near-random and can sit close to 0, which would
-        # otherwise send lambda towards infinity and destabilize the very first updates.
         lam = torch.clamp(TD3BC_ALPHA / (q_pred.abs().mean().detach() + 1e-3), max=100.0)
         q_term = -lam * q_pred.mean()
 
@@ -539,12 +450,9 @@ BEST_CHECKPOINT_DIR = "model_data/td3_checkpoints_best"
 
 
 def save_best_checkpoint(actor, critic, det_harvest, global_step):
-    """A separate, never-overwritten-by-collapse snapshot (v36, after v35 lost its best
-    ~2.65M-step state to a later divergence — checkpointing only ever kept the LATEST
-    weights, so a subsequent collapse silently destroyed the best result on disk with no
-    way back short of re-running). Called after every chunk's det-eval; overwrites only
-    when the new det_harvest is a genuine improvement, so this directory always holds the
-    best deterministic policy seen so far, independent of what happens afterward."""
+    """Separate, never-overwritten-by-collapse snapshot — the regular checkpoint only
+    keeps the latest weights, so a later divergence can otherwise destroy the best
+    result on disk. Overwrites only on genuine det_harvest improvement."""
     os.makedirs(BEST_CHECKPOINT_DIR, exist_ok=True)
     marker_path = f"{BEST_CHECKPOINT_DIR}/best_info.txt"
     prev_best = -1.0
@@ -614,8 +522,8 @@ def train(resume=False):
         else:
             print("  [RESUME] no checkpoint found, starting fresh.")
 
-    # Demo buffer is regenerated deterministically (fixed seed) rather than persisted —
-    # it's a pure function of the scripted expert law, which never changes mid-run.
+    # Regenerated deterministically (fixed seed) rather than persisted — pure function of
+    # the scripted expert law, which never changes mid-run.
     demo_buffer = build_demo_buffer(N_DEMO_EPISODES, seed=0)
 
     global_step = saved_state.get("global_step", 0)
@@ -736,7 +644,7 @@ def train(resume=False):
         pbar.close()
         env.close()
 
-        # ── Dual gate — identical apparatus to TD-MPC2's Fix #15/#29 port (legacy/TD_MPC2.py) ──
+        # Dual gate, same apparatus as legacy/TD_MPC2.py's Fix #15/#29 port.
         stats = _compute_curriculum_stats(list(history_by_diff[current_difficulty]), mastery_diff=current_difficulty)
         for i in range(DET_EVAL_EPISODES_PER_CHUNK):
             rec = run_td3_eval_episode(actor, current_difficulty, seed=100_000 + global_step + i)

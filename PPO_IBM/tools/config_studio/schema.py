@@ -1,19 +1,7 @@
-"""
-schema.py — declares which project constants config_studio can edit, and where each
-one lives. This is the "content model" half of the Tina-CMS analogy: instead of blog
-post fields, the editable schema here is the curriculum gate thresholds and the
-scripted-expert control law, because those are the two knobs this project has actually
-been tuning by hand (see experiments/bc_scaffold/).
-
-Each field is one of two kinds:
-  - "simple": a bare `NAME = <number>` assignment, matched by name.
-  - "tuple2": a bare `NAME = (<a>, <b>)` assignment, exposed as two sub-fields.
-  - "tier_dict": one entry inside curriculum_schedule.py's ADVANCE_TARGETS dict, keyed
-    by (tier, dict-key-name).
-
-Adding a field means adding one entry here — the server and UI both read this list,
-nothing else needs touching.
-"""
+"""schema.py — declares which project constants config_studio can edit and where each
+lives. Field kinds: "simple" (`NAME = <number>`), "tuple2" (`NAME = (a, b)`, exposed as
+two sub-fields), "tier_dict" (one entry in curriculum_schedule.py's ADVANCE_TARGETS,
+keyed by tier + dict key). Add a field by adding one entry here."""
 
 CURRICULUM_FILE = "training/curriculum_schedule.py"
 EXPERT_FILE = "bc/bc_pretrain.py"

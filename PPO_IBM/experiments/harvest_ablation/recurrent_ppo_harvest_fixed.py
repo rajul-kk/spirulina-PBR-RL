@@ -52,12 +52,7 @@ from callbacks import (
 )
 from training_state import find_latest_checkpoint, load_state, save_state
 
-# --- harvest-ablation wiring (experiments/harvest_ablation/) -------------------------
-# Both swapped for locally-defined variants that wrap the env in HarvestFixedWrapper —
-# see this folder's README.md for why the shared env_factory/deterministic_eval modules
-# can't just be parameterized in place (they're used by every other run in this project,
-# and this ablation intentionally changes what the agent's harvest output DOES, not just
-# a hyperparameter).
+# --- harvest-ablation wiring: forked env_factory/deterministic_eval (see README.md) ---
 import sys as _sys2, os as _os2
 _sys2.path.insert(0, _os2.path.dirname(_os2.path.abspath(__file__)))
 from env_factory_harvest_fixed import make_env

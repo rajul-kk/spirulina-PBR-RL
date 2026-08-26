@@ -1,39 +1,15 @@
 """
-diagnose.py — full actions/reward/environment diagnostic sweep for GeneticPhotobioreactorEnv.
+diagnose.py — actions/reward/environment diagnostic sweep for GeneticPhotobioreactorEnv.
 
-WHY THIS EXISTS
----------------
-TD3+BC (v35) reached D2 and held it cleanly for ~2M steps (0% crash, harvest well over
-gate), then diverged sharply after being resumed: critic loss jumped 7.8 -> 543.6 within
-one chunk, and deterministic crash rate climbed 0% -> 23% -> 33% -> 43% -> 50% -> 100%
-over the next few chunks, with harvest and time_avg_od collapsing in lockstep
-(runs_registry.csv v35_td3bc). Reading genetic_env.py's reward function turned up a
-likely mechanism worth confirming directly rather than assumed: crash/extinction carries
-a reward of -100.0 (genetic_env.py's step(), extinction branch), against dense per-step
-reward terms that top out around 0.15 (reward_od) + 0.20 (reward_biomass) + 0.01
-(reward_od_delta) + 0.5 (reward_harvest, harvest-event steps only) ~= 0.86 at best,
-typically much less. That is a ~100-700x outlier in the reward distribution TD3's critic
-trains on, compounded by GAMMA=0.9995's long effective horizon (~2000 steps) bootstrapping
-that single outlier backward through many preceding transitions once a crash episode lands
-in the (non-evicting-within-a-chunk) online replay buffer. This project's own code comment
-on that same line documents an identical failure mode already diagnosed for PPO's LSTM
-weights (the penalty was reduced from -1000 to -100 for exactly this reason) — this sweep
-checks whether TD3's collapse fits the same mechanism, and separately characterizes the
-action-space crash boundary and which environment conditions (initial population size,
-difficulty tier) make a crash likely to occur at all, since a bootstrapped-outlier
-explanation only matters if crashes were becoming more frequent going into the collapse.
+Investigates TD3+BC (v35)'s post-resume divergence (critic loss 7.8->543.6, crash rate
+0%->100% over a few chunks; runs_registry.csv v35_td3bc) via three sweeps:
 
-THREE SWEEPS, ONE SCRIPT
--------------------------
-1. REWARD  — quantify the actual per-step reward distribution (component breakdown) under
-   the validated scripted-expert law, and the outlier ratio of the crash penalty against it.
-2. ENVIRONMENT — crash rate as a function of initial-population bucket (low/mid/high, the
-   same buckets curriculum_starts.py samples from) and difficulty tier, under BOTH the
-   scripted expert (what should happen) and random actions (a proxy for an early/perturbed/
-   undertrained policy, closer to what an actor mid-collapse might be doing).
-3. ACTIONS — harvest-fraction crash boundary (where does the "washout cliff" bc_pretrain.py
-   references actually sit, verified against the CURRENT env version, not assumed from an
-   old comment) plus stir/light extremes.
+1. REWARD — per-step reward distribution under the scripted expert, and how much of an
+   outlier the -100 crash/extinction penalty (genetic_env.py) is against it.
+2. ENVIRONMENT — crash rate by initial-population bucket (low/mid/high) x difficulty,
+   under the scripted expert and under random actions (proxy for a perturbed policy).
+3. ACTIONS — harvest-fraction crash boundary ("washout cliff"), re-verified against the
+   current env version.
 
 Usage (from repo root, PPO_IBM/):
     python experiments/env_diagnosis/diagnose.py

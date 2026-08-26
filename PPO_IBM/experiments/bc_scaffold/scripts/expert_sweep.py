@@ -1,26 +1,8 @@
 """
-expert_sweep.py — does a NON-LEARNED scripted controller solve the time_avg_od
-bottleneck that stalled PPO v31 and TD-MPC2 v32 at D0/D1?
-
-WHY THIS SCRIPT EXISTS
------------------------
-v31 (PPO) and v32 (TD-MPC2) both got stuck well below the curriculum's
-time_avg_od gate (D0 >= 0.004, D1 >= 0.008, D2 >= 0.011) despite clearing the
-harvest/p25/crash criteria easily. Before concluding the ENVIRONMENT is hard,
-this isolates whether the task is solvable at all by testing a zero-parameter,
-non-learned proportional feedback law directly against genetic_env.py, on the
-exact same held-out cold-start distribution the curriculum gate uses
-(90% lognormal(100,400) cells, 10% adversarial 30-80 cells).
-
-This reuses the EXACT surplus-harvest law already proven out in
-bc/bc_pretrain.py (harvest the surplus above an OD setpoint, proportionally):
-
-    frac = clip(GAIN * (od / OD_SETPOINT - 1), 0, FRAC_CAP)
-
-No neural network, no training, no BC — just the hand-written control law
-run directly against the environment. If this alone clears D0/D1/D2, the
-bottleneck is squarely in the RL algorithms' ability to FIND/HOLD this
-controller, not in the environment's difficulty.
+expert_sweep.py — runs the non-learned proportional harvest law (same as
+bc/bc_pretrain.py) directly against genetic_env.py, zero NN and zero training, on
+the curriculum's own held-out cold-start distribution. Isolates whether PPO/TD-MPC2's
+time_avg_od bottleneck is environment difficulty or an RL-discovery problem.
 
 Usage (from repo root, PPO_IBM/):
     python experiments/bc_scaffold/scripts/expert_sweep.py --n 40 --difficulty 0
@@ -40,9 +22,7 @@ import numpy as np
 
 from genetic_env import GeneticPhotobioreactorEnv
 
-# Same law, same constants as bc/bc_pretrain.py — deliberately not re-tuned here so
-# this sweep is a clean read on the ALREADY-VALIDATED expert, not a new hyperparameter
-# search. EXPERT_OD_SETPOINT sits above every gate's time_avg_od requirement with margin.
+# Same law/constants as bc/bc_pretrain.py, not re-tuned here.
 EXPERT_STIR_RANGE = (60.0, 80.0)
 EXPERT_LIGHT_RANGE = (900.0, 1000.0)
 EXPERT_OD_SETPOINT = 0.015

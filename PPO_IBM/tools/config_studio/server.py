@@ -1,12 +1,7 @@
 """
-config_studio — a Tina-CMS-style visual editor pointed at this project's environment
-config instead of a website's content: the curriculum gate thresholds and the
-scripted-expert control law, with a "run N episodes and show the result" live preview
-in place of a rendered page, and git-backed saves in place of a CMS's content commits.
-
-No new dependencies: built on the standard library's http.server, since this project's
-venv doesn't have a web framework installed and this is a small local dev tool, not a
-service. Run it and open the printed URL in a browser.
+config_studio — visual editor for the curriculum gate thresholds and scripted-expert
+control law, with a live-preview (run N episodes, show the result) and git-backed
+saves. Stdlib http.server only, no new dependencies.
 
 Usage (from repo root, PPO_IBM/):
     python tools/config_studio/server.py [--port 8765]

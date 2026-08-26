@@ -1,12 +1,6 @@
-"""
-deterministic_eval_harvest_fixed.py — harvest-ablation variant of training/deterministic_eval.py.
-
-Identical to the original except the env is wrapped with HarvestFixedWrapper before
-Monitor/VecNormalize, so the deterministic-eval side of the dual gate sees the same
-fixed-harvest environment training does. Without this, det-eval would score the agent's
-UNUSED harvest output against the real, controllable harvest dimension — a mismatch with
-what was actually trained, and a false read on the ablation.
-"""
+"""deterministic_eval_harvest_fixed.py — harvest-ablation variant of
+training/deterministic_eval.py. Wraps the env with HarvestFixedWrapper so the dual
+gate's det-eval side sees the same fixed-harvest environment training does."""
 
 import os as _os, sys as _sys
 _ROOT = _os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
@@ -43,7 +37,10 @@ def run_deterministic_eval_episode(model, obs_rms, difficulty, seed=None):
     vec.training = False
 
     obs = vec.reset()
-    max_steps = vec.venv.envs[0].env.max_steps
+    # .unwrapped (not .env) — Monitor wraps HarvestFixedWrapper wraps the raw env here,
+    # one layer deeper than the original deterministic_eval.py's Monitor(raw env), so a
+    # single .env unwrap lands on HarvestFixedWrapper, not GeneticPhotobioreactorEnv.
+    max_steps = vec.venv.envs[0].env.unwrapped.max_steps
     lstm_states = None
     ep_starts = np.ones((1,), dtype=bool)
     done = False

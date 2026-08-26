@@ -1,14 +1,6 @@
-"""
-config_io.py — read/write the actual project source files that schema.py's fields
-point at, via targeted regex substitution (not a full Python parser/rewriter, since
-these files are hand-formatted with comments that a round-tripping AST rewrite would
-mangle). Each write is a single, minimal in-place edit that preserves everything else
-in the file byte-for-byte.
-
-Every successful write is followed by a git commit scoped to that one file, so every
-config_studio change is independently reviewable/revertable — the git-backed-save half
-of the Tina-CMS analogy this tool is modeled on.
-"""
+"""config_io.py — read/write schema.py's target files via targeted regex substitution
+(not a full AST rewrite, to avoid mangling hand-formatted comments). Each write is
+followed by a git commit scoped to that one file."""
 
 import os
 import re

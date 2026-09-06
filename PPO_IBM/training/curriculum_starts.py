@@ -26,6 +26,8 @@ STITCH_MIN_EPISODES = {
 }
 
 MAX_STITCHED_SHARE_FOR_MASTERY = 0.30
+REGRET_BLEND = 0.25
+REGRET_MIN_SHARE_OF_BASE = 0.5
 
 
 def _log_uniform_int(low: int, high: int, rng) -> int:
@@ -50,11 +52,33 @@ def choose_episode_start(
     saved_state_available: bool,
     completed_episodes: int,
     rng=np.random,
+    bucket_regret: Optional[Dict[str, float]] = None,
+    blend: float = REGRET_BLEND,
 ) -> Dict[str, Optional[int]]:
     difficulty = int(np.clip(difficulty, 0, 2))
     weights = dict(START_DISTRIBUTION[difficulty])
     if (not saved_state_available) or (completed_episodes < STITCH_MIN_EPISODES[difficulty]):
         weights.pop("stitched", None)
+
+    if bucket_regret:
+        stitched_w = weights.pop("stitched", 0.0)
+        cold_buckets = list(weights.keys())
+        base = np.array([weights[b] for b in cold_buckets], dtype=np.float64)
+        base /= base.sum()
+        regret_vals = np.array([max(bucket_regret.get(b, 0.0), 0.0) for b in cold_buckets], dtype=np.float64)
+        if regret_vals.sum() > 1e-9:
+            regret_probs = regret_vals / regret_vals.sum()
+            blended = (1 - blend) * base + blend * regret_probs
+        else:
+            blended = base
+        floor = REGRET_MIN_SHARE_OF_BASE * base
+        blended = np.maximum(blended, floor)
+        blended /= blended.sum()
+        remaining = 1.0 - stitched_w
+        for b, p in zip(cold_buckets, blended):
+            weights[b] = float(p * remaining)
+        if stitched_w > 0:
+            weights["stitched"] = stitched_w
 
     modes = list(weights.keys())
     probs = np.array(list(weights.values()), dtype=np.float64)

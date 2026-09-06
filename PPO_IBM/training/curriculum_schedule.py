@@ -86,6 +86,7 @@ def _compute_curriculum_stats(history, mastery_diff: int = None):
             "episodes": 0,
             "median_harvested_mg": 0.0,
             "p25_harvested_mg": 0.0,
+            "cvar10_harvested_mg": 0.0,
             "median_time_avg_od": 0.0,
             "crash_rate": 0.0,
             "reward_std": 0.0,
@@ -101,14 +102,43 @@ def _compute_curriculum_stats(history, mastery_diff: int = None):
     rewards        = np.array([h["reward"] for h in filtered_history], dtype=np.float32)
 
     p25 = float(np.percentile(harvested_values, 25))
+    cvar_cutoff = np.percentile(harvested_values, 10)
+    tail = harvested_values[harvested_values <= cvar_cutoff]
+    cvar10 = float(np.mean(tail)) if len(tail) > 0 else float(np.min(harvested_values))
     return {
         "episodes": int(len(adv_set)),
         "median_harvested_mg": float(np.median(harvested_values)),
         "p25_harvested_mg": p25,
+        "cvar10_harvested_mg": cvar10,
         "median_time_avg_od": float(np.median(time_avg_od_values)),
         "crash_rate": float(np.mean(crash_values)),
         "reward_std": float(np.std(rewards)),
     }
+
+
+REGRET_EMA_DECAY = 0.7
+
+
+def compute_bucket_regret(history, difficulty):
+    buckets = {"low": [], "mid": [], "high": []}
+    for h in history:
+        mode = h.get("start_mode", "low")
+        if mode in buckets:
+            buckets[mode].append(h)
+
+    regret = {}
+    for bucket, eps in buckets.items():
+        if not eps:
+            regret[bucket] = 0.5
+            continue
+        crashed = np.array([1.0 if e["crashed"] else 0.0 for e in eps], dtype=np.float64)
+        regret[bucket] = float(np.mean(crashed))
+    return regret
+
+
+def update_bucket_regret_ema(prev, raw, decay=REGRET_EMA_DECAY):
+    prev = prev or {}
+    return {k: decay * prev.get(k, v) + (1 - decay) * v for k, v in raw.items()}
 
 
 class CurriculumStartController:
@@ -119,6 +149,7 @@ class CurriculumStartController:
         self.train_diff = None
         self.mastery_diff = None
         self.log_episode_starts = False
+        self.bucket_regret = {}
 
 
 class CurriculumStartWrapper(gym.Wrapper):
@@ -147,6 +178,7 @@ class CurriculumStartWrapper(gym.Wrapper):
             difficulty,
             saved_state_available=self.controller.saved_state is not None,
             completed_episodes=self.controller.completed_episodes,
+            bucket_regret=self.controller.bucket_regret.get(difficulty),
         )
         if start_cfg["initial_cells"] is not None:
             raw_env.initial_cells = int(start_cfg["initial_cells"])

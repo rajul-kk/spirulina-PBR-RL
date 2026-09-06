@@ -1,0 +1,1 @@
+step=800000 det_harvest=74.15

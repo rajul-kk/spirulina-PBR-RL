@@ -85,12 +85,15 @@ def main():
     time_od = np.array([r["time_avg_od"] for r in results])
     crash_rate = float(np.mean([r["crashed"] for r in results]))
     med_h, p25_h, med_od = float(np.median(harvested)), float(np.percentile(harvested, 25)), float(np.median(time_od))
+    cvar_cutoff = np.percentile(harvested, 10)
+    tail = harvested[harvested <= cvar_cutoff]
+    cvar10 = float(np.mean(tail)) if len(tail) > 0 else float(harvested.min())
 
     print(f"\n{'='*70}")
     print(f"  TD3+BC HELD-OUT SWEEP  (D{args.difficulty}, n={args.n}, {n_adv} adversarial cold starts)")
     print(f"{'='*70}")
     print(f"  crash_rate           : {crash_rate*100:.1f}%")
-    print(f"  harvested_mg  median : {med_h:.1f}   p25: {p25_h:.1f}   min: {harvested.min():.1f}   max: {harvested.max():.1f}")
+    print(f"  harvested_mg  median : {med_h:.1f}   p25: {p25_h:.1f}   cvar10: {cvar10:.1f}   min: {harvested.min():.1f}   max: {harvested.max():.1f}")
     print(f"  time_avg_od   median : {med_od:.4f}   p25: {np.percentile(time_od,25):.4f}")
     print(f"\n  vs D2 curriculum gate: harvest>={GATE['harvest']} p25>={GATE['p25']} "
           f"crash<={GATE['crash']*100:.0f}% time_od>={GATE['time_od']}")

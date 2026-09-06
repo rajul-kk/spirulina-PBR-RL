@@ -123,8 +123,11 @@ def main():
     print(f"  HELD-OUT SWEEP  (D{args.difficulty}, n={args.n}, {n_adversarial} adversarial cold starts)")
     print(f"{'='*70}")
     print(f"  crash_rate           : {crash_rate*100:.1f}%")
+    cvar_cutoff = np.percentile(harvested, 10)
+    tail = harvested[harvested <= cvar_cutoff]
+    cvar10 = float(np.mean(tail)) if len(tail) > 0 else float(harvested.min())
     print(f"  harvested_mg  median : {np.median(harvested):.1f}   p25: {np.percentile(harvested,25):.1f}   "
-          f"min: {harvested.min():.1f}   max: {harvested.max():.1f}")
+          f"cvar10: {cvar10:.1f}   min: {harvested.min():.1f}   max: {harvested.max():.1f}")
     print(f"  time_avg_od   median : {np.median(time_od):.4f}   p25: {np.percentile(time_od,25):.4f}")
 
     adv_results = [r for r in results if r["init_cells"] <= 80]

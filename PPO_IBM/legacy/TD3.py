@@ -39,7 +39,8 @@ from training_state import find_latest_checkpoint, load_state, save_state
 from curriculum_schedule import (
     ADVANCE_TARGETS, MASTERY_MIN_EPISODES, MASTERY_WINDOW, MASTERY_REQUIRED_STREAK,
     DEMOTION_CRASH_RATE, DEMOTION_STREAK_REQUIRED, CAPABILITY_DEMOTION_CHUNKS,
-    _compute_curriculum_stats, _sample_training_difficulty,
+    _compute_curriculum_stats, _sample_training_difficulty, compute_bucket_regret,
+    update_bucket_regret_ema,
 )
 from genetic_env import GeneticPhotobioreactorEnv
 
@@ -56,6 +57,8 @@ HIDDEN_DIM = 128
 LSTM_LAYERS = 1
 BATCH_SIZE = 24
 SEQ_LEN = 60  # long enough for real pre/post context around a harvest event; see HARVEST_BIAS_PROB
+HIDDEN_RESET_INTERVAL = SEQ_LEN  # cap LSTM state to the horizon actually seen in training
+# (full rationale: docs/decision_history.md#--legacy-TD3-py-107-lstm-cell-state-saturation)
 ONLINE_BUFFER_CAPACITY = 5_000       # episodes
 LR_ACTOR = 3e-4
 LR_CRITIC = 3e-4
@@ -73,6 +76,7 @@ BC_COEF = 1.0
 EXPLORATION_NOISE_START = 0.25
 EXPLORATION_NOISE_END = 0.03
 EXPLORATION_NOISE_ANNEAL_FRAC = 0.3  # fraction of TOTAL_TRAINING_STEPS to anneal over
+TD3_REGRET_BLEND = 0.08
 
 N_DEMO_EPISODES = 24                 # matches bc/bc_pretrain.py's default episode count
 DEMO_FRACTION = 0.25                 # share of every training batch drawn from demos
@@ -101,6 +105,8 @@ BUFFER_PATH = "model_data/td3_checkpoints/online_buffer.pkl"
 
 # ═════════════════════════════════════════════════════════════════════════════
 # (full rationale: docs/decision_history.md#--legacy-TD3-py-107)
+# LSTM cell state can saturate over long rollouts (see HIDDEN_RESET_INTERVAL fix)
+# (full rationale: docs/decision_history.md#--legacy-TD3-py-107-lstm-cell-state-saturation)
 
 class RecurrentActor(nn.Module):
     """LSTM encoder + tanh-squashed deterministic head. Exploration noise is added
@@ -334,16 +340,21 @@ def run_td3_eval_episode(actor, difficulty, seed):
     env = GeneticPhotobioreactorEnv(max_cells=MAX_CELLS, initial_cells=init_cells, difficulty=difficulty)
     obs, _ = env.reset(seed=seed)
     hidden = actor.initial_hidden(batch=1)
+    steps_since_hidden_reset = 0
     done, step, info = False, 0, {}
     actor.eval()
     with torch.no_grad():
         while not done:
+            if steps_since_hidden_reset >= HIDDEN_RESET_INTERVAL:
+                hidden = actor.initial_hidden(batch=1)
+                steps_since_hidden_reset = 0
             obs_t = torch.tensor(obs, dtype=torch.float32, device=DEVICE).view(1, 1, -1)
             action_t, hidden = actor(obs_t, hidden)
             action = action_t.view(-1).cpu().numpy()
             obs, reward, terminated, truncated, info = env.step(action)
             done = terminated or truncated
             step += 1
+            steps_since_hidden_reset += 1
     actor.train()
     return {
         "harvested_mg": float(info.get("cumulative_harvested_mg", 0.0)),
@@ -525,6 +536,7 @@ def train(resume=False):
     for d, eps in saved_state.get("history_by_diff", {}).items():
         history_by_diff[d] = deque(eps, maxlen=MASTERY_WINDOW)
     det_eval_history = deque(saved_state.get("det_eval_history", []), maxlen=30)
+    bucket_regret_by_diff = {}
 
     while global_step < TOTAL_TRAINING_STEPS and not d0_capability_abort:
         train_diff = _sample_training_difficulty(current_difficulty)
@@ -540,6 +552,7 @@ def train(resume=False):
             apply_saved_population(env, saved_env_state)
             obs = env._get_obs()
         actor_hidden = actor.initial_hidden(batch=1)
+        steps_since_hidden_reset = 0
 
         ep_obs, ep_act, ep_rew, ep_nobs, ep_done = [], [], [], [], []
         episodes_this_chunk = 0
@@ -552,11 +565,16 @@ def train(resume=False):
             noise_frac = min(1.0, global_step / max(1, TOTAL_TRAINING_STEPS * EXPLORATION_NOISE_ANNEAL_FRAC))
             noise_scale = EXPLORATION_NOISE_START + noise_frac * (EXPLORATION_NOISE_END - EXPLORATION_NOISE_START)
 
+            if steps_since_hidden_reset >= HIDDEN_RESET_INTERVAL:
+                actor_hidden = actor.initial_hidden(batch=1)
+                steps_since_hidden_reset = 0
+
             with torch.no_grad():
                 obs_t = torch.tensor(obs, dtype=torch.float32, device=DEVICE).view(1, 1, -1)
                 action_t, actor_hidden = actor(obs_t, actor_hidden)
                 action = action_t.view(-1).cpu().numpy()
             action = np.clip(action + np.random.normal(0, noise_scale, size=ACTION_DIM), -1.0, 1.0)
+            steps_since_hidden_reset += 1
 
             next_obs, reward, terminated, truncated, info = env.step(action)
             done = terminated or truncated
@@ -612,6 +630,7 @@ def train(resume=False):
                     apply_saved_population(env, saved_env_state)
                     obs = env._get_obs()
                 actor_hidden = actor.initial_hidden(batch=1)
+                steps_since_hidden_reset = 0
                 ep_obs, ep_act, ep_rew, ep_nobs, ep_done = [], [], [], [], []
 
             if global_step % 50_000 == 0:
@@ -631,6 +650,15 @@ def train(resume=False):
 
         # Dual gate, same apparatus as legacy/TD_MPC2.py's Fix #15/#29 port.
         stats = _compute_curriculum_stats(list(history_by_diff[current_difficulty]), mastery_diff=current_difficulty)
+        raw_regret = compute_bucket_regret(list(history_by_diff[current_difficulty]), current_difficulty)
+        bucket_regret_by_diff[current_difficulty] = update_bucket_regret_ema(
+            bucket_regret_by_diff.get(current_difficulty), raw_regret
+        )
+        print(
+            f"  [Regret] D{current_difficulty}: "
+            + " ".join(f"{k}={v:.2f}" for k, v in bucket_regret_by_diff[current_difficulty].items())
+            + f"  | cvar10_harvest={stats['cvar10_harvested_mg']:.1f}"
+        )
         for i in range(DET_EVAL_EPISODES_PER_CHUNK):
             rec = run_td3_eval_episode(actor, current_difficulty, seed=100_000 + global_step + i)
             det_eval_history.append(rec)

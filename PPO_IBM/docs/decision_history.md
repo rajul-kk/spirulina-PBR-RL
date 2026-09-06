@@ -4382,3 +4382,22 @@ Relocated comment blocks (originally >2 lines) from source files, verbatim. Each
 # "model_data/..." are resolved against the working directory, not against __file__.
 ```
 
+
+## ./legacy/TD3.py:107 {#--legacy-TD3-py-107-lstm-cell-state-saturation}
+
+```
+Found 2026-09-06: RecurrentActor's LSTM cell state grows unboundedly over a rollout
+(max|c| ~= step count), saturating ~40% of hidden units by step 10-20 and freezing the
+actor's output for the rest of a 7200-step episode. Root cause of the repeated "sudden
+cliff" collapses across v33/v34/v40/v42/v43/v44, each previously blamed on whatever was
+being tested that run. Confirmed by probing a collapsed checkpoint: same saturated corner
+action (stir~+1, light~-1, harvest~-1) regardless of input.
+Also: training always unrolls from a zero state over SEQ_LEN=60 steps, so the network is
+never trained on the state regime a full-length rollout actually reaches -- a train/
+rollout mismatch on top of the saturation itself.
+Fix (v45): HIDDEN_RESET_INTERVAL=SEQ_LEN added, resets actor hidden/cell state to zero
+every 60 steps during rollout (training collection + det-eval), capping growth and
+matching rollout state to what training sees. Verified the reset mechanically works
+(cell state returns to step-0 levels after each boundary); v45 tests whether it prevents
+recurrence. If not: try LSTM->GRU next (no unbounded cell state by construction).
+```

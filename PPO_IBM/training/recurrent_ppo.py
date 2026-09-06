@@ -37,6 +37,7 @@ from curriculum_schedule import (
     ADVANCE_TARGETS, MIXING_PROBS,
     DET_EVAL_EPISODES_PER_CHUNK, DET_EVAL_WINDOW, DET_MASTERY_MIN_EPISODES,
     _sample_init_cells, _sample_training_difficulty, _compute_curriculum_stats,
+    compute_bucket_regret, update_bucket_regret_ema,
     CurriculumStartController, CurriculumStartWrapper,
 )
 from deterministic_eval import run_deterministic_eval_episode
@@ -378,6 +379,17 @@ def train_recurrent_agent(resume=False):
         # episodes, survives chunk boundaries) rather than only this chunk's ~14 episodes.
         stats = _compute_curriculum_stats(
             metrics_cb.history_for_difficulty(current_difficulty), mastery_diff=current_difficulty
+        )
+        raw_regret = compute_bucket_regret(
+            metrics_cb.history_for_difficulty(current_difficulty), current_difficulty
+        )
+        start_controller.bucket_regret[current_difficulty] = update_bucket_regret_ema(
+            start_controller.bucket_regret.get(current_difficulty), raw_regret
+        )
+        print(
+            f"  [Regret] {current_difficulty}: "
+            + " ".join(f"{k}={v:.2f}" for k, v in start_controller.bucket_regret[current_difficulty].items())
+            + f"  | cvar10_harvest={stats['cvar10_harvested_mg']:.1f}"
         )
 
         # Deterministic evaluation pass (see deterministic_eval.py): a handful of genuinely

@@ -165,6 +165,10 @@ class GeneticPhotobioreactorEnv(gym.Env):
 
     def reset(self, seed: Optional[int] = None, options: Optional[Dict] = None):
         super().reset(seed=seed)
+        # This env randomizes via the legacy global np.random, not gym's self.np_random,
+        # so super().reset(seed=) alone does not make strain/initial state reproducible.
+        if seed is not None:
+            np.random.seed(seed)
         self._randomize_strain()
         
         # Initialize Population

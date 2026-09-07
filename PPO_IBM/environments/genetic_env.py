@@ -52,6 +52,14 @@ class GeneticPhotobioreactorEnv(gym.Env):
         self.F_MAX = 0.5                    # max fraction removed in one harvest event
         self.HARVEST_INTERVAL_STEPS = 600   # 600*0.02h = 12h between harvest decisions (12/episode)
 
+        # Terminal crash penalty. Was -100 (678x mean per-step reward, an outlier that
+        # (full rationale: docs/decision_history.md#--environments-genetic_env-crash-penalty)
+        self.CRASH_PENALTY = 10.0
+        # Graduated extinction warning: measured reward stayed POSITIVE while a culture
+        # (full rationale: docs/decision_history.md#--environments-genetic_env-decline-warning)
+        self.DECLINE_WARN_POP = 50          # danger band: below this many active cells
+        self.DECLINE_WARN_MAX = 0.05        # per-step penalty at the extinction edge
+
         # Action: [Stirring, Light, Harvest fraction] — CO2 and Nutrient dosing remain
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-78)
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(3,), dtype=np.float32)
@@ -109,7 +117,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         self._harvest_action_count = 0
         self.od_sum_back_half = 0.0
         self.od_count_back_half = 0
-        self.reward_term_sums = {"od": 0.0, "biomass": 0.0, "od_delta": 0.0, "harvest": 0.0}
+        self.reward_term_sums = {"od": 0.0, "biomass": 0.0, "od_delta": 0.0, "harvest": 0.0, "decline": 0.0}
         self.I_surface = 0.0        # last delivered PAR (µmol/m²/s) — BH1750 source signal
         self._ph_bias = 0.0         # per-episode additive pH calibration offset
         self.prev_action = np.zeros(3, dtype=np.float32)
@@ -223,7 +231,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         self._harvest_action_count = 0      # first event of a new episode averages stale steps
         self.od_sum_back_half = 0.0         # for time-averaged OD (curriculum metric)
         self.od_count_back_half = 0
-        self.reward_term_sums = {"od": 0.0, "biomass": 0.0, "od_delta": 0.0, "harvest": 0.0}
+        self.reward_term_sums = {"od": 0.0, "biomass": 0.0, "od_delta": 0.0, "harvest": 0.0, "decline": 0.0}
         self.I_surface = 0.0        # reset BH1750 source signal
         # --- Sim-to-Real Sensor Drift & Lag (D1+) ---
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-303)
@@ -459,7 +467,16 @@ class GeneticPhotobioreactorEnv(gym.Env):
             if post_harvest_ratio < OD_SAFE_FLOOR:
                 reward_harvest -= 0.3 * float(OD_SAFE_FLOOR - post_harvest_ratio)
 
-        reward = reward_od + reward_biomass + reward_od_delta + reward_harvest
+        # 5. Decline warning — ramps in only when the culture is BOTH inside the danger
+        # (full rationale: docs/decision_history.md#--environments-genetic_env-decline-warning)
+        reward_decline = 0.0
+        prev_pop = getattr(self, "_prev_pop_for_warn", self.num_active)
+        if self.num_active < self.DECLINE_WARN_POP and self.num_active <= prev_pop:
+            depth = 1.0 - (self.num_active / float(self.DECLINE_WARN_POP))
+            reward_decline = -self.DECLINE_WARN_MAX * float(np.clip(depth, 0.0, 1.0))
+        self._prev_pop_for_warn = self.num_active
+
+        reward = reward_od + reward_biomass + reward_od_delta + reward_harvest + reward_decline
 
         # Episode-accumulated per-term breakdown, exposed via info dict for diagnostics
         # (not used in reward itself).
@@ -467,6 +484,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         self.reward_term_sums["biomass"] += reward_biomass
         self.reward_term_sums["od_delta"] += reward_od_delta
         self.reward_term_sums["harvest"] += reward_harvest
+        self.reward_term_sums["decline"] += reward_decline
 
         # Tracking for debug log (not used in reward)
         mean_shock = np.mean(shock_factor) if self.num_active > 0 else 1.0
@@ -1277,7 +1295,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         if self.num_active < 10 or total_mass_mg < 1.0:
             # Reduced from -1000: that scale was 300-1000x larger than typical achievable
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1729)
-            reward -= 100.0
+            reward -= self.CRASH_PENALTY
             done = True
         else:
             done = self.step_count >= self.max_steps

@@ -5979,3 +5979,32 @@ population_range_check.py showed v45 collapsing there: at init=1000 it harvests 
 vs the expert's 370.8mg (ratio 0.03) with time_avg_od 0.0356 (nearly 2x expert) --
 letting the culture overgrow without harvesting.
 ```
+
+
+## ./training/curriculum_schedule.py {#--curriculum_schedule-fixed-det-eval-set}
+
+```
+Fixed, stratified det-eval set (2026-09-08). Replaces per-chunk random draws.
+
+Two separate defects it fixes:
+1. Random draws meant every chunk scored a DIFFERENT task, so chunk-to-chunk det-eval
+   compared policy-and-task changes together. With the seeding fix in place, pinning
+   (init_cells, seed) makes it a paired comparison.
+2. det_eval_history was a deque(maxlen=30) appended 3 per chunk, so det_stats blended
+   evaluations of ~10 DIFFERENT policies across 30 different random tasks. The set is
+   now re-evaluated in full each chunk, so the numbers describe the current policy only.
+
+Stratification matters more than pinning. The old draw was lognormal(100,400)+10%
+adversarial, so the gate only ever measured 100-400 cells -- while training samples mid
+(600-1500) and high (2000-5000). population_range_check.py showed v45 near-expert at
+150 (ratio 0.99) but collapsing to ratio 0.03 at init=1000 (10.9mg vs expert 370.8mg).
+Best-checkpoint selection was therefore optimising against a metric blind to where the
+policy actually broke. The set now spans 45-4000.
+
+Adversarial instances (<=DET_EVAL_ADVERSARIAL_MAX=80) are survival-scored, not yield-
+scored: a 50-cell start returns 0.0mg under the scripted expert.
+DET_MASTERY_MIN_EPISODES is derived from the count of yield-scored instances so the
+gate cannot be silently disabled by changing the set.
+
+Cost: 9 eval episodes per chunk instead of 3.
+```

@@ -73,6 +73,22 @@ def _sample_training_difficulty(current_difficulty: int) -> int:
     return int(np.random.choice(diffs, p=probs))
 
 
+# Fixed, stratified det-eval set. Replaces per-chunk random draws, which compared each
+# (full rationale: docs/decision_history.md#--curriculum_schedule-fixed-det-eval-set)
+DET_EVAL_SET = [
+    (120, 900_001), (250, 900_002), (380, 900_003),      # low  (what the old gate saw)
+    (700, 900_004), (1100, 900_005), (1500, 900_006),    # mid  (trained on, never gated)
+    (2500, 900_007), (4000, 900_008),                    # high (trained on, never gated)
+    (45, 900_009),                                       # adversarial: survival-scored
+]
+DET_EVAL_ADVERSARIAL_MAX = 80  # at/below this, score survival not yield
+
+
+def det_eval_set(n=None):
+    """The fixed evaluation instances, optionally the first n (kept in stratified order)."""
+    return DET_EVAL_SET if n is None else DET_EVAL_SET[:n]
+
+
 def _compute_curriculum_stats(history, mastery_diff: int = None):
     filtered_history = mastery_metrics_view(history)
     # Filter to on-level episodes only (train_diff == mastery_diff).

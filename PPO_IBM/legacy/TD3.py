@@ -22,7 +22,7 @@ from curriculum_schedule import (
     ADVANCE_TARGETS, MASTERY_MIN_EPISODES, MASTERY_WINDOW, MASTERY_REQUIRED_STREAK,
     DEMOTION_CRASH_RATE, DEMOTION_STREAK_REQUIRED, CAPABILITY_DEMOTION_CHUNKS,
     _compute_curriculum_stats, _sample_training_difficulty, compute_bucket_regret,
-    update_bucket_regret_ema,
+    update_bucket_regret_ema, det_eval_set, DET_EVAL_ADVERSARIAL_MAX,
 )
 from genetic_env import GeneticPhotobioreactorEnv
 
@@ -77,7 +77,9 @@ EXPERT_FRAC_CAP = 0.30
 TOTAL_TRAINING_STEPS = int(os.environ.get("TD3_STEPS", "2000000"))
 CHUNK_STEPS = 100_000
 DET_EVAL_EPISODES_PER_CHUNK = 3
-DET_MASTERY_MIN_EPISODES = 9
+# Derived from the fixed det-eval set (yield-scored instances only), so the gate can
+# (full rationale: docs/decision_history.md#--curriculum_schedule-fixed-det-eval-set)
+DET_MASTERY_MIN_EPISODES = sum(1 for ic, _ in det_eval_set() if ic > DET_EVAL_ADVERSARIAL_MAX)
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 CHECKPOINT_DIR = "model_data/td3_checkpoints"
@@ -318,12 +320,13 @@ def build_demo_buffer(n_episodes, seed=0):
 # env.reset(seed=X) alone doesn't seed strain randomization -- see np.random.seed(seed) below
 # (full rationale: docs/decision_history.md#--legacy-TD3-py-335-seed-reproducibility)
 
-def run_td3_eval_episode(actor, difficulty, seed):
+def run_td3_eval_episode(actor, difficulty, seed, init_cells=None):
     """Noise-free rollout for the project's dual gate (see deterministic_eval.py /
     TD-MPC2's run_tdmpc2_eval_episode for the same rationale)."""
     from curriculum_schedule import _sample_init_cells
     np.random.seed(seed)
-    init_cells = _sample_init_cells("random", difficulty)
+    if init_cells is None:
+        init_cells = _sample_init_cells("random", difficulty)
     env = GeneticPhotobioreactorEnv(max_cells=MAX_CELLS, initial_cells=init_cells, difficulty=difficulty)
     obs, _ = env.reset(seed=seed)
     hidden = actor.initial_hidden(batch=1)
@@ -347,6 +350,7 @@ def run_td3_eval_episode(actor, difficulty, seed):
         "harvested_mg": float(info.get("cumulative_harvested_mg", 0.0)),
         "time_avg_od": float(info.get("time_avg_od", 0.0)),
         "crashed": step < env.max_steps,
+        "init_cells": int(init_cells),
         "start_mode": "low",
         "train_diff": difficulty,
         "reward": 0.0,
@@ -645,13 +649,20 @@ def train(resume=False):
             + " ".join(f"{k}={v:.2f}" for k, v in bucket_regret_by_diff[current_difficulty].items())
             + f"  | cvar10_harvest={stats['cvar10_harvested_mg']:.1f}"
         )
-        for i in range(DET_EVAL_EPISODES_PER_CHUNK):
-            rec = run_td3_eval_episode(actor, current_difficulty, seed=100_000 + global_step + i)
-            det_eval_history.append(rec)
-        det_stats = _compute_curriculum_stats(list(det_eval_history), mastery_diff=current_difficulty)
+        # Fixed stratified set, re-evaluated in full each chunk: identical tasks every
+        # (full rationale: docs/decision_history.md#--curriculum_schedule-fixed-det-eval-set)
+        det_recs = [run_td3_eval_episode(actor, current_difficulty, seed=s, init_cells=ic)
+                    for ic, s in det_eval_set()]
+        det_eval_history = deque(det_recs, maxlen=len(det_recs))
+        yield_recs = [r for r in det_recs if r["init_cells"] > DET_EVAL_ADVERSARIAL_MAX]
+        det_stats = _compute_curriculum_stats(yield_recs, mastery_diff=current_difficulty)
+        det_stats["crash_rate"] = float(np.mean([1.0 if r["crashed"] else 0.0 for r in det_recs]))
         print(f"  [Det] eps={det_stats['episodes']} harvest_mg={det_stats['median_harvested_mg']:.1f} "
               f"p25={det_stats['p25_harvested_mg']:.1f} time_avg_od={det_stats['median_time_avg_od']:.4f} "
               f"crash={det_stats['crash_rate']*100:.1f}%")
+        print("  [Det/bucket] " + "  ".join(
+            f"{r['init_cells']}:{r['harvested_mg']:.0f}" + ("*" if r["crashed"] else "")
+            for r in det_recs))
         if det_stats["episodes"] >= DET_MASTERY_MIN_EPISODES and det_stats["crash_rate"] == 0.0:
             if save_best_checkpoint(actor, critic, det_stats["median_harvested_mg"], global_step):
                 print(f"  [BEST] new best det checkpoint saved -> {BEST_CHECKPOINT_DIR} "

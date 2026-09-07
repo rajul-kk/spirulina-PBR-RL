@@ -5942,3 +5942,40 @@ expert operation is unchanged (mean per-step 0.1475 before and after). Misfire c
 healthy adversarial starts is bounded: init=33 accrues -4.89 total (0.66% of a 736.8
 episode) and does not crash; init>=50 accrues exactly 0.
 ```
+
+
+## ./experiments/bc_scaffold/scripts/td3_held_out_sweep.py {#--td3_held_out_sweep-adversarial-survival}
+
+```
+Adversarial cold starts (<=80 cells) are scored on SURVIVAL, not yield (2026-09-08).
+
+Measured: a 50-cell start yields 0.0mg under the SCRIPTED EXPERT
+(experiments/env_diagnosis/difficulty_tier_check.py). Those instances are not harvest
+tasks -- including them in a harvest median measures something no controller can do,
+and drags the statistic around. On v45's 40-episode sweep the adversarial harvests were
+[0.0, 0.0, 0.0, 72.0]; excluding them moved median 95.8 -> 98.0 and p25 62.1 -> 67.4.
+
+Crash rate is still computed over ALL episodes -- surviving a near-extinction start is
+the meaningful objective there, and the expert achieves 0mg at 0% crash.
+```
+
+
+## ./experiments/bc_scaffold/scripts/td3_held_out_sweep.py {#--td3_held_out_sweep-per-bucket}
+
+```
+Per-bucket reporting (2026-09-08). A pooled median over this distribution hides large
+within-range spread and can flip a pass/fail verdict on sample composition alone.
+
+Measured on v45's 40-episode D2 sweep:
+  adversarial <=80 : n= 4  median   0.0
+  low 81-200       : n=23  median  87.5   <-- BELOW the 90mg gate
+  low 200-400      : n=13  median 164.9
+Pooled median was 95.8 (PASS) only because the draw happened to include 13 larger
+starts; a draw weighted toward 81-200 would have failed the same policy.
+
+Related coverage gap: this sweep samples lognormal(100,400)+10% adversarial and never
+tests above ~400 cells, while training samples mid (600-1500) and high (2000-5000).
+population_range_check.py showed v45 collapsing there: at init=1000 it harvests 10.9mg
+vs the expert's 370.8mg (ratio 0.03) with time_avg_od 0.0356 (nearly 2x expert) --
+letting the culture overgrow without harvesting.
+```

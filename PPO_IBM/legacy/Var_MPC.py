@@ -1,8 +1,5 @@
-"""
-TD-MPC2 (Temporal Difference Model Predictive Control) Implementation
-For deeply-delayed, domain-randomized state-based control.
-Upgrades: 1D-CNN History Compressor (24 steps), Policy Prior (Actor-Guided MPPI), Curriculum Learning (3 Phases).
-"""
+"""TD-MPC2 (Temporal Difference Model Predictive Control) Implementation ...
+(full rationale: docs/decision_history.md#--legacy-var_mpc-py-1)"""
 
 import torch
 import torch.nn as nn
@@ -22,10 +19,8 @@ PRIV_DIM    = 4   # Privileged state dim [dissolved_co2, mean_fQ, mu_max, Ks_lig
 
 
 class ObservationBuffer:
-    """
-    Holds the running LMU memory state `m_t`.
-    No longer needs a full rolling window queue since LMU is continuous time.
-    """
+    """Holds the running LMU memory state `m_t`.
+    (full rationale: docs/decision_history.md#--legacy-var_mpc-py-25)"""
     def __init__(self, obs_dim: int = OBS_DIM, order: int = 16):
         self.obs_dim = obs_dim
         self.order = order
@@ -54,9 +49,7 @@ def symlog(x: torch.Tensor) -> torch.Tensor:
 
 class PrivilegedEncoder(nn.Module):
     """Teacher: maps 4D privileged state → latent_dim (training only).
-    Inputs: [dissolved_co2, mean_fQ, mu_max, Ks_light_norm]
-    Grad does NOT flow through teacher into student — student loss uses .detach().
-    """
+    (full rationale: docs/decision_history.md#--legacy-var_mpc-py-56)"""
     def __init__(self, priv_dim: int = PRIV_DIM, latent_dim: int = 64):
         super().__init__()
         self.net = nn.Sequential(
@@ -69,12 +62,8 @@ class PrivilegedEncoder(nn.Module):
 
 
 class LMUHistoryCompressor(nn.Module):
-    """
-    Legendre Memory Unit (LMU): Compresses continuous observation history
-    into a stateful encoding `m_t` and projects it to a 64D feature vector.
-
-    Uses a fixed per-channel timescale (delta) for stable LMU dynamics.
-    """
+    """Legendre Memory Unit (LMU): Compresses continuous observation history ...
+    (full rationale: docs/decision_history.md#--legacy-var_mpc-py-72)"""
     def __init__(self, obs_dim: int = OBS_DIM, order: int = 16, init_theta: float = 250.0, out_dim: int = 64):
         super().__init__()
         self.obs_dim = obs_dim
@@ -167,12 +156,8 @@ class Encoder(nn.Module):
         return x / (x.norm(p=1, dim=-1, keepdim=True) + 1e-8)
 
 class PolicyPrior(nn.Module):
-    """
-    Actor network: takes a latent state h and outputs a *mean* action.
-    This biases the MPPI sampling N(pi(h), sigma) instead of N(0, sigma),
-    focusing all 512 trajectories around the actor's best guess.
-    Trained via behavioral cloning on the MPPI-chosen elite actions.
-    """
+    """Actor network: takes a latent state h and outputs a *mean* action.
+    (full rationale: docs/decision_history.md#--legacy-var_mpc-py-170)"""
     def __init__(self, latent_dim=64, action_dim=4):
         super().__init__()
         self.net = nn.Sequential(
@@ -290,13 +275,8 @@ class TDMPC2Agent:
     def plan(self, obs: np.ndarray, m_t: torch.Tensor = None, horizon: int = 24,
              num_samples: int = 512, num_iters: int = 3,
              explore_mode: bool = False, beta: float = 2.0) -> np.ndarray:
-        """
-        CEM/MPPI Planner with Policy Prior warm-start.
-        obs: (OBS_DIM,) numpy array.
-        m_t: Continuous latent state (OBS_DIM, ORDER).
-        explore_mode: If True, uses OU noise and Variance-Maximizing evaluation.
-        Returns the FIRST action of the optimal plan.
-        """
+        """CEM/MPPI Planner with Policy Prior warm-start.
+        (full rationale: docs/decision_history.md#--legacy-var_mpc-py-293)"""
         self.compressor.eval()
         self.encoder.eval()
         self.dynamics.eval()
@@ -503,12 +483,8 @@ class TDMPC2Agent:
         
     def update(self, batch_obs, batch_mt, batch_actions, batch_rewards, batch_next_obs, batch_next_mt, batch_dones,
                 batch_priv=None):
-        """
-        Joint-Embedding Training Loop.
-        batch_obs / batch_next_obs: (B, OBS_DIM) tensors.
-        batch_mt / batch_next_mt: (B, OBS_DIM, ORDER) LMU state tensors.
-        batch_priv: (B, PRIV_DIM) privileged state tensor — optional, enables distillation.
-        """
+        """Joint-Embedding Training Loop.
+        (full rationale: docs/decision_history.md#--legacy-var_mpc-py-506)"""
         self.compressor.train()
         self.encoder.train()
         self.dynamics.train()
@@ -1067,12 +1043,8 @@ def train_var_mpc(resume: bool = False):
 
 
 def finetune_var_mpc(extra_steps: int = 500_000):
-    """
-    Continue Var-MPC training from a saved checkpoint at Difficulty 2 (Full Physics).
-    Loads the world model, policy prior, and Q-network weights from the saved .pth file.
-    Runs at a reduced exploration noise (0.05 vs 0.15) so the policy prior is trusted
-    more heavily and MPPI focuses on refinement rather than exploration.
-    """
+    """Continue Var-MPC training from a saved checkpoint at Difficulty 2 (Full Physics).
+    (full rationale: docs/decision_history.md#--legacy-var_mpc-py-1070)"""
     import sys, os
     sys.path.append(os.path.join(os.path.dirname(__file__), 'environments'))
     from genetic_env import GeneticPhotobioreactorEnv

@@ -1,16 +1,5 @@
-"""
-dynamic_profile_sweep.py — Part 4 diagnostic for the periodic semi-continuous harvest
-redesign: sweep constant per-event harvest fractions (with the known best stir/light
-combo held fixed) at 20L/D2 physics to find (a) the achievable per-event mg ceiling
-(feeds TARGET_MG_PER_EVENT in genetic_env.py's _compute_reward) and (b) roughly where
-repeated over-harvesting starts causing washout (sanity-checks F_MAX).
-
-Read-only physics probe — no model, no training. Drives the env directly with raw
-actions decoded the same way genetic_env.step() does (np.interp[-1,1] -> physical).
-
-Usage:
-    python dynamic_profile_sweep.py
-"""
+"""dynamic_profile_sweep.py — Part 4 diagnostic for the periodic semi-continuous harvest ...
+(full rationale: docs/decision_history.md#--diagnostics-dynamic_profile_sweep-py-1)"""
 
 # --- path bootstrap (added by _refactor_layout.py) -------------------------------------
 # (full rationale: docs/decision_history.md#--diagnostics-dynamic_profile_sweep-py-15)

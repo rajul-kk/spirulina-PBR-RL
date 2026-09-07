@@ -1,14 +1,5 @@
-"""
-expert_sweep.py — runs the non-learned proportional harvest law (same as
-bc/bc_pretrain.py) directly against genetic_env.py, zero NN and zero training, on
-the curriculum's own held-out cold-start distribution. Isolates whether PPO/TD-MPC2's
-time_avg_od bottleneck is environment difficulty or an RL-discovery problem.
-
-Usage (from repo root, PPO_IBM/):
-    python experiments/bc_scaffold/scripts/expert_sweep.py --n 40 --difficulty 0
-    python experiments/bc_scaffold/scripts/expert_sweep.py --n 40 --difficulty 1
-    python experiments/bc_scaffold/scripts/expert_sweep.py --n 40 --difficulty 2
-"""
+"""expert_sweep.py — runs the non-learned proportional harvest law (same as ...
+(full rationale: docs/decision_history.md#--experiments-bc_scaffold-scripts-expert_sweep-py-1)"""
 
 import os as _os, sys as _sys
 _ROOT = _os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))))

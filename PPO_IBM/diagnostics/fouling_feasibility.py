@@ -1,25 +1,5 @@
-"""
-fouling_feasibility.py — would enabling REAL biofouling make D2 unreachable, and does it
-make stir an interesting control lever?
-
-Two questions, both of which must be answered before recommending that the light-path
-fouling coefficient be raised from its (inert) historical 0.0002:
-
-  Q1 FEASIBILITY. Fouling attenuates all light channels by exp(-fouling_factor), which
-     throttles growth, which lowers time_avg_od — the exact criterion that gates D2
-     (>=0.011). If active fouling puts D2 out of reach even for the best known controller,
-     enabling it would set the agent an impossible target.
-
-  Q2 INTERESTINGNESS. Fouling rate scales with (1 - stir/200), so stir becomes a real
-     mitigation. But higher stir also costs yield. If the best stir under fouling differs
-     from the best stir without it, fouling turns stir from a near-irrelevant dial into a
-     genuine trade-off — and because fouling ACCUMULATES, the optimal stir becomes
-     time-varying, which a constant-stir controller cannot exploit but a recurrent policy
-     can. That would be a regime where RL should beat the scripted expert.
-
-Read-only probe: drives the env with the scripted OD-feedback harvest law (same one
-bc_pretrain.py clones) at a range of fixed stir settings, with fouling off vs on.
-"""
+"""fouling_feasibility.py — would enabling REAL biofouling make D2 unreachable, and does it ...
+(full rationale: docs/decision_history.md#--diagnostics-fouling_feasibility-py-1)"""
 
 # --- path bootstrap (added by _refactor_layout.py) -------------------------------------
 # (full rationale: docs/decision_history.md#--diagnostics-fouling_feasibility-py-24)

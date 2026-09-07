@@ -1,6 +1,5 @@
-"""config_io.py — read/write schema.py's target files via targeted regex substitution
-(not a full AST rewrite, to avoid mangling hand-formatted comments). Each write is
-followed by a git commit scoped to that one file."""
+"""config_io.py — read/write schema.py's target files via targeted regex substitution ...
+(full rationale: docs/decision_history.md#--tools-config_studio-config_io-py-1)"""
 
 import os
 import re

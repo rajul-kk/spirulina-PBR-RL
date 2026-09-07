@@ -1,22 +1,5 @@
-"""
-tdmpc2_cost_probe.py — functional smoke test + wall-clock cost measurement for the upgraded
-TD-MPC2 agent (Fix v27: 3D action space, macro-timestep world model, 5-critic ensemble,
-two-hot reward/value regression, project curriculum gate).
-
-Two checks, in order — this project has a standing rule against trusting an estimate over a
-measurement (the original TD-MPC2 cost claim was wrong by ~20x for exactly that reason):
-
-  1. CORRECTNESS. TwoHotEncoder round-trip (encode a scalar, decode the encoding straight
-     back) and one live agent.update() call, checked for NaN/Inf and a finite loss. This is
-     read-only / no training — it exists to catch a shape or encoding bug BEFORE it burns
-     hours of wall-clock in a real run.
-  2. COST. Times agent.plan() and agent.update() at the file's actual configured hyperparameters
-     (horizon=12, samples=64, MACRO_STEPS=50) and projects the full TOTAL_TRAINING_STEPS budget.
-
-Usage:
-    python diagnostics/tdmpc2_cost_probe.py
-    python diagnostics/tdmpc2_cost_probe.py --steps 2000000
-"""
+"""tdmpc2_cost_probe.py — functional smoke test + wall-clock cost measurement for the upgraded ...
+(full rationale: docs/decision_history.md#--diagnostics-tdmpc2_cost_probe-py-1)"""
 import argparse
 import os
 import sys

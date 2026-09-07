@@ -1,25 +1,5 @@
-"""
-noise_sensitivity.py — how much does ACTION NOISE destroy each policy?
-
-WHY: reward_ab.py showed the reward function ranks the scripted expert +313 above v17
-(1079 vs 766), driven entirely by reward_od. So the reward is NOT exploitable and the
-reward-structure hypothesis is dead. Yet PPO drifted from expert-like behaviour to v17's.
-
-PPO maximises expected reward UNDER ITS OWN SAMPLING NOISE; we evaluate deterministically.
-If the expert's strategy is noise-fragile (it harvests ~0 early, and Gaussian noise around
-0 forces harvesting anyway because the low side clips) while v17's higher-baseline strategy
-is noise-robust, then PPO was correctly optimising a DIFFERENT objective than the one the
-curriculum gates score. That is the "stochastic-train / deterministic-evaluate" gap
-documented in arXiv 2509.19464, which notes it widens on long-horizon tasks (ours: 7200 steps).
-
-This script measures that directly: run each policy with Gaussian noise of varying sigma
-added to its raw [-1,1] action, and see where each one's reward and time_avg_od fall apart.
-
-Read-only. No training, no model modification.
-
-Usage:
-    python noise_sensitivity.py --model <path> --norm <path> --n 4
-"""
+"""noise_sensitivity.py — how much does ACTION NOISE destroy each policy?
+(full rationale: docs/decision_history.md#--diagnostics-noise_sensitivity-py-1)"""
 
 # --- path bootstrap (added by _refactor_layout.py) -------------------------------------
 # (full rationale: docs/decision_history.md#--diagnostics-noise_sensitivity-py-24)

@@ -1,16 +1,5 @@
-"""
-curriculum_gate_sweep.py — validates ADVANCE_TARGETS thresholds in curriculum_schedule.py
-by running constant-action (best known stir/light/frac) physics probes at D0 and D1,
-the two tiers whose thresholds were only ever scaled off a single D2 setpoint sweep
-rather than measured directly.
-
-Read-only physics probe — no model, no training. Same pattern as dynamic_profile_sweep.py,
-but across difficulty tiers instead of harvest fractions, at the fraction
-(0.15) that sweep found best-sustainable at D2.
-
-Usage:
-    python curriculum_gate_sweep.py
-"""
+"""curriculum_gate_sweep.py — validates ADVANCE_TARGETS thresholds in curriculum_schedule.py ...
+(full rationale: docs/decision_history.md#--diagnostics-curriculum_gate_sweep-py-1)"""
 
 # --- path bootstrap (added by _refactor_layout.py) -------------------------------------
 # (full rationale: docs/decision_history.md#--diagnostics-curriculum_gate_sweep-py-15)

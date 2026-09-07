@@ -1,6 +1,5 @@
 """env_factory_harvest_fixed.py — harvest-ablation variant of training/env_factory.py.
-Same wrapper stack, with HarvestFixedWrapper inserted innermost so the fixed harvest
-value is seen by every downstream wrapper, not just the raw env physics."""
+(full rationale: docs/decision_history.md#--experiments-harvest_ablation-env_factory_harvest_fixed-py-1)"""
 
 import os as _os, sys as _sys
 _ROOT = _os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))

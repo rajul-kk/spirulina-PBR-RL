@@ -1,22 +1,5 @@
-"""
-reward_ab.py — head-to-head per-term reward comparison: trained policy vs scripted expert,
-on IDENTICAL episodes (same seed, same initial_cells, same difficulty).
-
-WHY: v17 (BC warm start) inverted the expert's phase structure — it harvests 0.25-0.30
-early and declines to ~0.18, whereas the expert it was cloned from harvests ~0 early and
-ramps up. The expert scores better on the curriculum gates, so the question is whether the
-REWARD also prefers the expert. If the reward prefers v17's behaviour, the reward is the
-problem. If the reward prefers the expert and PPO drifted anyway, it is an optimisation
-problem.
-
-The standing lesson from the v8 reweighting mistake applies: measure per-term totals before
-changing any weight. This script produces that measurement.
-
-Usage:
-    python reward_ab.py --model model_data/archive_v17_bc_warmstart_D2_8M/recurrent_ppo_genetic_ibm \
-                        --norm  model_data/archive_v17_bc_warmstart_D2_8M/recurrent_vec_normalize.pkl \
-                        --n 8 --difficulty 2
-"""
+"""reward_ab.py — head-to-head per-term reward comparison: trained policy vs scripted expert, ...
+(full rationale: docs/decision_history.md#--diagnostics-reward_ab-py-1)"""
 
 # --- path bootstrap (added by _refactor_layout.py) -------------------------------------
 # (full rationale: docs/decision_history.md#--diagnostics-reward_ab-py-21)

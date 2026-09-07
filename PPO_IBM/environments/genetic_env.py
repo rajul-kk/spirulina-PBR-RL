@@ -11,11 +11,8 @@ from typing import Optional, Dict
 ENV_DEBUG = os.environ.get("ENV_DEBUG", "").strip().lower() in ("1", "true", "yes", "on")
 
 class GeneticPhotobioreactorEnv(gym.Env):
-    """
-    Individual-Based Model (IBM) Photobioreactor Environment.
-    Tracks N individual algal cells as particles in 1D depth (z-axis) using vectorized operations.
-    Implements Genetic Domain Randomization with unique algal strains per episode.
-    """
+    """Individual-Based Model (IBM) Photobioreactor Environment.
+    (full rationale: docs/decision_history.md#--environments-genetic_env-py-14)"""
     metadata = {'render_modes': ['human']}
 
     def __init__(self, max_cells: int = 300000, initial_cells: int = 3000, difficulty: int = 2,
@@ -384,8 +381,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
 
     def get_privileged_state(self) -> np.ndarray:
         """4D privileged vector — sim-only, never exposed at deployment.
-        Returns: [dissolved_co2, mean_f_Q, mu_max, Ks_light]
-        """
+        (full rationale: docs/decision_history.md#--environments-genetic_env-py-386)"""
         mean_fQ = float(np.mean(np.maximum(
             0.0, 1.0 - 0.5 / (self.cells_quota[self.active_mask] + 1e-6)
         ))) if self.num_active > 0 else 0.0
@@ -416,17 +412,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
 
     def _compute_reward(self, delta_mass_mg, shock_factor, harvested_this_step_mg=0.0, is_harvest_event=False):
         """Semi-continuous reward: sustained growth + periodic dilution/harvest.
-
-        Dense per-step components (OD, biomass — the latter also covers stagnation via its
-        own curve — and OD movement) carry the agent between harvest events; reward_harvest
-        fires only on harvest-event steps (every HARVEST_INTERVAL_STEPS), rewarding the
-        size of that periodic yield. There is no batch "terminal harvest" — harvest happens
-        repeatedly through the episode, not once at the end.
-
-        Simplified to 4 terms (from 5) after three training attempts: extra reward-shaping
-        terms proved to be a liability, not just complexity — see reward_biomass comment
-        below for what was folded/removed and why.
-        """
+        (full rationale: docs/decision_history.md#--environments-genetic_env-py-418)"""
         # Curriculum metric: time-averaged OD over the back half of the episode (steps
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-564)
         if self.step_count >= 3600:

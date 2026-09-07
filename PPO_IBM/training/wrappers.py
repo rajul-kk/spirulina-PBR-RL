@@ -35,9 +35,8 @@ class ActionSmoothnessWrapper(gym.Wrapper):
 
 
 class HarvestFixedWrapper(gym.Wrapper):
-    """Overrides the harvest action dimension (index 2) with a fixed raw value before
-    it reaches the env (experiments/harvest_ablation/). Action space stays 3D — the
-    policy still outputs a harvest value, it's just discarded here."""
+    """Overrides the harvest action dimension (index 2) with a fixed raw value before ...
+    (full rationale: docs/decision_history.md#--training-wrappers-py-38)"""
     def __init__(self, env, fixed_harvest_raw):
         super().__init__(env)
         self.fixed_harvest_raw = float(fixed_harvest_raw)

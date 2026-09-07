@@ -6,11 +6,8 @@ from gymnasium import spaces
 from typing import Optional, Dict
 
 class GeneticPhotobioreactorEnv(gym.Env):
-    """
-    Individual-Based Model (IBM) Photobioreactor Environment.
-    Tracks N individual algal cells as particles in 1D depth (z-axis) using vectorized operations.
-    Implements Genetic Domain Randomization with unique algal strains per episode.
-    """
+    """Individual-Based Model (IBM) Photobioreactor Environment.
+    (full rationale: docs/decision_history.md#--environments-alpha_env-py-9)"""
     metadata = {'render_modes': ['human']}
 
     def __init__(self, max_cells: int = 300000, initial_cells: int = 3000, difficulty: int = 2,
@@ -285,8 +282,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
 
     def get_privileged_state(self) -> np.ndarray:
         """4D privileged vector — sim-only, never exposed at deployment.
-        Returns: [dissolved_co2, mean_f_Q, mu_max, Ks_light]
-        """
+        (full rationale: docs/decision_history.md#--environments-alpha_env-py-287)"""
         mean_fQ = float(np.mean(np.maximum(
             0.0, 1.0 - 0.5 / (self.cells_quota[self.active_mask] + 1e-6)
         ))) if self.num_active > 0 else 0.0

@@ -1,46 +1,5 @@
-"""
-bc_pretrain.py — behaviour-cloning warm start for the RecurrentPPO curriculum trainer.
-
-WHY THIS EXISTS
----------------
-Across v4, v14, v15 and v16b, PPO consistently failed to find and HOLD the harvest
-setpoint that the reward function itself ranks highest. Measured directly
-(dynamic_profile_sweep_od.py, D1 physics, 4 seeds/point):
-
-    constant-action controller, stir=60 light=900 frac=0.18
-        -> reward 1116.8, harvest 139.9mg, time_avg_od 0.0131, 0% crash
-           (clears not just the D1 gate but the D2 gate)
-
-    v16b's learned policy (8M steps, full budget)
-        -> reward 957-1028, harvest ~22mg median on a 40-seed held-out sweep
-
-So the correct behaviour is not merely acceptable under the current reward, it is
-reward-SUPERIOR by ~10%. The learned policy sits in a nearby, worse local optimum
-("throttle light, coast at OD~0.012, never harvest"). This is an exploration/
-convergence failure, not a reward-ranking failure.
-
-This script therefore initialises the policy AT the known-good setpoint by supervised
-learning on scripted expert rollouts, then hands off to the normal PPO curriculum. The
-reward function and environment are deliberately left UNTOUCHED, so v17 remains directly
-comparable to v15/v16b and so the experiment cleanly distinguishes two hypotheses:
-
-    - BC holds the setpoint  -> the problem was exploration; nothing else needs changing.
-    - BC drifts back to coasting -> the dense/sparse reward imbalance (reward_od's ~1080
-      per-episode ceiling vs reward_harvest's 6) is the real cause, and a structural
-      reward change is then justified by evidence rather than by inference.
-
-Precedent: arXiv 2509.06853 bootstraps an industrial photobioreactor RL agent from PID
-controller trajectories before online RL, for essentially these reasons.
-
-NOTE ON THE LSTM: the expert is a CONSTANT action, so its target does not depend on
-observation history at all. BC can therefore be done per-timestep with a zeroed LSTM
-state rather than by unrolling whole 7200-step sequences — far faster and equivalent for
-this target. The LSTM's recurrent capacity is left for PPO fine-tuning to develop.
-
-Usage:
-    python bc_pretrain.py                  # generate demos + train + save warm start
-    python bc_pretrain.py --episodes 32 --epochs 12
-"""
+"""bc_pretrain.py — behaviour-cloning warm start for the RecurrentPPO curriculum trainer.
+(full rationale: docs/decision_history.md#--bc-bc_pretrain-py-1)"""
 
 # --- path bootstrap (added by _refactor_layout.py) -------------------------------------
 # (full rationale: docs/decision_history.md#--bc-bc_pretrain-py-45)
@@ -98,9 +57,7 @@ DEMO_DIFFICULTY_WEIGHTS = {0: 0.4, 1: 0.4, 2: 0.2}
 
 def expert_raw_action(stir, light, frac, f_max):
     """Encode physical setpoints into the env's raw [-1, 1] action space.
-
-    Mirrors genetic_env.step()'s decode exactly (np.interp on each dim).
-    """
+    (full rationale: docs/decision_history.md#--bc-bc_pretrain-py-100)"""
     return np.array([
         np.interp(stir, [50, 200], [-1, 1]),
         np.interp(light, [0, 2000], [-1, 1]),
@@ -116,11 +73,7 @@ def expert_harvest_frac(od):
 
 def collect_demonstrations(vec_env, n_episodes, rng):
     """Roll the scripted expert through the normalized env, recording (obs, action).
-
-    VecNormalize stays in training mode here so obs_rms adapts to the state distribution
-    the expert actually visits — that is the distribution PPO will see on handoff. Using
-    calibration-only stats would leave a train/BC observation mismatch.
-    """
+    (full rationale: docs/decision_history.md#--bc-bc_pretrain-py-118)"""
     raw_env = _unwrap_raw_env(vec_env)
     f_max = float(getattr(raw_env, "F_MAX", 0.5))
 
@@ -187,11 +140,7 @@ def collect_demonstrations(vec_env, n_episodes, rng):
 
 def summarise_expert(results):
     """Score the scripted expert against the curriculum gates it must clear.
-
-    This is the gate that decides whether cloning is even worth doing: if the expert
-    itself cannot pass D1/D2 on the real training start distribution, a clone of it
-    certainly will not, and an 8M-step run would be wasted confirming that.
-    """
+    (full rationale: docs/decision_history.md#--bc-bc_pretrain-py-189)"""
     harvests = np.array([r[0] for r in results], dtype=np.float64)
     ods = np.array([r[1] for r in results], dtype=np.float64)
     steps = np.array([r[2] for r in results], dtype=np.float64)
@@ -219,20 +168,7 @@ def summarise_expert(results):
 def behaviour_clone(model, obs_arr, act_arr, ret_arr, epochs, batch_size, lr, rng,
                     critic_epochs=20):
     """Joint supervised pretraining of the actor (action mean) AND critic (value head).
-
-    Per-timestep with a zeroed LSTM state (see module docstring).
-
-    Fix #14 (v18): the critic is now pretrained too. v17 cloned ONLY the actor, leaving a
-    randomly-initialised value head. PPO's first updates therefore computed advantages from
-    a meaningless baseline, and v17's deterministic performance decayed steadily from the
-    handoff onward (harvest 113 -> 103 -> 113 -> 98.9mg over the first four chunks, ending at
-    72-80mg; time_avg_od 0.0215 -> 0.0022). A garbage critic producing large, wrongly-signed
-    advantages against a good actor is a well-known way to destroy a cloned policy, and it is
-    the leading explanation for that decay now that the reward-exploit and exploration-noise
-    hypotheses have both been measured and refuted (see recurrent_ppo.py's Fix #13 comment).
-    Regressing the value head onto discounted returns-to-go from the expert's own rollouts
-    gives PPO a calibrated baseline from step one.
-    """
+    (full rationale: docs/decision_history.md#--bc-bc_pretrain-py-221)"""
     policy = model.policy
     device = policy.device
     policy.train()
@@ -342,10 +278,7 @@ def behaviour_clone(model, obs_arr, act_arr, ret_arr, epochs, batch_size, lr, rn
 
 def verify(model, vec_env, n_episodes, f_max):
     """Deterministic rollouts of the cloned policy — the honest check that BC worked.
-
-    Reports the decoded harvest fraction, which is the quantity every previous run got
-    wrong, alongside harvest yield and time_avg_od.
-    """
+    (full rationale: docs/decision_history.md#--bc-bc_pretrain-py-344)"""
     raw_env = _unwrap_raw_env(vec_env)
     if hasattr(raw_env, "set_difficulty"):
         raw_env.set_difficulty(1)

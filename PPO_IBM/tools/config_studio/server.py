@@ -1,11 +1,5 @@
-"""
-config_studio — visual editor for the curriculum gate thresholds and scripted-expert
-control law, with a live-preview (run N episodes, show the result) and git-backed
-saves. Stdlib http.server only, no new dependencies.
-
-Usage (from repo root, PPO_IBM/):
-    python tools/config_studio/server.py [--port 8765]
-"""
+"""config_studio — visual editor for the curriculum gate thresholds and scripted-expert ...
+(full rationale: docs/decision_history.md#--tools-config_studio-server-py-1)"""
 
 import argparse
 import json

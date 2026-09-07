@@ -1,24 +1,5 @@
-"""
-deterministic_eval.py — lightweight, read-only deterministic evaluation episode used by the
-curriculum training loop (recurrent_ppo.py) to gate advancement, in addition to the existing
-stochastic-rollout gate.
-
-Why this exists: EpisodeMetricsCallback records episodes generated during model.learn(),
-which always uses stochastic action sampling (the entropy term's whole purpose). A policy
-whose deterministic (mean) action has collapsed to a degenerate strategy (e.g. never
-harvesting) can still look like it "harvests fine" in the stochastic rollouts purely from
-exploration noise around that mean occasionally crossing into a nonzero action — inflating
-the live curriculum gate without reflecting what the actually-deployed (deterministic)
-policy does. held_out_sweep.py and test_actions.py both catch this because they use
-deterministic=True, but neither runs during training. This module brings that same
-deterministic evaluation into the training loop itself, cheaply (a handful of episodes per
-chunk), so a policy that only "looks like" it works under exploration noise can no longer
-advance or be declared mastered.
-
-Modeled directly on held_out_sweep.py's run_episode — same env construction and step loop —
-but takes a normalization snapshot (obs_rms) instead of loading one from disk, since this
-runs against the live, still-training model rather than a saved checkpoint.
-"""
+"""deterministic_eval.py — lightweight, read-only deterministic evaluation episode used by the ...
+(full rationale: docs/decision_history.md#--training-deterministic_eval-py-1)"""
 
 # --- path bootstrap (added by _refactor_layout.py) -------------------------------------
 # (full rationale: docs/decision_history.md#--training-deterministic_eval-py-23)
@@ -39,10 +20,8 @@ from curriculum_schedule import _sample_init_cells
 
 
 def run_deterministic_eval_episode(model, obs_rms, difficulty, seed=None):
-    """Run one full deterministic episode against a fresh env, isolated from the live
-    training vec_env (a separate VecNormalize copy, training=False) so this is guaranteed
-    read-only — it cannot perturb training's running normalization stats or LSTM state.
-    """
+    """Run one full deterministic episode against a fresh env, isolated from the live ...
+    (full rationale: docs/decision_history.md#--training-deterministic_eval-py-42)"""
     if seed is not None:
         np.random.seed(seed)
     init_cells = _sample_init_cells("random", difficulty)

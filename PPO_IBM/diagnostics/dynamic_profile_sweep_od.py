@@ -1,11 +1,5 @@
-"""
-dynamic_profile_sweep_od.py — ad hoc extension of dynamic_profile_sweep.py that also reports
-time_avg_od per frac, to check whether the D1 gate's two thresholds (median_harvested_mg>=60,
-median_time_avg_od>=0.008) are jointly achievable under a fixed-action physics-only policy,
-or whether they trade off against each other (as v15's deterministic-eval trace suggested).
-
-Read-only physics probe — no model, no training.
-"""
+"""dynamic_profile_sweep_od.py — ad hoc extension of dynamic_profile_sweep.py that also reports ...
+(full rationale: docs/decision_history.md#--diagnostics-dynamic_profile_sweep_od-py-1)"""
 
 # --- path bootstrap (added by _refactor_layout.py) -------------------------------------
 # (full rationale: docs/decision_history.md#--diagnostics-dynamic_profile_sweep_od-py-10)

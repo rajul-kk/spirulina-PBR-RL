@@ -1,6 +1,5 @@
-"""deterministic_eval_harvest_fixed.py — harvest-ablation variant of
-training/deterministic_eval.py. Wraps the env with HarvestFixedWrapper so the dual
-gate's det-eval side sees the same fixed-harvest environment training does."""
+"""deterministic_eval_harvest_fixed.py — harvest-ablation variant of ...
+(full rationale: docs/decision_history.md#--experiments-harvest_ablation-deterministic_eval_harvest_fixed-py-1)"""
 
 import os as _os, sys as _sys
 _ROOT = _os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))

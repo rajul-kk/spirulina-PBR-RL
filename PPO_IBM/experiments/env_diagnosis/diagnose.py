@@ -1,19 +1,5 @@
-"""
-diagnose.py — actions/reward/environment diagnostic sweep for GeneticPhotobioreactorEnv.
-
-Investigates TD3+BC (v35)'s post-resume divergence (critic loss 7.8->543.6, crash rate
-0%->100% over a few chunks; runs_registry.csv v35_td3bc) via three sweeps:
-
-1. REWARD — per-step reward distribution under the scripted expert, and how much of an
-   outlier the -100 crash/extinction penalty (genetic_env.py) is against it.
-2. ENVIRONMENT — crash rate by initial-population bucket (low/mid/high) x difficulty,
-   under the scripted expert and under random actions (proxy for a perturbed policy).
-3. ACTIONS — harvest-fraction crash boundary ("washout cliff"), re-verified against the
-   current env version.
-
-Usage (from repo root, PPO_IBM/):
-    python experiments/env_diagnosis/diagnose.py
-"""
+"""diagnose.py — actions/reward/environment diagnostic sweep for GeneticPhotobioreactorEnv.
+(full rationale: docs/decision_history.md#--experiments-env_diagnosis-diagnose-py-1)"""
 
 import os
 import sys

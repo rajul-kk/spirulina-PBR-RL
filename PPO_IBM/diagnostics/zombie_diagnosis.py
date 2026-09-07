@@ -1,16 +1,5 @@
-"""
-zombie_diagnosis.py — diagnoses the "zombie" failure mode found by reward_breakdown.py:
-episodes that never hard-crash (terminate early) but spend an extended stretch with
-OD < 0.001, racking up heavy washout penalty and dragging deterministic reward deeply
-negative even though the same checkpoint reports 0% crash_rate in the curriculum gate.
-
-For each episode, tracks per-step OD/action and reports:
-  - init_cells, difficulty
-  - whether the episode ever entered a "zombie" stretch (>=20 consecutive steps od<0.001)
-  - zombie onset step, zombie duration (steps), whether it recovered before episode end
-  - mean action (stir/light/harvest_frac) in the 200 steps before zombie onset vs during
-  - final reward_term_sums, cumulative_harvested_mg, time_avg_od, crashed
-"""
+"""zombie_diagnosis.py — diagnoses the "zombie" failure mode found by reward_breakdown.py:
+(full rationale: docs/decision_history.md#--diagnostics-zombie_diagnosis-py-1)"""
 
 # --- path bootstrap (added by _refactor_layout.py) -------------------------------------
 # (full rationale: docs/decision_history.md#--diagnostics-zombie_diagnosis-py-15)

@@ -5,10 +5,8 @@ import numpy as np
 from typing import Optional, Tuple, Dict
 
 class LightPhotobioreactorEnv(gym.Env):
-    """
-    Individual-Based Model (IBM) Photobioreactor Environment (Light Efficient).
-    Tracks N individual algal cells as particles in 1D depth (z-axis).
-    """
+    """Individual-Based Model (IBM) Photobioreactor Environment (Light Efficient).
+    (full rationale: docs/decision_history.md#--environments-light_env-py-8)"""
     metadata = {'render_modes': ['human']}
 
     def __init__(self, max_cells: int = 300000, initial_cells: int = 2000):

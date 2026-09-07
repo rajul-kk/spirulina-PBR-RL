@@ -73,9 +73,8 @@ RUN_SEED = int(os.environ.get("RUN_SEED", "0"))
 
 
 def _lr_schedule_fn(_progress_remaining_ignored: float) -> float:
-    """Passed to RecurrentPPO as `learning_rate`. Ignores SB3's own progress_remaining
-    argument (meaningless here per the chunked-call issue above) and returns whatever
-    the training loop last wrote to _lr_state, based on true overall progress."""
+    """Passed to RecurrentPPO as `learning_rate`. Ignores SB3's own progress_remaining ...
+    (full rationale: docs/decision_history.md#--experiments-harvest_ablation-recurrent_ppo_harvest_fixed-py-76)"""
     return _lr_state["value"]
 
 
@@ -636,13 +635,8 @@ def train_recurrent_agent(resume=False):
 
 
 def finetune_recurrent_agent(extra_steps: int = 500_000):
-    """
-    Continue training from a previously saved checkpoint on Difficulty 2 (Full Physics).
-    Loads the model weights AND the VecNormalize running statistics so the agent
-    doesn't lose its calibrated observation normalisation.
-    Uses a lower learning rate (1e-4) to consolidate long-horizon strategies
-    without catastrophically forgetting the curriculum knowledge.
-    """
+    """Continue training from a previously saved checkpoint on Difficulty 2 (Full Physics).
+    (full rationale: docs/decision_history.md#--experiments-harvest_ablation-recurrent_ppo_harvest_fixed-py-639)"""
     model_path   = "model_data/harvest_fixed_ppo/recurrent_ppo_genetic_ibm"
     norm_path    = "model_data/harvest_fixed_ppo/vec_normalize.pkl"
     model_zip    = model_path + ".zip"

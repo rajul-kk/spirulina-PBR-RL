@@ -1,12 +1,5 @@
-"""
-held_out_sweep_harvest_fixed.py — independent held-out sweep for the v37 harvest-fixed
-PPO ablation (experiments/harvest_ablation/). Same methodology as diagnostics/held_out_sweep.py
-(90% lognormal(100,400) / 10% adversarial 30-80 cold starts, deterministic policy), but wraps
-the env with HarvestFixedWrapper so harvest is fixed at frac=0.15 exactly as during training.
-
-Usage (from repo root, PPO_IBM/):
-    python experiments/harvest_ablation/held_out_sweep_harvest_fixed.py --n 40 --difficulty 1
-"""
+"""held_out_sweep_harvest_fixed.py — independent held-out sweep for the v37 harvest-fixed ...
+(full rationale: docs/decision_history.md#--experiments-harvest_ablation-held_out_sweep_harvest_fixed-py-1)"""
 
 import os as _os, sys as _sys
 _ROOT = _os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))

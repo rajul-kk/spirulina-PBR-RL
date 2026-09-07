@@ -1,21 +1,5 @@
-"""
-growth_dynamics_check.py — independent sanity check of GeneticPhotobioreactorEnv's
-core biology: does population/OD grow the way a Spirulina culture actually should?
-
-Three checks:
-1. NO-HARVEST GROWTH CURVE (D0, favorable stir/light, no harvest): full 144h episode.
-   Expect near-exponential growth while nutrients/light are non-limiting, then a
-   slowdown as N/P/light self-shading kick in. Fits an exponential to the early phase
-   and compares the fitted rate to the strain's own mu_max.
-2. SEMI-CONTINUOUS HARVEST CYCLE (fixed sustainable harvest fraction every 12h):
-   expect a repeating sawtooth in OD/biomass, not a monotonic trend.
-3. LIGHT-RESPONSE SWEEP (short runs at fixed light levels, harvest=0): expect a
-   unimodal (Haldane) response -- growth rate rising then falling as light increases,
-   not monotonic.
-
-Usage (from repo root, PPO_IBM/):
-    python experiments/env_diagnosis/growth_dynamics_check.py
-"""
+"""growth_dynamics_check.py — independent sanity check of GeneticPhotobioreactorEnv's ...
+(full rationale: docs/decision_history.md#--experiments-env_diagnosis-growth_dynamics_check-py-1)"""
 
 import os
 import sys
@@ -45,10 +29,8 @@ def make_action(stir, light, frac, f_max=0.5):
 
 
 def run_fixed_policy(init_cells, difficulty, stir, light, frac, seed, max_steps=None, harvest_every=None):
-    # env.reset(seed=...) alone does NOT reproducibly seed this env -- strain randomization
-    # (_randomize_strain) and initial cell state use the legacy global np.random module, not
-    # gym's self.np_random. Must seed the global RNG explicitly first (same fix applied to
-    # legacy/TD3.py's run_td3_eval_episode, see docs/decision_history.md).
+    # env.reset(seed=...) alone does NOT reproducibly seed this env -- strain randomization ...
+    # (full rationale: docs/decision_history.md#--experiments-env_diagnosis-growth_dynamics_check-py-48)
     np.random.seed(seed)
     env = GeneticPhotobioreactorEnv(max_cells=50_000, initial_cells=init_cells, difficulty=difficulty)
     env.reset(seed=seed)
@@ -56,10 +38,8 @@ def run_fixed_policy(init_cells, difficulty, stir, light, frac, seed, max_steps=
     f_max = float(getattr(env, "F_MAX", 0.5))
 
     t_h, od, active, mass_mg, n_pool, p_pool, ph = [], [], [], [], [], [], []
-    # Harvest action is interval-averaged by the env (_harvest_action_sum /
-    # _harvest_action_count), applied as a pulse when HARVEST_INTERVAL_STEPS fires --
-    # holding frac constant every step makes the interval average equal frac, matching
-    # how a real policy would need to sustain it across the interval.
+    # Harvest action is interval-averaged by the env (_harvest_action_sum / ...
+    # (full rationale: docs/decision_history.md#--experiments-env_diagnosis-growth_dynamics_check-py-59)
     action_run = make_action(stir, light, 0.0, f_max)
     action_harvest = make_action(stir, light, frac, f_max)
 

@@ -1,23 +1,5 @@
-"""
-TD3 (Twin Delayed DDPG) for GeneticPhotobioreactorEnv.
-
-Tests whether the "BC beats RL" pattern (experiments/bc_scaffold/) is specific to
-on-policy/planning methods (PPO, TD-MPC2) or generalizes to off-policy actor-critic too.
-Reuses proven project infrastructure rather than building from scratch: LSTM actor/twin
-critic shape from legacy/recurrent_sac.py, and the dual-gate/capability-demotion
-curriculum apparatus from curriculum_schedule.py and legacy/TD_MPC2.py, so results are
-directly comparable to every other run in finalresults.md.
-
-Replay buffer is split into a permanent `demo_buffer` (scripted-expert episodes, seeded
-once, never evicted) and a growing `online_buffer`; every batch mixes DEMO_FRACTION from
-the former. TD3+BC (Fujimoto & Gu 2021) adds an explicit imitation term to the actor loss
-on top of that, after v33/v34 showed replay-buffer mixing alone wasn't enough to prevent
-actor collapse (see git history / runs_registry.csv for v33-v36).
-
-Usage (from repo root, PPO_IBM/):
-    python legacy/TD3.py                 # fresh run, full curriculum
-    python legacy/TD3.py --resume        # resume from latest checkpoint
-"""
+"""TD3 (Twin Delayed DDPG) for GeneticPhotobioreactorEnv.
+(full rationale: docs/decision_history.md#--legacy-td3-py-1)"""
 
 import os
 import sys
@@ -105,6 +87,7 @@ BUFFER_PATH = "model_data/td3_checkpoints/online_buffer.pkl"
 
 # ═════════════════════════════════════════════════════════════════════════════
 # (full rationale: docs/decision_history.md#--legacy-TD3-py-107)
+
 # LSTM cell state can saturate over long rollouts (see HIDDEN_RESET_INTERVAL fix)
 # (full rationale: docs/decision_history.md#--legacy-TD3-py-107-lstm-cell-state-saturation)
 
@@ -331,6 +314,7 @@ def build_demo_buffer(n_episodes, seed=0):
 
 # ═════════════════════════════════════════════════════════════════════════════
 # (full rationale: docs/decision_history.md#--legacy-TD3-py-335)
+
 # env.reset(seed=X) alone doesn't seed strain randomization -- see np.random.seed(seed) below
 # (full rationale: docs/decision_history.md#--legacy-TD3-py-335-seed-reproducibility)
 
@@ -450,9 +434,8 @@ BEST_CHECKPOINT_DIR = "model_data/td3_checkpoints_best"
 
 
 def save_best_checkpoint(actor, critic, det_harvest, global_step):
-    """Separate, never-overwritten-by-collapse snapshot — the regular checkpoint only
-    keeps the latest weights, so a later divergence can otherwise destroy the best
-    result on disk. Overwrites only on genuine det_harvest improvement."""
+    """Separate, never-overwritten-by-collapse snapshot — the regular checkpoint only ...
+    (full rationale: docs/decision_history.md#--legacy-td3-py-453)"""
     os.makedirs(BEST_CHECKPOINT_DIR, exist_ok=True)
     marker_path = f"{BEST_CHECKPOINT_DIR}/best_info.txt"
     prev_best = -1.0

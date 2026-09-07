@@ -1,25 +1,5 @@
-"""
-Recurrent SAC (Soft Actor-Critic with LSTM) for GeneticPhotobioreactorEnv
-=========================================================================
-
-Architecture:
-  - RecurrentActor   : LSTM(256) → GaussianPolicy (re-parameterised)
-  - RecurrentCritic  : Twin independent LSTM(256) soft Q-networks
-  - SequenceBuffer   : Episode-based replay; samples fixed-length sequences
-  - Alpha            : Automatic entropy coefficient (learned online)
-  - Curriculum       : 3-phase loop (D0 → D1 → D2) matching PPO / TD-MPC2
-
-Why Recurrent SAC over vanilla SAC?
-  The photobioreactor is a POMDP — single observations don't fully reveal the
-  state (biofouling accumulates invisibly, O2 lags, pH has inertia).
-  LSTM maintains a hidden belief state h_t across the full episode, letting
-  the policy reason about trends rather than just snapshots.
-
-Usage:
-  python recurrent_sac.py                  # full curriculum
-  python recurrent_sac.py --finetune       # continue from checkpoint at D2
-  python recurrent_sac.py --finetune --steps 1000000
-"""
+"""Recurrent SAC (Soft Actor-Critic with LSTM) for GeneticPhotobioreactorEnv ...
+(full rationale: docs/decision_history.md#--legacy-recurrent_sac-py-1)"""
 
 import os, sys, json, random, argparse
 from collections import deque
@@ -74,10 +54,8 @@ LOG_STD_MIN, LOG_STD_MAX = -5.0, 2.0
 
 
 class RecurrentActor(nn.Module):
-    """
-    LSTM-based Gaussian policy that maps observation sequence → (mean, log_std).
-    Re-parameterised sampling + tanh squashing for bounded action space [-1, 1].
-    """
+    """LSTM-based Gaussian policy that maps observation sequence → (mean, log_std).
+    (full rationale: docs/decision_history.md#--legacy-recurrent_sac-py-77)"""
 
     def __init__(self, obs_dim: int, action_dim: int,
                  hidden_dim: int = HIDDEN_DIM, lstm_layers: int = LSTM_LAYERS):
@@ -103,15 +81,8 @@ class RecurrentActor(nn.Module):
         return (h, c)
 
     def forward(self, obs: torch.Tensor, hidden: tuple | None = None):
-        """
-        Args:
-            obs    : [B, T, obs_dim]  or  [1, 1, obs_dim] during inference
-            hidden : (h, c) LSTM state; None → zero-init
-
-        Returns:
-            mean, log_std  : [B, T, action_dim]
-            hidden         : updated (h, c) for next step
-        """
+        """Args:
+        (full rationale: docs/decision_history.md#--legacy-recurrent_sac-py-106)"""
         B, T, _ = obs.shape
         if hidden is None:
             hidden = self.initial_hidden(B)
@@ -125,13 +96,8 @@ class RecurrentActor(nn.Module):
         return mean, log_std, hidden
 
     def sample(self, obs: torch.Tensor, hidden: tuple | None = None):
-        """
-        Returns:
-            action    : tanh-squashed sample  [B, T, action_dim]
-            log_prob  : log π(a|s) corrected for tanh  [B, T, 1]
-            mean      : deterministic action (for eval)
-            hidden    : updated LSTM state
-        """
+        """Returns:
+        (full rationale: docs/decision_history.md#--legacy-recurrent_sac-py-128)"""
         mean, log_std, hidden = self.forward(obs, hidden)
         std  = log_std.exp()
         dist = torch.distributions.Normal(mean, std)
@@ -147,11 +113,8 @@ class RecurrentActor(nn.Module):
 
 
 class RecurrentCritic(nn.Module):
-    """
-    Twin soft Q-networks with independent LSTM encoders.
-    Each network maps (obs, action) sequence → Q-value sequence.
-    Twin architecture prevents overestimation bias (Fujimoto et al. 2018).
-    """
+    """Twin soft Q-networks with independent LSTM encoders.
+    (full rationale: docs/decision_history.md#--legacy-recurrent_sac-py-150)"""
 
     def __init__(self, obs_dim: int, action_dim: int,
                  hidden_dim: int = HIDDEN_DIM, lstm_layers: int = LSTM_LAYERS):
@@ -176,13 +139,8 @@ class RecurrentCritic(nn.Module):
 
     def forward(self, obs: torch.Tensor, action: torch.Tensor,
                 hidden1: tuple | None = None, hidden2: tuple | None = None):
-        """
-        Args:
-            obs, action : [B, T, dim]
-        Returns:
-            q1, q2      : [B, T, 1]
-            hidden1, hidden2 : updated LSTM states
-        """
+        """Args:
+        (full rationale: docs/decision_history.md#--legacy-recurrent_sac-py-179)"""
         B, T, _ = obs.shape
         if hidden1 is None:
             hidden1, hidden2 = self.initial_hidden(B)
@@ -216,11 +174,8 @@ class RecurrentCritic(nn.Module):
 # (full rationale: docs/decision_history.md#--legacy-recurrent_sac-py-216)
 
 class SequenceReplayBuffer:
-    """
-    Stores complete episodes. Samples random fixed-length sub-sequences for
-    training. BPTT is truncated to SEQ_LEN steps; hidden states are
-    zero-initialised at the start of each sampled sequence.
-    """
+    """Stores complete episodes. Samples random fixed-length sub-sequences for ...
+    (full rationale: docs/decision_history.md#--legacy-recurrent_sac-py-219)"""
 
     def __init__(self, capacity: int, obs_dim: int, action_dim: int, seq_len: int):
         self.capacity   = capacity
@@ -346,11 +301,8 @@ def load_checkpoint(actor, critic, critic_target, actor_opt, critic_opt,
 # (full rationale: docs/decision_history.md#--legacy-recurrent_sac-py-348)
 
 def train():
-    """
-    Full automated curriculum: Easy → Medium → Hard.
-    Model weights, replay buffer, and α carry across phases.
-    Only the environment is swapped; LSTM hidden state is reset per episode.
-    """
+    """Full automated curriculum: Easy → Medium → Hard.
+    (full rationale: docs/decision_history.md#--legacy-recurrent_sac-py-349)"""
     from tqdm import tqdm
 
     obs_dim    = 7   # GeneticPhotobioreactorEnv
@@ -583,15 +535,8 @@ def _sac_update(actor, critic, critic_target, _unused,
 # (full rationale: docs/decision_history.md#--legacy-recurrent_sac-py-587)
 
 def finetune(extra_steps: int = 500_000):
-    """
-    Load existing checkpoint and continue training at Difficulty 2 (Full Physics)
-    with reduced learning rates to consolidate without catastrophic forgetting.
-
-    Strategy:
-      - Load actor, critic, buffer from MODEL_DIR
-      - Set LR_ACTOR = LR_CRITIC = LR_ALPHA = 3e-5 (10× lower than default)
-      - Run extra_steps on D2 with the same dual-gate check (no threshold)
-    """
+    """Load existing checkpoint and continue training at Difficulty 2 (Full Physics)
+    (full rationale: docs/decision_history.md#--legacy-recurrent_sac-py-586)"""
     state_path = f"{MODEL_DIR}/training_state.json"
     current_step = 0
     if os.path.exists(state_path):

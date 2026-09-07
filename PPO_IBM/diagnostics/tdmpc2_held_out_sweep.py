@@ -1,20 +1,5 @@
-"""
-tdmpc2_held_out_sweep.py — read-only held-out robustness check for a trained TD-MPC2 checkpoint.
-
-TD-MPC2 equivalent of held_out_sweep.py: that script assumes an SB3 model.predict() interface
-(TDMPC2Agent.plan() is not compatible), so this is a separate, parallel implementation rather
-than a shared one. Same project rule applies regardless: no mastery claim is final without an
-independent held-out check on FRESH seeds, disjoint from anything used to gate training.
-
-Both eval modes sample initial_cells via curriculum_schedule._sample_init_cells, matched to
-difficulty (the run_tdmpc2_eval_episode / v27-diagnostic fix — NOT the training run's own
-det-eval harness, which hardcoded initial_cells=3000 and is why this script exists as an
-independent check rather than trusting the training loop's own [Det] numbers).
-
-Usage:
-    python diagnostics/tdmpc2_held_out_sweep.py --difficulty 0 --seeds 40
-    python diagnostics/tdmpc2_held_out_sweep.py --difficulty 1 --seeds 40 --stochastic
-"""
+"""tdmpc2_held_out_sweep.py — read-only held-out robustness check for a trained TD-MPC2 checkpoint.
+(full rationale: docs/decision_history.md#--diagnostics-tdmpc2_held_out_sweep-py-1)"""
 import argparse
 import os
 import sys

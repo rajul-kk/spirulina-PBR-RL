@@ -1,13 +1,5 @@
-"""
-run_bc_clone_and_eval.py — runs bc/bc_pretrain.py fresh (clones the expert law into
-the real RecurrentPPO policy, zero RL steps) and evaluates it at D0/D1/D2 with
-diagnostics/held_out_sweep.py. Reproduces the earlier v19 BC-clone result
-(model_data/BEST_bc_clone_D2_validated) from a clean run and extends it to all
-three tiers.
-
-Usage (from repo root, PPO_IBM/):
-    python experiments/bc_scaffold/scripts/run_bc_clone_and_eval.py
-"""
+"""run_bc_clone_and_eval.py — runs bc/bc_pretrain.py fresh (clones the expert law into ...
+(full rationale: docs/decision_history.md#--experiments-bc_scaffold-scripts-run_bc_clone_and_eval-py-1)"""
 
 import os
 import subprocess

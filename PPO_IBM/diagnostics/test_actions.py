@@ -1,16 +1,5 @@
-"""
-test_actions.py — inspect or compare trained RecurrentPPO action outputs.
-
-Single model:
-    python test_actions.py --model model_data/recurrent_ppo_ibm_8.5_env
-    python test_actions.py --interval 200 --difficulty 0 --plot
-
-Compare two models (same env seed):
-    python test_actions.py --model model_data/recurrent_ppo_ibm_8.5_env \\
-                           --compare model_data/recurrent_ppo_ibm_6.5_env
-    python test_actions.py --model A --norm model_data/norm_A.pkl \\
-                           --compare B --norm-b model_data/norm_B.pkl --seed 42
-"""
+"""test_actions.py — inspect or compare trained RecurrentPPO action outputs.
+(full rationale: docs/decision_history.md#--diagnostics-test_actions-py-1)"""
 
 # --- path bootstrap (added by _refactor_layout.py) -------------------------------------
 # (full rationale: docs/decision_history.md#--diagnostics-test_actions-py-15)

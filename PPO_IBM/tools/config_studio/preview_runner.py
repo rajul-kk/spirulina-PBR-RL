@@ -1,7 +1,5 @@
-"""preview_runner.py — live-preview half of config_studio. Runs the scripted expert
-against genetic_env.py using whatever values the UI has staged (not necessarily saved),
-scored against a gate. Every parameter is a function argument (not a module constant,
-unlike expert_sweep.py) since these are exactly what the UI varies."""
+"""preview_runner.py — live-preview half of config_studio. Runs the scripted expert ...
+(full rationale: docs/decision_history.md#--tools-config_studio-preview_runner-py-1)"""
 
 import os
 import sys

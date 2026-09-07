@@ -1,17 +1,5 @@
-"""
-held_out_sweep.py — read-only robustness check for a trained RecurrentPPO checkpoint.
-
-Runs N cold-start episodes at D2 (full difficulty) with the same init-cells
-distribution the curriculum uses during training (90% lognormal(100,400),
-10% adversarial cold start 30-80 cells), deterministic policy, and reports
-crash rate / harvested-mass distribution / time_avg_od distribution — the same
-metrics the curriculum gate checks, but over a much larger held-out sample than
-the 14-episode chunks used live during training.
-
-Usage:
-    python held_out_sweep.py --model model_data/recurrent_ppo_genetic_ibm --n 40
-    python held_out_sweep.py --model model_data/archive_periodic_harvest_run1_D2mastery_2.7M/recurrent_ppo_genetic_ibm --n 40
-"""
+"""held_out_sweep.py — read-only robustness check for a trained RecurrentPPO checkpoint.
+(full rationale: docs/decision_history.md#--diagnostics-held_out_sweep-py-1)"""
 
 # --- path bootstrap (added by _refactor_layout.py) -------------------------------------
 # (full rationale: docs/decision_history.md#--diagnostics-held_out_sweep-py-16)

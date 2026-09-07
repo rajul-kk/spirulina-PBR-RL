@@ -40,11 +40,7 @@ STD_ANNEAL_FINAL = 0.12        # final cap (vs STD_BAND_LOW=0.08, so 0.04 of mar
 
 def annealed_std_cap(progress: float) -> float:
     """Hard cap on actor std as a function of overall training progress in [0, 1].
-
-    Flat at STD_HARD_CAP until STD_ANNEAL_START_FRAC, then linear down to
-    STD_ANNEAL_FINAL by STD_ANNEAL_END_FRAC. Early training keeps full exploration; late
-    training forces the mean policy to become the policy that is actually evaluated.
-    """
+    (full rationale: docs/decision_history.md#--training-entropy_schedule-py-42)"""
     p = float(np.clip(progress, 0.0, 1.0))
     if p <= STD_ANNEAL_START_FRAC:
         return STD_HARD_CAP

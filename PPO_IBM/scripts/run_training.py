@@ -1,34 +1,5 @@
-"""
-run_training.py — safe launcher for a curriculum training run.
-
-Every bug this guards against actually happened in this project:
-
-  * DUAL PROCESS (~20h of v16 invalidated). A launch reported a non-zero exit and was assumed
-    dead; it wasn't. A second launch meant two processes writing the same log AND the same
-    checkpoint_dir / state_path / norm_path, silently corrupting each other. The interleaved
-    log looked like a curriculum state-machine bug and cost hours to diagnose.
-      -> refuses to start if a recurrent_ppo process is already alive, and verifies exactly
-         one startup banner appears after launch.
-  * STALE AUTO-RESUME (v14). Bare `--resume` scans a shared, never-cleared checkpoint dir and
-    picked up an unrelated older checkpoint while pairing it with the current run's state file.
-      -> resume requires an explicit path; the launcher pairs norm+state from that same
-         directory rather than leaving whatever happened to be in model_data/.
-  * UNPAIRED NORM/STATE (nearly hit at v17). The trainer reads norm_path/state_path from
-    model_data/, NOT from the warm-start folder, so `--resume warmstart/model.zip` would have
-    loaded a BC actor against the previous run's normalisation statistics.
-      -> pairing is explicit and verified before launch.
-  * SILENT NON-LAUNCH. `(tasklist | grep -ci python) && python ...` never ran the trainer,
-    because `grep -c` exits 1 on zero matches and `&&` short-circuited.
-      -> the launcher checks the log for real startup output instead of trusting exit codes.
-  * UNATTRIBUTABLE CONFIG CHANGES (v22 changed three things at once plus the seed, and its
-    regression could not be assigned to any of them).
-      -> every run writes a config snapshot and appends a row to a registry CSV.
-
-Usage (ALWAYS from the repo root — relative paths resolve against the working directory):
-    python scripts/run_training.py --tag v25_my_change
-    python scripts/run_training.py --tag v25_bc --resume model_data/bc_warmstart/recurrent_ppo_genetic_ibm.zip
-    python scripts/run_training.py --tag v25 --archive-prev v24_std_anneal_run5
-"""
+"""run_training.py — safe launcher for a curriculum training run.
+(full rationale: docs/decision_history.md#--scripts-run_training-py-1)"""
 import argparse
 import csv
 import json
@@ -54,14 +25,7 @@ TRAINER = os.path.join(ROOT, "training", "recurrent_ppo.py")
 
 def live_training_pids():
     """PIDs of running trainer processes.
-
-    Matches on the COMMAND LINE rather than on 'python' — an unrelated python process once
-    blocked a wait loop for hours. But the pattern must be 'recurrent_ppo.py', NOT
-    'recurrent_ppo': the saved model is named `recurrent_ppo_genetic_ibm`, so the looser
-    pattern matches every diagnostic and validation process that references the checkpoint.
-    That false positive is not harmless in either direction — it would make this launcher
-    refuse to start while a read-only sweep was running, and a kill loop built on the same
-    pattern terminated a validation run mid-sweep."""
+    (full rationale: docs/decision_history.md#--scripts-run_training-py-56)"""
     try:
         out = subprocess.run(
             ["powershell", "-NoProfile", "-Command",

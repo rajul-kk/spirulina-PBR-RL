@@ -1,13 +1,5 @@
-"""
-reward_breakdown.py — reports per-term reward contribution (od / biomass / stagnation /
-washout / harvest) for a trained checkpoint, summed across full episodes. Diagnoses
-whether any _compute_reward term in genetic_env.py is dead weight or dominating.
-
-Requires genetic_env.py's reward_term_sums tracking (added alongside this script).
-
-Usage:
-    python reward_breakdown.py --model model_data/archive_.../recurrent_ppo_genetic_ibm --n 8
-"""
+"""reward_breakdown.py — reports per-term reward contribution (od / biomass / stagnation / ...
+(full rationale: docs/decision_history.md#--diagnostics-reward_breakdown-py-1)"""
 
 # --- path bootstrap (added by _refactor_layout.py) -------------------------------------
 # (full rationale: docs/decision_history.md#--diagnostics-reward_breakdown-py-12)

@@ -1,8 +1,5 @@
-"""
-TD-MPC2 (Temporal Difference Model Predictive Control) Implementation
-For deeply-delayed, domain-randomized state-based control.
-Upgrades: 1D-CNN History Compressor (24 steps), Policy Prior (Actor-Guided MPPI), Curriculum Learning (3 Phases).
-"""
+"""TD-MPC2 (Temporal Difference Model Predictive Control) Implementation ...
+(full rationale: docs/decision_history.md#--legacy-td_mpc2-py-1)"""
 
 import os
 import sys
@@ -45,10 +42,8 @@ MAX_CELLS = 7_500
 
 
 class ObservationBuffer:
-    """
-    Holds the running LMU memory state `m_t`.
-    No longer needs a full rolling window queue since LMU is continuous time.
-    """
+    """Holds the running LMU memory state `m_t`.
+    (full rationale: docs/decision_history.md#--legacy-td_mpc2-py-48)"""
     def __init__(self, obs_dim: int = OBS_DIM, order: int = 16):
         self.obs_dim = obs_dim
         self.order = order
@@ -81,24 +76,8 @@ def symexp(x: torch.Tensor) -> torch.Tensor:
 
 
 class TwoHotEncoder:
-    """Fix (v27): two-hot discrete regression for reward/value, replacing MSE — one of the two
-    changes that distinguish TD-MPC2 from "MPC with a learned model" (the other is the Q
-    ensemble below). Scalar targets are symlog-compressed, then represented as a two-hot
-    vector over a fixed linear bin grid (mass split between the two bins bracketing the
-    value, proportional to distance — exact if the value falls on a bin centre). The network
-    predicts a categorical distribution over bins and is trained with cross-entropy; the
-    scalar estimate is recovered as the expected bin value under that distribution.
-
-    Why this over MSE: MSE regression on a wide-dynamic-range, heavy-tailed target (block
-    rewards here range from near-zero to double digits depending on OD/harvest state) tends
-    to be dominated by the largest-magnitude examples and gives no calibrated uncertainty.
-    Two-hot classification is scale-robust by construction (symlog) and its softmax output
-    is directly usable as a distributional value estimate.
-
-    Verified with a standalone round-trip check (encode -> take the encoded distribution as
-    if it were a perfect prediction -> decode) before being wired into training — see
-    diagnostics/tdmpc2_cost_probe.py.
-    """
+    """Fix (v27): two-hot discrete regression for reward/value, replacing MSE — one of the two ...
+    (full rationale: docs/decision_history.md#--legacy-td_mpc2-py-84)"""
     def __init__(self, vmin: float = -20.0, vmax: float = 20.0, num_bins: int = 101, device: str = "cpu"):
         self.num_bins = num_bins
         self.device = device
@@ -127,10 +106,7 @@ class TwoHotEncoder:
 
     def decode(self, logits: torch.Tensor) -> torch.Tensor:
         """logits: (B, num_bins) RAW network output (not yet a distribution) -> (B,) scalar.
-        Applies softmax first — do not call this on something already normalised (e.g. the
-        output of encode()); use _expected_value directly for that, or the softmax will
-        distort an already-valid distribution. This distinction is exactly what
-        diagnostics/tdmpc2_cost_probe.py's round-trip test checks."""
+        (full rationale: docs/decision_history.md#--legacy-td_mpc2-py-129)"""
         return self._expected_value(F.softmax(logits, dim=-1))
 
 
@@ -149,12 +125,8 @@ class PrivilegedEncoder(nn.Module):
 
 
 class LMUHistoryCompressor(nn.Module):
-    """
-    Legendre Memory Unit (LMU): Compresses continuous observation history
-    into a stateful encoding `m_t` and projects it to a 64D feature vector.
-
-    Uses a fixed per-channel timescale (delta) for stable LMU dynamics.
-    """
+    """Legendre Memory Unit (LMU): Compresses continuous observation history ...
+    (full rationale: docs/decision_history.md#--legacy-td_mpc2-py-152)"""
     def __init__(self, obs_dim: int = OBS_DIM, order: int = 16, init_theta: float = 250.0, out_dim: int = 64):
         super().__init__()
         self.obs_dim = obs_dim
@@ -186,10 +158,8 @@ class LMUHistoryCompressor(nn.Module):
         )
 
     def forward(self, obs: torch.Tensor, m_t_minus_1: torch.Tensor = None) -> tuple[torch.Tensor, torch.Tensor]:
-        """
-        obs: (Batch, OBS_DIM)
-        m_t_minus_1: (Batch, OBS_DIM, ORDER)   -- previous continuous memory state
-        """
+        """obs: (Batch, OBS_DIM)
+        (full rationale: docs/decision_history.md#--legacy-td_mpc2-py-189)"""
         batch_size = obs.shape[0] if obs.dim() > 1 else 1
         obs_sym = symlog(obs)
         
@@ -257,12 +227,8 @@ class Encoder(nn.Module):
         return x / (x.norm(p=1, dim=-1, keepdim=True) + 1e-8)
 
 class PolicyPrior(nn.Module):
-    """
-    Actor network: takes a latent state h and outputs a *mean* action.
-    This biases the MPPI sampling N(pi(h), sigma) instead of N(0, sigma),
-    focusing all 512 trajectories around the actor's best guess.
-    Trained via behavioral cloning on the MPPI-chosen elite actions.
-    """
+    """Actor network: takes a latent state h and outputs a *mean* action.
+    (full rationale: docs/decision_history.md#--legacy-td_mpc2-py-260)"""
     def __init__(self, latent_dim=64, action_dim=4):
         super().__init__()
         self.net = nn.Sequential(
@@ -296,9 +262,7 @@ class DynamicsModel(nn.Module):
 
 class RewardPredictor(nn.Module):
     """Predicts immediate (macro-block) reward from a state/action pair.
-    Fix (v27): outputs num_bins logits (two-hot classification target) instead of 1 scalar
-    (MSE target) — see TwoHotEncoder. Decoding to a scalar is the caller's responsibility
-    (via TwoHotEncoder.decode), so this module stays a plain classifier head."""
+    (full rationale: docs/decision_history.md#--legacy-td_mpc2-py-298)"""
     def __init__(self, latent_dim=64, action_dim=4, num_bins=101):
         super().__init__()
         self.net = nn.Sequential(
@@ -396,32 +360,23 @@ class TDMPC2Agent:
         return self.encoder(emb), new_m_t         # (B, 64) with SimNorm
 
     def _q_min_decoded(self, h: torch.Tensor, qs_list: nn.ModuleList, subset_size: int = 2) -> torch.Tensor:
-        """Fix (v27): random-subset ensemble minimum (TD-MPC2's overestimation-reduction
-        mechanism), decoded from two-hot logits to a scalar. A DIFFERENT random pair is drawn
-        each call — including each call within the same plan()/update() — so no fixed pair of
-        critics can collude with each other across updates the way a hard-coded twin-Q pair can.
-        h: (B, latent_dim)."""
+        """Fix (v27): random-subset ensemble minimum (TD-MPC2's overestimation-reduction ...
+        (full rationale: docs/decision_history.md#--legacy-td_mpc2-py-399)"""
         idx = np.random.choice(len(qs_list), size=min(subset_size, len(qs_list)), replace=False)
         vals = torch.stack([self.two_hot.decode(qs_list[i](h)) for i in idx], dim=0)  # (subset, B)
         return vals.min(dim=0).values
 
     def _two_hot_ce_loss(self, logits: torch.Tensor, target_scalar: torch.Tensor) -> torch.Tensor:
-        """Cross-entropy against a two-hot soft target — the training-side counterpart to
-        TwoHotEncoder.decode. Implemented explicitly (rather than relying on a specific
-        PyTorch version's soft-label F.cross_entropy support) so behaviour is pinned regardless
-        of torch version."""
+        """Cross-entropy against a two-hot soft target — the training-side counterpart to ...
+        (full rationale: docs/decision_history.md#--legacy-td_mpc2-py-409)"""
         target_dist = self.two_hot.encode(target_scalar.reshape(-1))
         log_probs = F.log_softmax(logits, dim=-1)
         return -(target_dist * log_probs).sum(dim=-1).mean()
 
     def plan(self, obs: np.ndarray, m_t: torch.Tensor = None, horizon: int = 24,
              num_samples: int = 512, num_iters: int = 3) -> np.ndarray:
-        """
-        CEM/MPPI Planner with Policy Prior warm-start.
-        obs: (OBS_DIM,) numpy array.
-        m_t: Continuous latent state (OBS_DIM, ORDER).
-        Returns the FIRST action of the optimal plan.
-        """
+        """CEM/MPPI Planner with Policy Prior warm-start.
+        (full rationale: docs/decision_history.md#--legacy-td_mpc2-py-419)"""
         self.compressor.eval()
         self.encoder.eval()
         self.dynamics.eval()
@@ -602,11 +557,8 @@ class TDMPC2Agent:
         
     def update(self, batch_obs, batch_mt, batch_actions, batch_rewards, batch_next_obs, batch_next_mt, batch_dones,
                batch_priv=None):
-        """
-        Joint-Embedding Training Loop.
-        batch_obs / batch_next_obs: (B, OBS_DIM) tensors.
-        batch_mt / batch_next_mt: (B, OBS_DIM, ORDER) tensors.
-        """
+        """Joint-Embedding Training Loop.
+        (full rationale: docs/decision_history.md#--legacy-td_mpc2-py-605)"""
         self.compressor.train()
         self.encoder.train()
         self.dynamics.train()
@@ -755,18 +707,8 @@ class ReplayBuffer:
         )
 
 def run_tdmpc2_eval_episode(agent, difficulty, seed=None, horizon=12, num_samples=64):
-    """Deterministic evaluation episode for the project's dual gate — mirrors
-    deterministic_eval.run_deterministic_eval_episode's role and return shape, but for the
-    TD-MPC2 agent's plan()/env interface (raw env + LMU memory, not SB3/VecNormalize).
-
-    "Deterministic" here means running plan() WITHOUT the training loop's added exploration
-    noise (`action += np.random.normal(...)`) — MPPI's own internal sampling is unavoidable,
-    but the noise injected on top of the plan for exploration is not, and it is that
-    exploration noise (not planner internals) that the dual gate exists to see past. Same
-    project rationale as deterministic_eval.py: EpisodeMetricsCallback-equivalent stats come
-    from noisy rollouts, and a policy that only "looks like" it works under exploration noise
-    should not be able to advance on that alone.
-    """
+    """Deterministic evaluation episode for the project's dual gate — mirrors ...
+    (full rationale: docs/decision_history.md#--legacy-td_mpc2-py-758)"""
     from genetic_env import GeneticPhotobioreactorEnv
     from curriculum_schedule import _sample_init_cells
     if seed is not None:
@@ -1262,12 +1204,8 @@ def train_td_mpc2(resume: bool = False, use_privileged_distill: bool = False,
 
 
 def finetune_td_mpc2(extra_steps: int = 500_000, use_privileged_distill: bool = False):
-    """
-    Continue TD-MPC2 training from a saved checkpoint at Difficulty 2 (Full Physics).
-    Loads the world model, policy prior, and Q-network weights from the saved .pth file.
-    Runs at a reduced exploration noise (0.05 vs 0.15) so the policy prior is trusted
-    more heavily and MPPI focuses on refinement rather than exploration.
-    """
+    """Continue TD-MPC2 training from a saved checkpoint at Difficulty 2 (Full Physics).
+    (full rationale: docs/decision_history.md#--legacy-td_mpc2-py-1265)"""
     # Fix (v27): NOT YET UPDATED for the macro-timestep/ensemble/two-hot rewrite below this
     # (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-1362)
     raise NotImplementedError(

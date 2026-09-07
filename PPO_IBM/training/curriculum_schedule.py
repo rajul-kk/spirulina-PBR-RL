@@ -1,6 +1,5 @@
-"""Curriculum difficulty scheduling: mastery/demotion targets, per-episode difficulty
-sampling, and the reset-time wrapper that applies the sampled difficulty and start mode.
-"""
+"""Curriculum difficulty scheduling: mastery/demotion targets, per-episode difficulty ...
+(full rationale: docs/decision_history.md#--training-curriculum_schedule-py-1)"""
 
 # --- path bootstrap (added by _refactor_layout.py) -------------------------------------
 # (full rationale: docs/decision_history.md#--training-curriculum_schedule-py-5)

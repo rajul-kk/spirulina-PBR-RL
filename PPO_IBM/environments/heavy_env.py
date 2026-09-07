@@ -4,10 +4,8 @@ import numpy as np
 from typing import Optional, Dict
 
 class HeavyPhotobioreactorEnv(gym.Env):
-    """
-    Individual-Based Model (IBM) Photobioreactor Environment (Simplified 1D/Heavy).
-    Tracks N individual algal cells as particles in 1D depth (z-axis).
-    """
+    """Individual-Based Model (IBM) Photobioreactor Environment (Simplified 1D/Heavy).
+    (full rationale: docs/decision_history.md#--environments-heavy_env-py-7)"""
     metadata = {'render_modes': ['human']}
 
     def __init__(self, max_cells: int = 300000, initial_cells: int = 3000, difficulty: int = 2):

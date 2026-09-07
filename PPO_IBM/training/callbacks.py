@@ -18,10 +18,8 @@ from env_utils import unwrap_raw_env
 
 
 class TQDMActionCallback(BaseCallback):
-    """
-    Appends all 3 raw actuator outputs (Stir, Light, Harvest) and
-    rolling mean OD to the TQDM progress bar on every env step.
-    """
+    """Appends all 3 raw actuator outputs (Stir, Light, Harvest) and ...
+    (full rationale: docs/decision_history.md#--training-callbacks-py-21)"""
     def __init__(self, verbose=0):
         super().__init__(verbose)
         self._ep_ods = []
@@ -65,12 +63,8 @@ class EntropyLoggingCallback(BaseCallback):
 
 
 class PopulationStitchCallback(BaseCallback):
-    """
-    Implements Population-Seeded Batch Stitching for Stable-Baselines3.
-
-    On episode end: if num_active > pop_threshold, save the full physical state.
-    Reset-time start selection is handled by CurriculumStartWrapper.
-    """
+    """Implements Population-Seeded Batch Stitching for Stable-Baselines3.
+    (full rationale: docs/decision_history.md#--training-callbacks-py-68)"""
     def __init__(self, controller,
                  pop_threshold: int = 15_000, difficulty_min: int = 1, verbose: int = 0):
         super().__init__(verbose)
@@ -119,19 +113,7 @@ class PopulationStitchCallback(BaseCallback):
 
 class EpisodeMetricsCallback(BaseCallback):
     """Collect episode-end metrics used for adaptive curriculum decisions.
-
-    Maintains a persistent, per-difficulty rolling window (deque, maxlen=window_size)
-    that survives across chunk boundaries, instead of a flat list that used to be
-    discarded (a fresh EpisodeMetricsCallback instantiated) every 100k-step chunk.
-    That previously meant curriculum advancement/demotion decisions were made on
-    whatever ~14 episodes happened to land in the current chunk — a sample small and
-    narrow enough that a "lucky" chunk (biased toward larger, easier initial
-    populations) could pass a gate that didn't hold up on a broader held-out sample
-    (see held_out_sweep.py). This instance should be constructed once and reused
-    across the whole training run's chunk loop; call start_new_chunk() at each chunk
-    boundary to reset only the per-chunk episode counter (still needed for entropy
-    std-control pacing), not the rolling history.
-    """
+    (full rationale: docs/decision_history.md#--training-callbacks-py-121)"""
     def __init__(self, window_size: int = 40, verbose: int = 0):
         super().__init__(verbose)
         self.window_size = window_size

@@ -1,20 +1,5 @@
-"""
-validate.py — the mandatory independent check on any checkpoint, in one command.
-
-WHY THIS EXISTS: no mastery claim in this project has ever been trustworthy without held-out
-validation. v14 advanced to D2 with both in-training gates passing and then scored median
-0.4mg against a 90mg gate. v17 did the same and failed at BOTH tiers. The in-training
-deterministic eval uses a 15-episode rolling window; held_out_sweep.py uses 40 fresh seeds
-including adversarial cold starts, and that difference has repeatedly been decisive.
-
-It also runs the action trace, because the SHAPE of the harvest profile has diagnosed every
-failure mode here: never-harvest (v4/v14), drift-up (v15), start-high-decay-to-zero (v16b),
-over-harvest-early (v17). Aggregate numbers alone hid all four.
-
-Usage (from the repo root):
-    python scripts/validate.py --model model_data/best_det_checkpoint/recurrent_ppo_genetic_ibm
-    python scripts/validate.py --model <path> --norm <path> --n 40 --seeds 0 1 2 3
-"""
+"""validate.py — the mandatory independent check on any checkpoint, in one command.
+(full rationale: docs/decision_history.md#--scripts-validate-py-1)"""
 import argparse
 import os
 import re

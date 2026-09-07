@@ -157,10 +157,7 @@ def mastery_metrics_view(
     max_stitched_share: float = MAX_STITCHED_SHARE_FOR_MASTERY,
 ) -> List[Dict[str, object]]:
     """Return metrics used for curriculum pass/fail.
-
-    Policy: exclude stitched episodes when non-stitched episodes exist.
-    If a window has only stitched episodes, fall back to capped mixed view.
-    """
+    (full rationale: docs/decision_history.md#--training-curriculum_starts-py-159)"""
     metrics = list(episode_metrics)
     if not metrics:
         return []

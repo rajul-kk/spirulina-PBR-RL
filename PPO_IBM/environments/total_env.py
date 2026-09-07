@@ -6,11 +6,8 @@ from gymnasium import spaces
 from typing import Optional, Dict
 
 class GeneticPhotobioreactorEnv(gym.Env):
-    """
-    Individual-Based Model (IBM) Photobioreactor Environment.
-    Tracks N individual algal cells as particles in 1D depth (z-axis) using vectorized operations.
-    Implements Genetic Domain Randomization with unique algal strains per episode.
-    """
+    """Individual-Based Model (IBM) Photobioreactor Environment.
+    (full rationale: docs/decision_history.md#--environments-total_env-py-9)"""
     metadata = {'render_modes': ['human']}
 
     def __init__(self, max_cells: int = 300000, initial_cells: int = 3000, difficulty: int = 2,
@@ -332,8 +329,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
 
     def get_privileged_state(self) -> np.ndarray:
         """4D privileged vector — sim-only, never exposed at deployment.
-        Returns: [dissolved_co2, mean_f_Q, mu_max, Ks_light]
-        """
+        (full rationale: docs/decision_history.md#--environments-total_env-py-334)"""
         mean_fQ = float(np.mean(np.maximum(
             0.0, 1.0 - 0.5 / (self.cells_quota[self.active_mask] + 1e-6)
         ))) if self.num_active > 0 else 0.0
@@ -346,15 +342,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
 
     def _compute_reward(self, delta_mass_mg, total_mass_mg, shock_factor):
         """Batch-cycle reward: grow for 144h, harvest once at the end.
-
-        4 dense per-step components carry the agent through the cycle, plus one
-        terminal bonus that fires only at natural episode end (not on crash). Dense
-        terms are intentionally kept as the dominant contributors, not the terminal
-        bonus — gamma=0.995 gives only ~200-step (4h) effective horizon, so a single
-        reward spike 7200 steps away is nearly unlearnable via TD bootstrapping; the
-        terminal bonus is a capstone nudge on top of continuous shaping, not a
-        sparse-reward substitute for it.
-        """
+        (full rationale: docs/decision_history.md#--environments-total_env-py-348)"""
         # Curriculum metric: time-averaged OD over the back half of the episode (steps
         # (full rationale: docs/decision_history.md#--environments-total_env-py-382)
         if self.step_count >= 3600:

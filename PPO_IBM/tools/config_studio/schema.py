@@ -1,7 +1,5 @@
-"""schema.py — declares which project constants config_studio can edit and where each
-lives. Field kinds: "simple" (`NAME = <number>`), "tuple2" (`NAME = (a, b)`, exposed as
-two sub-fields), "tier_dict" (one entry in curriculum_schedule.py's ADVANCE_TARGETS,
-keyed by tier + dict key). Add a field by adding one entry here."""
+"""schema.py — declares which project constants config_studio can edit and where each ...
+(full rationale: docs/decision_history.md#--tools-config_studio-schema-py-1)"""
 
 CURRICULUM_FILE = "training/curriculum_schedule.py"
 EXPERT_FILE = "bc/bc_pretrain.py"

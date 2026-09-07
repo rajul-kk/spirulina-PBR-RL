@@ -1,16 +1,5 @@
-"""
-format_docx.py
-Post-processes pandoc-generated .docx files to apply:
-  - Plain colourless tables via Word's built-in "Table Grid" style
-    (header row text made bold; no fills or colour)
-  - All heading levels bold, black, controlled sizes
-  - Proper paragraph/heading spacing
-  - Consistent Calibri body font
-
-Usage:
-    python format_docx.py
-    (close any open Word windows for the output files first)
-"""
+"""format_docx.py ...
+(full rationale: docs/decision_history.md#--legacy-format_docx-py-1)"""
 
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -80,12 +69,8 @@ def _clear_cell_shading(cell):
 # ── Table formatter ───────────────────────────────────────────────────────────
 
 def _force_table_borders(tbl):
-    """
-    Remove any existing w:tblBorders inserted by pandoc, then inject
-    explicit 0.5 pt (sz=4) single black borders for all six sides.
-    This overrides pandoc's direct XML so the Table Grid style is not silently
-    suppressed.
-    """
+    """Remove any existing w:tblBorders inserted by pandoc, then inject ...
+    (full rationale: docs/decision_history.md#--legacy-format_docx-py-83)"""
     tblPr = _get_or_add(tbl, "w:tblPr")
 
     # Strip whatever pandoc wrote
@@ -106,11 +91,8 @@ def _force_table_borders(tbl):
 
 
 def format_table(table, doc):
-    """
-    Apply Word's built-in 'Table Grid' style then force explicit borders.
-    Header row text is bold. All cells use TABLE_FONT black.
-    Handles <br> tags by inserting actual Word line breaks.
-    """
+    """Apply Word's built-in 'Table Grid' style then force explicit borders.
+    (full rationale: docs/decision_history.md#--legacy-format_docx-py-109)"""
     try:
         table.style = doc.styles["Table Grid"]
     except KeyError:

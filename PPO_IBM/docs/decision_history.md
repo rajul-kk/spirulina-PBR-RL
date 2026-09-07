@@ -4424,3 +4424,1474 @@ det-eval trend read this session.
 Fixed: added np.random.seed(seed) to both functions, matching PPO's pattern. Verified
 fix makes mu_max reproducible across repeated reset(seed=1) calls.
 ```
+
+
+## ./bc/bc_pretrain.py:1 {#--bc-bc_pretrain-py-1}
+
+```
+"""
+bc_pretrain.py — behaviour-cloning warm start for the RecurrentPPO curriculum trainer.
+
+WHY THIS EXISTS
+---------------
+Across v4, v14, v15 and v16b, PPO consistently failed to find and HOLD the harvest
+setpoint that the reward function itself ranks highest. Measured directly
+(dynamic_profile_sweep_od.py, D1 physics, 4 seeds/point):
+
+    constant-action controller, stir=60 light=900 frac=0.18
+        -> reward 1116.8, harvest 139.9mg, time_avg_od 0.0131, 0% crash
+           (clears not just the D1 gate but the D2 gate)
+
+    v16b's learned policy (8M steps, full budget)
+        -> reward 957-1028, harvest ~22mg median on a 40-seed held-out sweep
+
+So the correct behaviour is not merely acceptable under the current reward, it is
+reward-SUPERIOR by ~10%. The learned policy sits in a nearby, worse local optimum
+("throttle light, coast at OD~0.012, never harvest"). This is an exploration/
+convergence failure, not a reward-ranking failure.
+
+This script therefore initialises the policy AT the known-good setpoint by supervised
+learning on scripted expert rollouts, then hands off to the normal PPO curriculum. The
+reward function and environment are deliberately left UNTOUCHED, so v17 remains directly
+comparable to v15/v16b and so the experiment cleanly distinguishes two hypotheses:
+
+    - BC holds the setpoint  -> the problem was exploration; nothing else needs changing.
+    - BC drifts back to coasting -> the dense/sparse reward imbalance (reward_od's ~1080
+      per-episode ceiling vs reward_harvest's 6) is the real cause, and a structural
+      reward change is then justified by evidence rather than by inference.
+
+Precedent: arXiv 2509.06853 bootstraps an industrial photobioreactor RL agent from PID
+controller trajectories before online RL, for essentially these reasons.
+
+NOTE ON THE LSTM: the expert is a CONSTANT action, so its target does not depend on
+observation history at all. BC can therefore be done per-timestep with a zeroed LSTM
+state rather than by unrolling whole 7200-step sequences — far faster and equivalent for
+this target. The LSTM's recurrent capacity is left for PPO fine-tuning to develop.
+
+Usage:
+    python bc_pretrain.py                  # generate demos + train + save warm start
+    python bc_pretrain.py --episodes 32 --epochs 12
+"""
+```
+
+
+## ./bc/bc_pretrain.py:100 {#--bc-bc_pretrain-py-100}
+
+```
+    """Encode physical setpoints into the env's raw [-1, 1] action space.
+
+    Mirrors genetic_env.step()'s decode exactly (np.interp on each dim).
+    """
+```
+
+
+## ./bc/bc_pretrain.py:118 {#--bc-bc_pretrain-py-118}
+
+```
+    """Roll the scripted expert through the normalized env, recording (obs, action).
+
+    VecNormalize stays in training mode here so obs_rms adapts to the state distribution
+    the expert actually visits — that is the distribution PPO will see on handoff. Using
+    calibration-only stats would leave a train/BC observation mismatch.
+    """
+```
+
+
+## ./bc/bc_pretrain.py:189 {#--bc-bc_pretrain-py-189}
+
+```
+    """Score the scripted expert against the curriculum gates it must clear.
+
+    This is the gate that decides whether cloning is even worth doing: if the expert
+    itself cannot pass D1/D2 on the real training start distribution, a clone of it
+    certainly will not, and an 8M-step run would be wasted confirming that.
+    """
+```
+
+
+## ./bc/bc_pretrain.py:221 {#--bc-bc_pretrain-py-221}
+
+```
+    """Joint supervised pretraining of the actor (action mean) AND critic (value head).
+
+    Per-timestep with a zeroed LSTM state (see module docstring).
+
+    Fix #14 (v18): the critic is now pretrained too. v17 cloned ONLY the actor, leaving a
+    randomly-initialised value head. PPO's first updates therefore computed advantages from
+    a meaningless baseline, and v17's deterministic performance decayed steadily from the
+    handoff onward (harvest 113 -> 103 -> 113 -> 98.9mg over the first four chunks, ending at
+    72-80mg; time_avg_od 0.0215 -> 0.0022). A garbage critic producing large, wrongly-signed
+    advantages against a good actor is a well-known way to destroy a cloned policy, and it is
+    the leading explanation for that decay now that the reward-exploit and exploration-noise
+    hypotheses have both been measured and refuted (see recurrent_ppo.py's Fix #13 comment).
+    Regressing the value head onto discounted returns-to-go from the expert's own rollouts
+    gives PPO a calibrated baseline from step one.
+    """
+```
+
+
+## ./bc/bc_pretrain.py:344 {#--bc-bc_pretrain-py-344}
+
+```
+    """Deterministic rollouts of the cloned policy — the honest check that BC worked.
+
+    Reports the decoded harvest fraction, which is the quantity every previous run got
+    wrong, alongside harvest yield and time_avg_od.
+    """
+```
+
+
+## ./diagnostics/curriculum_gate_sweep.py:1 {#--diagnostics-curriculum_gate_sweep-py-1}
+
+```
+"""
+curriculum_gate_sweep.py — validates ADVANCE_TARGETS thresholds in curriculum_schedule.py
+by running constant-action (best known stir/light/frac) physics probes at D0 and D1,
+the two tiers whose thresholds were only ever scaled off a single D2 setpoint sweep
+rather than measured directly.
+
+Read-only physics probe — no model, no training. Same pattern as dynamic_profile_sweep.py,
+but across difficulty tiers instead of harvest fractions, at the fraction
+(0.15) that sweep found best-sustainable at D2.
+
+Usage:
+    python curriculum_gate_sweep.py
+"""
+```
+
+
+## ./diagnostics/dynamic_profile_sweep.py:1 {#--diagnostics-dynamic_profile_sweep-py-1}
+
+```
+"""
+dynamic_profile_sweep.py — Part 4 diagnostic for the periodic semi-continuous harvest
+redesign: sweep constant per-event harvest fractions (with the known best stir/light
+combo held fixed) at 20L/D2 physics to find (a) the achievable per-event mg ceiling
+(feeds TARGET_MG_PER_EVENT in genetic_env.py's _compute_reward) and (b) roughly where
+repeated over-harvesting starts causing washout (sanity-checks F_MAX).
+
+Read-only physics probe — no model, no training. Drives the env directly with raw
+actions decoded the same way genetic_env.step() does (np.interp[-1,1] -> physical).
+
+Usage:
+    python dynamic_profile_sweep.py
+"""
+```
+
+
+## ./diagnostics/dynamic_profile_sweep_od.py:1 {#--diagnostics-dynamic_profile_sweep_od-py-1}
+
+```
+"""
+dynamic_profile_sweep_od.py — ad hoc extension of dynamic_profile_sweep.py that also reports
+time_avg_od per frac, to check whether the D1 gate's two thresholds (median_harvested_mg>=60,
+median_time_avg_od>=0.008) are jointly achievable under a fixed-action physics-only policy,
+or whether they trade off against each other (as v15's deterministic-eval trace suggested).
+
+Read-only physics probe — no model, no training.
+"""
+```
+
+
+## ./diagnostics/fouling_feasibility.py:1 {#--diagnostics-fouling_feasibility-py-1}
+
+```
+"""
+fouling_feasibility.py — would enabling REAL biofouling make D2 unreachable, and does it
+make stir an interesting control lever?
+
+Two questions, both of which must be answered before recommending that the light-path
+fouling coefficient be raised from its (inert) historical 0.0002:
+
+  Q1 FEASIBILITY. Fouling attenuates all light channels by exp(-fouling_factor), which
+     throttles growth, which lowers time_avg_od — the exact criterion that gates D2
+     (>=0.011). If active fouling puts D2 out of reach even for the best known controller,
+     enabling it would set the agent an impossible target.
+
+  Q2 INTERESTINGNESS. Fouling rate scales with (1 - stir/200), so stir becomes a real
+     mitigation. But higher stir also costs yield. If the best stir under fouling differs
+     from the best stir without it, fouling turns stir from a near-irrelevant dial into a
+     genuine trade-off — and because fouling ACCUMULATES, the optimal stir becomes
+     time-varying, which a constant-stir controller cannot exploit but a recurrent policy
+     can. That would be a regime where RL should beat the scripted expert.
+
+Read-only probe: drives the env with the scripted OD-feedback harvest law (same one
+bc_pretrain.py clones) at a range of fixed stir settings, with fouling off vs on.
+"""
+```
+
+
+## ./diagnostics/held_out_sweep.py:1 {#--diagnostics-held_out_sweep-py-1}
+
+```
+"""
+held_out_sweep.py — read-only robustness check for a trained RecurrentPPO checkpoint.
+
+Runs N cold-start episodes at D2 (full difficulty) with the same init-cells
+distribution the curriculum uses during training (90% lognormal(100,400),
+10% adversarial cold start 30-80 cells), deterministic policy, and reports
+crash rate / harvested-mass distribution / time_avg_od distribution — the same
+metrics the curriculum gate checks, but over a much larger held-out sample than
+the 14-episode chunks used live during training.
+
+Usage:
+    python held_out_sweep.py --model model_data/recurrent_ppo_genetic_ibm --n 40
+    python held_out_sweep.py --model model_data/archive_periodic_harvest_run1_D2mastery_2.7M/recurrent_ppo_genetic_ibm --n 40
+"""
+```
+
+
+## ./diagnostics/noise_sensitivity.py:1 {#--diagnostics-noise_sensitivity-py-1}
+
+```
+"""
+noise_sensitivity.py — how much does ACTION NOISE destroy each policy?
+
+WHY: reward_ab.py showed the reward function ranks the scripted expert +313 above v17
+(1079 vs 766), driven entirely by reward_od. So the reward is NOT exploitable and the
+reward-structure hypothesis is dead. Yet PPO drifted from expert-like behaviour to v17's.
+
+PPO maximises expected reward UNDER ITS OWN SAMPLING NOISE; we evaluate deterministically.
+If the expert's strategy is noise-fragile (it harvests ~0 early, and Gaussian noise around
+0 forces harvesting anyway because the low side clips) while v17's higher-baseline strategy
+is noise-robust, then PPO was correctly optimising a DIFFERENT objective than the one the
+curriculum gates score. That is the "stochastic-train / deterministic-evaluate" gap
+documented in arXiv 2509.19464, which notes it widens on long-horizon tasks (ours: 7200 steps).
+
+This script measures that directly: run each policy with Gaussian noise of varying sigma
+added to its raw [-1,1] action, and see where each one's reward and time_avg_od fall apart.
+
+Read-only. No training, no model modification.
+
+Usage:
+    python noise_sensitivity.py --model <path> --norm <path> --n 4
+"""
+```
+
+
+## ./diagnostics/reward_ab.py:1 {#--diagnostics-reward_ab-py-1}
+
+```
+"""
+reward_ab.py — head-to-head per-term reward comparison: trained policy vs scripted expert,
+on IDENTICAL episodes (same seed, same initial_cells, same difficulty).
+
+WHY: v17 (BC warm start) inverted the expert's phase structure — it harvests 0.25-0.30
+early and declines to ~0.18, whereas the expert it was cloned from harvests ~0 early and
+ramps up. The expert scores better on the curriculum gates, so the question is whether the
+REWARD also prefers the expert. If the reward prefers v17's behaviour, the reward is the
+problem. If the reward prefers the expert and PPO drifted anyway, it is an optimisation
+problem.
+
+The standing lesson from the v8 reweighting mistake applies: measure per-term totals before
+changing any weight. This script produces that measurement.
+
+Usage:
+    python reward_ab.py --model model_data/archive_v17_bc_warmstart_D2_8M/recurrent_ppo_genetic_ibm \
+                        --norm  model_data/archive_v17_bc_warmstart_D2_8M/recurrent_vec_normalize.pkl \
+                        --n 8 --difficulty 2
+"""
+```
+
+
+## ./diagnostics/reward_breakdown.py:1 {#--diagnostics-reward_breakdown-py-1}
+
+```
+"""
+reward_breakdown.py — reports per-term reward contribution (od / biomass / stagnation /
+washout / harvest) for a trained checkpoint, summed across full episodes. Diagnoses
+whether any _compute_reward term in genetic_env.py is dead weight or dominating.
+
+Requires genetic_env.py's reward_term_sums tracking (added alongside this script).
+
+Usage:
+    python reward_breakdown.py --model model_data/archive_.../recurrent_ppo_genetic_ibm --n 8
+"""
+```
+
+
+## ./diagnostics/tdmpc2_cost_probe.py:1 {#--diagnostics-tdmpc2_cost_probe-py-1}
+
+```
+"""
+tdmpc2_cost_probe.py — functional smoke test + wall-clock cost measurement for the upgraded
+TD-MPC2 agent (Fix v27: 3D action space, macro-timestep world model, 5-critic ensemble,
+two-hot reward/value regression, project curriculum gate).
+
+Two checks, in order — this project has a standing rule against trusting an estimate over a
+measurement (the original TD-MPC2 cost claim was wrong by ~20x for exactly that reason):
+
+  1. CORRECTNESS. TwoHotEncoder round-trip (encode a scalar, decode the encoding straight
+     back) and one live agent.update() call, checked for NaN/Inf and a finite loss. This is
+     read-only / no training — it exists to catch a shape or encoding bug BEFORE it burns
+     hours of wall-clock in a real run.
+  2. COST. Times agent.plan() and agent.update() at the file's actual configured hyperparameters
+     (horizon=12, samples=64, MACRO_STEPS=50) and projects the full TOTAL_TRAINING_STEPS budget.
+
+Usage:
+    python diagnostics/tdmpc2_cost_probe.py
+    python diagnostics/tdmpc2_cost_probe.py --steps 2000000
+"""
+```
+
+
+## ./diagnostics/tdmpc2_held_out_sweep.py:1 {#--diagnostics-tdmpc2_held_out_sweep-py-1}
+
+```
+"""
+tdmpc2_held_out_sweep.py — read-only held-out robustness check for a trained TD-MPC2 checkpoint.
+
+TD-MPC2 equivalent of held_out_sweep.py: that script assumes an SB3 model.predict() interface
+(TDMPC2Agent.plan() is not compatible), so this is a separate, parallel implementation rather
+than a shared one. Same project rule applies regardless: no mastery claim is final without an
+independent held-out check on FRESH seeds, disjoint from anything used to gate training.
+
+Both eval modes sample initial_cells via curriculum_schedule._sample_init_cells, matched to
+difficulty (the run_tdmpc2_eval_episode / v27-diagnostic fix — NOT the training run's own
+det-eval harness, which hardcoded initial_cells=3000 and is why this script exists as an
+independent check rather than trusting the training loop's own [Det] numbers).
+
+Usage:
+    python diagnostics/tdmpc2_held_out_sweep.py --difficulty 0 --seeds 40
+    python diagnostics/tdmpc2_held_out_sweep.py --difficulty 1 --seeds 40 --stochastic
+"""
+```
+
+
+## ./diagnostics/test_actions.py:1 {#--diagnostics-test_actions-py-1}
+
+```
+"""
+test_actions.py — inspect or compare trained RecurrentPPO action outputs.
+
+Single model:
+    python test_actions.py --model model_data/recurrent_ppo_ibm_8.5_env
+    python test_actions.py --interval 200 --difficulty 0 --plot
+
+Compare two models (same env seed):
+    python test_actions.py --model model_data/recurrent_ppo_ibm_8.5_env \\
+                           --compare model_data/recurrent_ppo_ibm_6.5_env
+    python test_actions.py --model A --norm model_data/norm_A.pkl \\
+                           --compare B --norm-b model_data/norm_B.pkl --seed 42
+"""
+```
+
+
+## ./diagnostics/zombie_diagnosis.py:1 {#--diagnostics-zombie_diagnosis-py-1}
+
+```
+"""
+zombie_diagnosis.py — diagnoses the "zombie" failure mode found by reward_breakdown.py:
+episodes that never hard-crash (terminate early) but spend an extended stretch with
+OD < 0.001, racking up heavy washout penalty and dragging deterministic reward deeply
+negative even though the same checkpoint reports 0% crash_rate in the curriculum gate.
+
+For each episode, tracks per-step OD/action and reports:
+  - init_cells, difficulty
+  - whether the episode ever entered a "zombie" stretch (>=20 consecutive steps od<0.001)
+  - zombie onset step, zombie duration (steps), whether it recovered before episode end
+  - mean action (stir/light/harvest_frac) in the 200 steps before zombie onset vs during
+  - final reward_term_sums, cumulative_harvested_mg, time_avg_od, crashed
+"""
+```
+
+
+## ./environments/alpha_env.py:9 {#--environments-alpha_env-py-9}
+
+```
+    """
+    Individual-Based Model (IBM) Photobioreactor Environment.
+    Tracks N individual algal cells as particles in 1D depth (z-axis) using vectorized operations.
+    Implements Genetic Domain Randomization with unique algal strains per episode.
+    """
+```
+
+
+## ./environments/alpha_env.py:287 {#--environments-alpha_env-py-287}
+
+```
+        """4D privileged vector — sim-only, never exposed at deployment.
+        Returns: [dissolved_co2, mean_f_Q, mu_max, Ks_light]
+        """
+```
+
+
+## ./environments/genetic_env.py:14 {#--environments-genetic_env-py-14}
+
+```
+    """
+    Individual-Based Model (IBM) Photobioreactor Environment.
+    Tracks N individual algal cells as particles in 1D depth (z-axis) using vectorized operations.
+    Implements Genetic Domain Randomization with unique algal strains per episode.
+    """
+```
+
+
+## ./environments/genetic_env.py:386 {#--environments-genetic_env-py-386}
+
+```
+        """4D privileged vector — sim-only, never exposed at deployment.
+        Returns: [dissolved_co2, mean_f_Q, mu_max, Ks_light]
+        """
+```
+
+
+## ./environments/genetic_env.py:418 {#--environments-genetic_env-py-418}
+
+```
+        """Semi-continuous reward: sustained growth + periodic dilution/harvest.
+
+        Dense per-step components (OD, biomass — the latter also covers stagnation via its
+        own curve — and OD movement) carry the agent between harvest events; reward_harvest
+        fires only on harvest-event steps (every HARVEST_INTERVAL_STEPS), rewarding the
+        size of that periodic yield. There is no batch "terminal harvest" — harvest happens
+        repeatedly through the episode, not once at the end.
+
+        Simplified to 4 terms (from 5) after three training attempts: extra reward-shaping
+        terms proved to be a liability, not just complexity — see reward_biomass comment
+        below for what was folded/removed and why.
+        """
+```
+
+
+## ./environments/heavy_env.py:7 {#--environments-heavy_env-py-7}
+
+```
+    """
+    Individual-Based Model (IBM) Photobioreactor Environment (Simplified 1D/Heavy).
+    Tracks N individual algal cells as particles in 1D depth (z-axis).
+    """
+```
+
+
+## ./environments/light_env.py:8 {#--environments-light_env-py-8}
+
+```
+    """
+    Individual-Based Model (IBM) Photobioreactor Environment (Light Efficient).
+    Tracks N individual algal cells as particles in 1D depth (z-axis).
+    """
+```
+
+
+## ./environments/prod_env.py:9 {#--environments-prod_env-py-9}
+
+```
+    """
+    Individual-Based Model (IBM) Photobioreactor Environment.
+    Tracks N individual algal cells as particles in 1D depth (z-axis) using vectorized operations.
+    Implements Genetic Domain Randomization with unique algal strains per episode.
+    """
+```
+
+
+## ./environments/prod_env.py:335 {#--environments-prod_env-py-335}
+
+```
+        """4D privileged vector — sim-only, never exposed at deployment.
+        Returns: [dissolved_co2, mean_f_Q, mu_max, Ks_light]
+        """
+```
+
+
+## ./environments/total_env.py:9 {#--environments-total_env-py-9}
+
+```
+    """
+    Individual-Based Model (IBM) Photobioreactor Environment.
+    Tracks N individual algal cells as particles in 1D depth (z-axis) using vectorized operations.
+    Implements Genetic Domain Randomization with unique algal strains per episode.
+    """
+```
+
+
+## ./environments/total_env.py:334 {#--environments-total_env-py-334}
+
+```
+        """4D privileged vector — sim-only, never exposed at deployment.
+        Returns: [dissolved_co2, mean_f_Q, mu_max, Ks_light]
+        """
+```
+
+
+## ./environments/total_env.py:348 {#--environments-total_env-py-348}
+
+```
+        """Batch-cycle reward: grow for 144h, harvest once at the end.
+
+        4 dense per-step components carry the agent through the cycle, plus one
+        terminal bonus that fires only at natural episode end (not on crash). Dense
+        terms are intentionally kept as the dominant contributors, not the terminal
+        bonus — gamma=0.995 gives only ~200-step (4h) effective horizon, so a single
+        reward spike 7200 steps away is nearly unlearnable via TD bootstrapping; the
+        terminal bonus is a capstone nudge on top of continuous shaping, not a
+        sparse-reward substitute for it.
+        """
+```
+
+
+## ./experiments/bc_scaffold/scripts/expert_sweep.py:1 {#--experiments-bc_scaffold-scripts-expert_sweep-py-1}
+
+```
+"""
+expert_sweep.py — runs the non-learned proportional harvest law (same as
+bc/bc_pretrain.py) directly against genetic_env.py, zero NN and zero training, on
+the curriculum's own held-out cold-start distribution. Isolates whether PPO/TD-MPC2's
+time_avg_od bottleneck is environment difficulty or an RL-discovery problem.
+
+Usage (from repo root, PPO_IBM/):
+    python experiments/bc_scaffold/scripts/expert_sweep.py --n 40 --difficulty 0
+    python experiments/bc_scaffold/scripts/expert_sweep.py --n 40 --difficulty 1
+    python experiments/bc_scaffold/scripts/expert_sweep.py --n 40 --difficulty 2
+"""
+```
+
+
+## ./experiments/bc_scaffold/scripts/run_bc_clone_and_eval.py:1 {#--experiments-bc_scaffold-scripts-run_bc_clone_and_eval-py-1}
+
+```
+"""
+run_bc_clone_and_eval.py — runs bc/bc_pretrain.py fresh (clones the expert law into
+the real RecurrentPPO policy, zero RL steps) and evaluates it at D0/D1/D2 with
+diagnostics/held_out_sweep.py. Reproduces the earlier v19 BC-clone result
+(model_data/BEST_bc_clone_D2_validated) from a clean run and extends it to all
+three tiers.
+
+Usage (from repo root, PPO_IBM/):
+    python experiments/bc_scaffold/scripts/run_bc_clone_and_eval.py
+"""
+```
+
+
+## ./experiments/bc_scaffold/scripts/td3_held_out_sweep.py:1 {#--experiments-bc_scaffold-scripts-td3_held_out_sweep-py-1}
+
+```
+"""
+td3_held_out_sweep.py — independent held-out validation for a TD3 actor checkpoint,
+mirroring diagnostics/held_out_sweep.py's role for PPO: 40 cold-start episodes on the
+curriculum gate's own distribution (90% lognormal(100,400), 10% adversarial 30-80),
+deterministic policy, scored against the D2 gate. In-training det-eval has produced
+false positives before (v14/v17/v26/TD-MPC2 v27), so results here are what actually
+counts, not the in-training numbers.
+
+Usage (from repo root, PPO_IBM/):
+    python experiments/bc_scaffold/scripts/td3_held_out_sweep.py --n 40
+"""
+```
+
+
+## ./experiments/env_diagnosis/diagnose.py:1 {#--experiments-env_diagnosis-diagnose-py-1}
+
+```
+"""
+diagnose.py — actions/reward/environment diagnostic sweep for GeneticPhotobioreactorEnv.
+
+Investigates TD3+BC (v35)'s post-resume divergence (critic loss 7.8->543.6, crash rate
+0%->100% over a few chunks; runs_registry.csv v35_td3bc) via three sweeps:
+
+1. REWARD — per-step reward distribution under the scripted expert, and how much of an
+   outlier the -100 crash/extinction penalty (genetic_env.py) is against it.
+2. ENVIRONMENT — crash rate by initial-population bucket (low/mid/high) x difficulty,
+   under the scripted expert and under random actions (proxy for a perturbed policy).
+3. ACTIONS — harvest-fraction crash boundary ("washout cliff"), re-verified against the
+   current env version.
+
+Usage (from repo root, PPO_IBM/):
+    python experiments/env_diagnosis/diagnose.py
+"""
+```
+
+
+## ./experiments/env_diagnosis/growth_dynamics_check.py:1 {#--experiments-env_diagnosis-growth_dynamics_check-py-1}
+
+```
+"""
+growth_dynamics_check.py — independent sanity check of GeneticPhotobioreactorEnv's
+core biology: does population/OD grow the way a Spirulina culture actually should?
+
+Three checks:
+1. NO-HARVEST GROWTH CURVE (D0, favorable stir/light, no harvest): full 144h episode.
+   Expect near-exponential growth while nutrients/light are non-limiting, then a
+   slowdown as N/P/light self-shading kick in. Fits an exponential to the early phase
+   and compares the fitted rate to the strain's own mu_max.
+2. SEMI-CONTINUOUS HARVEST CYCLE (fixed sustainable harvest fraction every 12h):
+   expect a repeating sawtooth in OD/biomass, not a monotonic trend.
+3. LIGHT-RESPONSE SWEEP (short runs at fixed light levels, harvest=0): expect a
+   unimodal (Haldane) response -- growth rate rising then falling as light increases,
+   not monotonic.
+
+Usage (from repo root, PPO_IBM/):
+    python experiments/env_diagnosis/growth_dynamics_check.py
+"""
+```
+
+
+## ./experiments/env_diagnosis/growth_dynamics_check.py:48 {#--experiments-env_diagnosis-growth_dynamics_check-py-48}
+
+```
+    # env.reset(seed=...) alone does NOT reproducibly seed this env -- strain randomization
+    # (_randomize_strain) and initial cell state use the legacy global np.random module, not
+    # gym's self.np_random. Must seed the global RNG explicitly first (same fix applied to
+    # legacy/TD3.py's run_td3_eval_episode, see docs/decision_history.md).
+```
+
+
+## ./experiments/env_diagnosis/growth_dynamics_check.py:59 {#--experiments-env_diagnosis-growth_dynamics_check-py-59}
+
+```
+    # Harvest action is interval-averaged by the env (_harvest_action_sum /
+    # _harvest_action_count), applied as a pulse when HARVEST_INTERVAL_STEPS fires --
+    # holding frac constant every step makes the interval average equal frac, matching
+    # how a real policy would need to sustain it across the interval.
+```
+
+
+## ./experiments/harvest_ablation/deterministic_eval_harvest_fixed.py:1 {#--experiments-harvest_ablation-deterministic_eval_harvest_fixed-py-1}
+
+```
+"""deterministic_eval_harvest_fixed.py — harvest-ablation variant of
+training/deterministic_eval.py. Wraps the env with HarvestFixedWrapper so the dual
+gate's det-eval side sees the same fixed-harvest environment training does."""
+```
+
+
+## ./experiments/harvest_ablation/env_factory_harvest_fixed.py:1 {#--experiments-harvest_ablation-env_factory_harvest_fixed-py-1}
+
+```
+"""env_factory_harvest_fixed.py — harvest-ablation variant of training/env_factory.py.
+Same wrapper stack, with HarvestFixedWrapper inserted innermost so the fixed harvest
+value is seen by every downstream wrapper, not just the raw env physics."""
+```
+
+
+## ./experiments/harvest_ablation/held_out_sweep_harvest_fixed.py:1 {#--experiments-harvest_ablation-held_out_sweep_harvest_fixed-py-1}
+
+```
+"""
+held_out_sweep_harvest_fixed.py — independent held-out sweep for the v37 harvest-fixed
+PPO ablation (experiments/harvest_ablation/). Same methodology as diagnostics/held_out_sweep.py
+(90% lognormal(100,400) / 10% adversarial 30-80 cold starts, deterministic policy), but wraps
+the env with HarvestFixedWrapper so harvest is fixed at frac=0.15 exactly as during training.
+
+Usage (from repo root, PPO_IBM/):
+    python experiments/harvest_ablation/held_out_sweep_harvest_fixed.py --n 40 --difficulty 1
+"""
+```
+
+
+## ./experiments/harvest_ablation/recurrent_ppo_harvest_fixed.py:76 {#--experiments-harvest_ablation-recurrent_ppo_harvest_fixed-py-76}
+
+```
+    """Passed to RecurrentPPO as `learning_rate`. Ignores SB3's own progress_remaining
+    argument (meaningless here per the chunked-call issue above) and returns whatever
+    the training loop last wrote to _lr_state, based on true overall progress."""
+```
+
+
+## ./experiments/harvest_ablation/recurrent_ppo_harvest_fixed.py:639 {#--experiments-harvest_ablation-recurrent_ppo_harvest_fixed-py-639}
+
+```
+    """
+    Continue training from a previously saved checkpoint on Difficulty 2 (Full Physics).
+    Loads the model weights AND the VecNormalize running statistics so the agent
+    doesn't lose its calibrated observation normalisation.
+    Uses a lower learning rate (1e-4) to consolidate long-horizon strategies
+    without catastrophically forgetting the curriculum knowledge.
+    """
+```
+
+
+## ./legacy/TD3.py:1 {#--legacy-td3-py-1}
+
+```
+"""
+TD3 (Twin Delayed DDPG) for GeneticPhotobioreactorEnv.
+
+Tests whether the "BC beats RL" pattern (experiments/bc_scaffold/) is specific to
+on-policy/planning methods (PPO, TD-MPC2) or generalizes to off-policy actor-critic too.
+Reuses proven project infrastructure rather than building from scratch: LSTM actor/twin
+critic shape from legacy/recurrent_sac.py, and the dual-gate/capability-demotion
+curriculum apparatus from curriculum_schedule.py and legacy/TD_MPC2.py, so results are
+directly comparable to every other run in finalresults.md.
+
+Replay buffer is split into a permanent `demo_buffer` (scripted-expert episodes, seeded
+once, never evicted) and a growing `online_buffer`; every batch mixes DEMO_FRACTION from
+the former. TD3+BC (Fujimoto & Gu 2021) adds an explicit imitation term to the actor loss
+on top of that, after v33/v34 showed replay-buffer mixing alone wasn't enough to prevent
+actor collapse (see git history / runs_registry.csv for v33-v36).
+
+Usage (from repo root, PPO_IBM/):
+    python legacy/TD3.py                 # fresh run, full curriculum
+    python legacy/TD3.py --resume        # resume from latest checkpoint
+"""
+```
+
+
+## ./legacy/TD3.py:453 {#--legacy-td3-py-453}
+
+```
+    """Separate, never-overwritten-by-collapse snapshot — the regular checkpoint only
+    keeps the latest weights, so a later divergence can otherwise destroy the best
+    result on disk. Overwrites only on genuine det_harvest improvement."""
+```
+
+
+## ./legacy/TD_MPC2.py:1 {#--legacy-td_mpc2-py-1}
+
+```
+"""
+TD-MPC2 (Temporal Difference Model Predictive Control) Implementation
+For deeply-delayed, domain-randomized state-based control.
+Upgrades: 1D-CNN History Compressor (24 steps), Policy Prior (Actor-Guided MPPI), Curriculum Learning (3 Phases).
+"""
+```
+
+
+## ./legacy/TD_MPC2.py:48 {#--legacy-td_mpc2-py-48}
+
+```
+    """
+    Holds the running LMU memory state `m_t`.
+    No longer needs a full rolling window queue since LMU is continuous time.
+    """
+```
+
+
+## ./legacy/TD_MPC2.py:84 {#--legacy-td_mpc2-py-84}
+
+```
+    """Fix (v27): two-hot discrete regression for reward/value, replacing MSE — one of the two
+    changes that distinguish TD-MPC2 from "MPC with a learned model" (the other is the Q
+    ensemble below). Scalar targets are symlog-compressed, then represented as a two-hot
+    vector over a fixed linear bin grid (mass split between the two bins bracketing the
+    value, proportional to distance — exact if the value falls on a bin centre). The network
+    predicts a categorical distribution over bins and is trained with cross-entropy; the
+    scalar estimate is recovered as the expected bin value under that distribution.
+
+    Why this over MSE: MSE regression on a wide-dynamic-range, heavy-tailed target (block
+    rewards here range from near-zero to double digits depending on OD/harvest state) tends
+    to be dominated by the largest-magnitude examples and gives no calibrated uncertainty.
+    Two-hot classification is scale-robust by construction (symlog) and its softmax output
+    is directly usable as a distributional value estimate.
+
+    Verified with a standalone round-trip check (encode -> take the encoded distribution as
+    if it were a perfect prediction -> decode) before being wired into training — see
+    diagnostics/tdmpc2_cost_probe.py.
+    """
+```
+
+
+## ./legacy/TD_MPC2.py:129 {#--legacy-td_mpc2-py-129}
+
+```
+        """logits: (B, num_bins) RAW network output (not yet a distribution) -> (B,) scalar.
+        Applies softmax first — do not call this on something already normalised (e.g. the
+        output of encode()); use _expected_value directly for that, or the softmax will
+        distort an already-valid distribution. This distinction is exactly what
+        diagnostics/tdmpc2_cost_probe.py's round-trip test checks."""
+```
+
+
+## ./legacy/TD_MPC2.py:152 {#--legacy-td_mpc2-py-152}
+
+```
+    """
+    Legendre Memory Unit (LMU): Compresses continuous observation history
+    into a stateful encoding `m_t` and projects it to a 64D feature vector.
+
+    Uses a fixed per-channel timescale (delta) for stable LMU dynamics.
+    """
+```
+
+
+## ./legacy/TD_MPC2.py:189 {#--legacy-td_mpc2-py-189}
+
+```
+        """
+        obs: (Batch, OBS_DIM)
+        m_t_minus_1: (Batch, OBS_DIM, ORDER)   -- previous continuous memory state
+        """
+```
+
+
+## ./legacy/TD_MPC2.py:260 {#--legacy-td_mpc2-py-260}
+
+```
+    """
+    Actor network: takes a latent state h and outputs a *mean* action.
+    This biases the MPPI sampling N(pi(h), sigma) instead of N(0, sigma),
+    focusing all 512 trajectories around the actor's best guess.
+    Trained via behavioral cloning on the MPPI-chosen elite actions.
+    """
+```
+
+
+## ./legacy/TD_MPC2.py:298 {#--legacy-td_mpc2-py-298}
+
+```
+    """Predicts immediate (macro-block) reward from a state/action pair.
+    Fix (v27): outputs num_bins logits (two-hot classification target) instead of 1 scalar
+    (MSE target) — see TwoHotEncoder. Decoding to a scalar is the caller's responsibility
+    (via TwoHotEncoder.decode), so this module stays a plain classifier head."""
+```
+
+
+## ./legacy/TD_MPC2.py:399 {#--legacy-td_mpc2-py-399}
+
+```
+        """Fix (v27): random-subset ensemble minimum (TD-MPC2's overestimation-reduction
+        mechanism), decoded from two-hot logits to a scalar. A DIFFERENT random pair is drawn
+        each call — including each call within the same plan()/update() — so no fixed pair of
+        critics can collude with each other across updates the way a hard-coded twin-Q pair can.
+        h: (B, latent_dim)."""
+```
+
+
+## ./legacy/TD_MPC2.py:409 {#--legacy-td_mpc2-py-409}
+
+```
+        """Cross-entropy against a two-hot soft target — the training-side counterpart to
+        TwoHotEncoder.decode. Implemented explicitly (rather than relying on a specific
+        PyTorch version's soft-label F.cross_entropy support) so behaviour is pinned regardless
+        of torch version."""
+```
+
+
+## ./legacy/TD_MPC2.py:419 {#--legacy-td_mpc2-py-419}
+
+```
+        """
+        CEM/MPPI Planner with Policy Prior warm-start.
+        obs: (OBS_DIM,) numpy array.
+        m_t: Continuous latent state (OBS_DIM, ORDER).
+        Returns the FIRST action of the optimal plan.
+        """
+```
+
+
+## ./legacy/TD_MPC2.py:605 {#--legacy-td_mpc2-py-605}
+
+```
+        """
+        Joint-Embedding Training Loop.
+        batch_obs / batch_next_obs: (B, OBS_DIM) tensors.
+        batch_mt / batch_next_mt: (B, OBS_DIM, ORDER) tensors.
+        """
+```
+
+
+## ./legacy/TD_MPC2.py:758 {#--legacy-td_mpc2-py-758}
+
+```
+    """Deterministic evaluation episode for the project's dual gate — mirrors
+    deterministic_eval.run_deterministic_eval_episode's role and return shape, but for the
+    TD-MPC2 agent's plan()/env interface (raw env + LMU memory, not SB3/VecNormalize).
+
+    "Deterministic" here means running plan() WITHOUT the training loop's added exploration
+    noise (`action += np.random.normal(...)`) — MPPI's own internal sampling is unavoidable,
+    but the noise injected on top of the plan for exploration is not, and it is that
+    exploration noise (not planner internals) that the dual gate exists to see past. Same
+    project rationale as deterministic_eval.py: EpisodeMetricsCallback-equivalent stats come
+    from noisy rollouts, and a policy that only "looks like" it works under exploration noise
+    should not be able to advance on that alone.
+    """
+```
+
+
+## ./legacy/TD_MPC2.py:1265 {#--legacy-td_mpc2-py-1265}
+
+```
+    """
+    Continue TD-MPC2 training from a saved checkpoint at Difficulty 2 (Full Physics).
+    Loads the world model, policy prior, and Q-network weights from the saved .pth file.
+    Runs at a reduced exploration noise (0.05 vs 0.15) so the policy prior is trusted
+    more heavily and MPPI focuses on refinement rather than exploration.
+    """
+```
+
+
+## ./legacy/Var_MPC.py:1 {#--legacy-var_mpc-py-1}
+
+```
+"""
+TD-MPC2 (Temporal Difference Model Predictive Control) Implementation
+For deeply-delayed, domain-randomized state-based control.
+Upgrades: 1D-CNN History Compressor (24 steps), Policy Prior (Actor-Guided MPPI), Curriculum Learning (3 Phases).
+"""
+```
+
+
+## ./legacy/Var_MPC.py:25 {#--legacy-var_mpc-py-25}
+
+```
+    """
+    Holds the running LMU memory state `m_t`.
+    No longer needs a full rolling window queue since LMU is continuous time.
+    """
+```
+
+
+## ./legacy/Var_MPC.py:56 {#--legacy-var_mpc-py-56}
+
+```
+    """Teacher: maps 4D privileged state → latent_dim (training only).
+    Inputs: [dissolved_co2, mean_fQ, mu_max, Ks_light_norm]
+    Grad does NOT flow through teacher into student — student loss uses .detach().
+    """
+```
+
+
+## ./legacy/Var_MPC.py:72 {#--legacy-var_mpc-py-72}
+
+```
+    """
+    Legendre Memory Unit (LMU): Compresses continuous observation history
+    into a stateful encoding `m_t` and projects it to a 64D feature vector.
+
+    Uses a fixed per-channel timescale (delta) for stable LMU dynamics.
+    """
+```
+
+
+## ./legacy/Var_MPC.py:170 {#--legacy-var_mpc-py-170}
+
+```
+    """
+    Actor network: takes a latent state h and outputs a *mean* action.
+    This biases the MPPI sampling N(pi(h), sigma) instead of N(0, sigma),
+    focusing all 512 trajectories around the actor's best guess.
+    Trained via behavioral cloning on the MPPI-chosen elite actions.
+    """
+```
+
+
+## ./legacy/Var_MPC.py:293 {#--legacy-var_mpc-py-293}
+
+```
+        """
+        CEM/MPPI Planner with Policy Prior warm-start.
+        obs: (OBS_DIM,) numpy array.
+        m_t: Continuous latent state (OBS_DIM, ORDER).
+        explore_mode: If True, uses OU noise and Variance-Maximizing evaluation.
+        Returns the FIRST action of the optimal plan.
+        """
+```
+
+
+## ./legacy/Var_MPC.py:506 {#--legacy-var_mpc-py-506}
+
+```
+        """
+        Joint-Embedding Training Loop.
+        batch_obs / batch_next_obs: (B, OBS_DIM) tensors.
+        batch_mt / batch_next_mt: (B, OBS_DIM, ORDER) LMU state tensors.
+        batch_priv: (B, PRIV_DIM) privileged state tensor — optional, enables distillation.
+        """
+```
+
+
+## ./legacy/Var_MPC.py:1070 {#--legacy-var_mpc-py-1070}
+
+```
+    """
+    Continue Var-MPC training from a saved checkpoint at Difficulty 2 (Full Physics).
+    Loads the world model, policy prior, and Q-network weights from the saved .pth file.
+    Runs at a reduced exploration noise (0.05 vs 0.15) so the policy prior is trusted
+    more heavily and MPPI focuses on refinement rather than exploration.
+    """
+```
+
+
+## ./legacy/format_docx.py:1 {#--legacy-format_docx-py-1}
+
+```
+"""
+format_docx.py
+Post-processes pandoc-generated .docx files to apply:
+  - Plain colourless tables via Word's built-in "Table Grid" style
+    (header row text made bold; no fills or colour)
+  - All heading levels bold, black, controlled sizes
+  - Proper paragraph/heading spacing
+  - Consistent Calibri body font
+
+Usage:
+    python format_docx.py
+    (close any open Word windows for the output files first)
+"""
+```
+
+
+## ./legacy/format_docx.py:83 {#--legacy-format_docx-py-83}
+
+```
+    """
+    Remove any existing w:tblBorders inserted by pandoc, then inject
+    explicit 0.5 pt (sz=4) single black borders for all six sides.
+    This overrides pandoc's direct XML so the Table Grid style is not silently
+    suppressed.
+    """
+```
+
+
+## ./legacy/format_docx.py:109 {#--legacy-format_docx-py-109}
+
+```
+    """
+    Apply Word's built-in 'Table Grid' style then force explicit borders.
+    Header row text is bold. All cells use TABLE_FONT black.
+    Handles <br> tags by inserting actual Word line breaks.
+    """
+```
+
+
+## ./legacy/recurrent_sac.py:1 {#--legacy-recurrent_sac-py-1}
+
+```
+"""
+Recurrent SAC (Soft Actor-Critic with LSTM) for GeneticPhotobioreactorEnv
+=========================================================================
+
+Architecture:
+  - RecurrentActor   : LSTM(256) → GaussianPolicy (re-parameterised)
+  - RecurrentCritic  : Twin independent LSTM(256) soft Q-networks
+  - SequenceBuffer   : Episode-based replay; samples fixed-length sequences
+  - Alpha            : Automatic entropy coefficient (learned online)
+  - Curriculum       : 3-phase loop (D0 → D1 → D2) matching PPO / TD-MPC2
+
+Why Recurrent SAC over vanilla SAC?
+  The photobioreactor is a POMDP — single observations don't fully reveal the
+  state (biofouling accumulates invisibly, O2 lags, pH has inertia).
+  LSTM maintains a hidden belief state h_t across the full episode, letting
+  the policy reason about trends rather than just snapshots.
+
+Usage:
+  python recurrent_sac.py                  # full curriculum
+  python recurrent_sac.py --finetune       # continue from checkpoint at D2
+  python recurrent_sac.py --finetune --steps 1000000
+"""
+```
+
+
+## ./legacy/recurrent_sac.py:77 {#--legacy-recurrent_sac-py-77}
+
+```
+    """
+    LSTM-based Gaussian policy that maps observation sequence → (mean, log_std).
+    Re-parameterised sampling + tanh squashing for bounded action space [-1, 1].
+    """
+```
+
+
+## ./legacy/recurrent_sac.py:106 {#--legacy-recurrent_sac-py-106}
+
+```
+        """
+        Args:
+            obs    : [B, T, obs_dim]  or  [1, 1, obs_dim] during inference
+            hidden : (h, c) LSTM state; None → zero-init
+
+        Returns:
+            mean, log_std  : [B, T, action_dim]
+            hidden         : updated (h, c) for next step
+        """
+```
+
+
+## ./legacy/recurrent_sac.py:128 {#--legacy-recurrent_sac-py-128}
+
+```
+        """
+        Returns:
+            action    : tanh-squashed sample  [B, T, action_dim]
+            log_prob  : log π(a|s) corrected for tanh  [B, T, 1]
+            mean      : deterministic action (for eval)
+            hidden    : updated LSTM state
+        """
+```
+
+
+## ./legacy/recurrent_sac.py:150 {#--legacy-recurrent_sac-py-150}
+
+```
+    """
+    Twin soft Q-networks with independent LSTM encoders.
+    Each network maps (obs, action) sequence → Q-value sequence.
+    Twin architecture prevents overestimation bias (Fujimoto et al. 2018).
+    """
+```
+
+
+## ./legacy/recurrent_sac.py:179 {#--legacy-recurrent_sac-py-179}
+
+```
+        """
+        Args:
+            obs, action : [B, T, dim]
+        Returns:
+            q1, q2      : [B, T, 1]
+            hidden1, hidden2 : updated LSTM states
+        """
+```
+
+
+## ./legacy/recurrent_sac.py:219 {#--legacy-recurrent_sac-py-219}
+
+```
+    """
+    Stores complete episodes. Samples random fixed-length sub-sequences for
+    training. BPTT is truncated to SEQ_LEN steps; hidden states are
+    zero-initialised at the start of each sampled sequence.
+    """
+```
+
+
+## ./legacy/recurrent_sac.py:349 {#--legacy-recurrent_sac-py-349}
+
+```
+    """
+    Full automated curriculum: Easy → Medium → Hard.
+    Model weights, replay buffer, and α carry across phases.
+    Only the environment is swapped; LSTM hidden state is reset per episode.
+    """
+```
+
+
+## ./legacy/recurrent_sac.py:586 {#--legacy-recurrent_sac-py-586}
+
+```
+    """
+    Load existing checkpoint and continue training at Difficulty 2 (Full Physics)
+    with reduced learning rates to consolidate without catastrophic forgetting.
+
+    Strategy:
+      - Load actor, critic, buffer from MODEL_DIR
+      - Set LR_ACTOR = LR_CRITIC = LR_ALPHA = 3e-5 (10× lower than default)
+      - Run extra_steps on D2 with the same dual-gate check (no threshold)
+    """
+```
+
+
+## ./legacy/ssm_core.py:7 {#--legacy-ssm_core-py-7}
+
+```
+    """
+    A simplified, pure-PyTorch Linear State Space Model (SSM) block.
+    Inspired by S4/Mamba foundations, this module provides infinite receptive 
+    field memory without the fixed-window constraint of 1D CNNs, while remaining
+    highly parallelizable for training.
+    """
+```
+
+
+## ./legacy/ssm_core.py:37 {#--legacy-ssm_core-py-37}
+
+```
+        """
+        Process a full sequence in bulk during training.
+        Uses a parallelized scan alias for fast GPU training.
+        
+        Args:
+            x: (Batch, SeqLen, d_model)
+            h_init: Optional initial hidden state (Batch, d_model, d_state)
+            
+        Returns:
+            out: (Batch, SeqLen, d_model)
+            h_last: Final hidden state (Batch, d_model, d_state) to pass to next chunk
+        """
+```
+
+
+## ./legacy/ssm_core.py:117 {#--legacy-ssm_core-py-117}
+
+```
+        """
+        O(1) Step function for environmental rollout inference.
+        
+        Args:
+            x_t: (Batch, d_model) current observation embedding
+            h_prev: (Batch, d_model, d_state) previous hidden state
+            
+        Returns:
+            out_t: (Batch, d_model) output
+            h_new: (Batch, d_model, d_state) updated hidden state
+        """
+```
+
+
+## ./scripts/finish_run.py:1 {#--scripts-finish_run-py-1}
+
+```
+"""
+finish_run.py — close out a training run: read its best deterministic checkpoint, score it
+against the curriculum gates, and write the result back into the run registry.
+
+WHY: comparing runs in this project meant grepping five multi-megabyte logs by hand and
+holding the numbers in working memory. That is how v21's od 0.0094 came to be treated as a
+reproducible level for a while — it was the top of a 0.0054-0.0094 spread, and nothing made
+the spread visible. A registry with one row per run makes that mistake hard to repeat.
+
+Usage (from the repo root):
+    python scripts/finish_run.py --tag v24_std_anneal_run5
+    python scripts/finish_run.py --tag v24_std_anneal_run5 --result "no D2; noise-dependent"
+"""
+```
+
+
+## ./scripts/run_training.py:1 {#--scripts-run_training-py-1}
+
+```
+"""
+run_training.py — safe launcher for a curriculum training run.
+
+Every bug this guards against actually happened in this project:
+
+  * DUAL PROCESS (~20h of v16 invalidated). A launch reported a non-zero exit and was assumed
+    dead; it wasn't. A second launch meant two processes writing the same log AND the same
+    checkpoint_dir / state_path / norm_path, silently corrupting each other. The interleaved
+    log looked like a curriculum state-machine bug and cost hours to diagnose.
+      -> refuses to start if a recurrent_ppo process is already alive, and verifies exactly
+         one startup banner appears after launch.
+  * STALE AUTO-RESUME (v14). Bare `--resume` scans a shared, never-cleared checkpoint dir and
+    picked up an unrelated older checkpoint while pairing it with the current run's state file.
+      -> resume requires an explicit path; the launcher pairs norm+state from that same
+         directory rather than leaving whatever happened to be in model_data/.
+  * UNPAIRED NORM/STATE (nearly hit at v17). The trainer reads norm_path/state_path from
+    model_data/, NOT from the warm-start folder, so `--resume warmstart/model.zip` would have
+    loaded a BC actor against the previous run's normalisation statistics.
+      -> pairing is explicit and verified before launch.
+  * SILENT NON-LAUNCH. `(tasklist | grep -ci python) && python ...` never ran the trainer,
+    because `grep -c` exits 1 on zero matches and `&&` short-circuited.
+      -> the launcher checks the log for real startup output instead of trusting exit codes.
+  * UNATTRIBUTABLE CONFIG CHANGES (v22 changed three things at once plus the seed, and its
+    regression could not be assigned to any of them).
+      -> every run writes a config snapshot and appends a row to a registry CSV.
+
+Usage (ALWAYS from the repo root — relative paths resolve against the working directory):
+    python scripts/run_training.py --tag v25_my_change
+    python scripts/run_training.py --tag v25_bc --resume model_data/bc_warmstart/recurrent_ppo_genetic_ibm.zip
+    python scripts/run_training.py --tag v25 --archive-prev v24_std_anneal_run5
+"""
+```
+
+
+## ./scripts/run_training.py:56 {#--scripts-run_training-py-56}
+
+```
+    """PIDs of running trainer processes.
+
+    Matches on the COMMAND LINE rather than on 'python' — an unrelated python process once
+    blocked a wait loop for hours. But the pattern must be 'recurrent_ppo.py', NOT
+    'recurrent_ppo': the saved model is named `recurrent_ppo_genetic_ibm`, so the looser
+    pattern matches every diagnostic and validation process that references the checkpoint.
+    That false positive is not harmless in either direction — it would make this launcher
+    refuse to start while a read-only sweep was running, and a kill loop built on the same
+    pattern terminated a validation run mid-sweep."""
+```
+
+
+## ./scripts/validate.py:1 {#--scripts-validate-py-1}
+
+```
+"""
+validate.py — the mandatory independent check on any checkpoint, in one command.
+
+WHY THIS EXISTS: no mastery claim in this project has ever been trustworthy without held-out
+validation. v14 advanced to D2 with both in-training gates passing and then scored median
+0.4mg against a 90mg gate. v17 did the same and failed at BOTH tiers. The in-training
+deterministic eval uses a 15-episode rolling window; held_out_sweep.py uses 40 fresh seeds
+including adversarial cold starts, and that difference has repeatedly been decisive.
+
+It also runs the action trace, because the SHAPE of the harvest profile has diagnosed every
+failure mode here: never-harvest (v4/v14), drift-up (v15), start-high-decay-to-zero (v16b),
+over-harvest-early (v17). Aggregate numbers alone hid all four.
+
+Usage (from the repo root):
+    python scripts/validate.py --model model_data/best_det_checkpoint/recurrent_ppo_genetic_ibm
+    python scripts/validate.py --model <path> --norm <path> --n 40 --seeds 0 1 2 3
+"""
+```
+
+
+## ./tools/config_studio/config_io.py:1 {#--tools-config_studio-config_io-py-1}
+
+```
+"""config_io.py — read/write schema.py's target files via targeted regex substitution
+(not a full AST rewrite, to avoid mangling hand-formatted comments). Each write is
+followed by a git commit scoped to that one file."""
+```
+
+
+## ./tools/config_studio/preview_runner.py:1 {#--tools-config_studio-preview_runner-py-1}
+
+```
+"""preview_runner.py — live-preview half of config_studio. Runs the scripted expert
+against genetic_env.py using whatever values the UI has staged (not necessarily saved),
+scored against a gate. Every parameter is a function argument (not a module constant,
+unlike expert_sweep.py) since these are exactly what the UI varies."""
+```
+
+
+## ./tools/config_studio/schema.py:1 {#--tools-config_studio-schema-py-1}
+
+```
+"""schema.py — declares which project constants config_studio can edit and where each
+lives. Field kinds: "simple" (`NAME = <number>`), "tuple2" (`NAME = (a, b)`, exposed as
+two sub-fields), "tier_dict" (one entry in curriculum_schedule.py's ADVANCE_TARGETS,
+keyed by tier + dict key). Add a field by adding one entry here."""
+```
+
+
+## ./tools/config_studio/server.py:1 {#--tools-config_studio-server-py-1}
+
+```
+"""
+config_studio — visual editor for the curriculum gate thresholds and scripted-expert
+control law, with a live-preview (run N episodes, show the result) and git-backed
+saves. Stdlib http.server only, no new dependencies.
+
+Usage (from repo root, PPO_IBM/):
+    python tools/config_studio/server.py [--port 8765]
+"""
+```
+
+
+## ./training/callbacks.py:21 {#--training-callbacks-py-21}
+
+```
+    """
+    Appends all 3 raw actuator outputs (Stir, Light, Harvest) and
+    rolling mean OD to the TQDM progress bar on every env step.
+    """
+```
+
+
+## ./training/callbacks.py:68 {#--training-callbacks-py-68}
+
+```
+    """
+    Implements Population-Seeded Batch Stitching for Stable-Baselines3.
+
+    On episode end: if num_active > pop_threshold, save the full physical state.
+    Reset-time start selection is handled by CurriculumStartWrapper.
+    """
+```
+
+
+## ./training/callbacks.py:121 {#--training-callbacks-py-121}
+
+```
+    """Collect episode-end metrics used for adaptive curriculum decisions.
+
+    Maintains a persistent, per-difficulty rolling window (deque, maxlen=window_size)
+    that survives across chunk boundaries, instead of a flat list that used to be
+    discarded (a fresh EpisodeMetricsCallback instantiated) every 100k-step chunk.
+    That previously meant curriculum advancement/demotion decisions were made on
+    whatever ~14 episodes happened to land in the current chunk — a sample small and
+    narrow enough that a "lucky" chunk (biased toward larger, easier initial
+    populations) could pass a gate that didn't hold up on a broader held-out sample
+    (see held_out_sweep.py). This instance should be constructed once and reused
+    across the whole training run's chunk loop; call start_new_chunk() at each chunk
+    boundary to reset only the per-chunk episode counter (still needed for entropy
+    std-control pacing), not the rolling history.
+    """
+```
+
+
+## ./training/curriculum_schedule.py:1 {#--training-curriculum_schedule-py-1}
+
+```
+"""Curriculum difficulty scheduling: mastery/demotion targets, per-episode difficulty
+sampling, and the reset-time wrapper that applies the sampled difficulty and start mode.
+"""
+```
+
+
+## ./training/curriculum_starts.py:159 {#--training-curriculum_starts-py-159}
+
+```
+    """Return metrics used for curriculum pass/fail.
+
+    Policy: exclude stitched episodes when non-stitched episodes exist.
+    If a window has only stitched episodes, fall back to capped mixed view.
+    """
+```
+
+
+## ./training/deterministic_eval.py:1 {#--training-deterministic_eval-py-1}
+
+```
+"""
+deterministic_eval.py — lightweight, read-only deterministic evaluation episode used by the
+curriculum training loop (recurrent_ppo.py) to gate advancement, in addition to the existing
+stochastic-rollout gate.
+
+Why this exists: EpisodeMetricsCallback records episodes generated during model.learn(),
+which always uses stochastic action sampling (the entropy term's whole purpose). A policy
+whose deterministic (mean) action has collapsed to a degenerate strategy (e.g. never
+harvesting) can still look like it "harvests fine" in the stochastic rollouts purely from
+exploration noise around that mean occasionally crossing into a nonzero action — inflating
+the live curriculum gate without reflecting what the actually-deployed (deterministic)
+policy does. held_out_sweep.py and test_actions.py both catch this because they use
+deterministic=True, but neither runs during training. This module brings that same
+deterministic evaluation into the training loop itself, cheaply (a handful of episodes per
+chunk), so a policy that only "looks like" it works under exploration noise can no longer
+advance or be declared mastered.
+
+Modeled directly on held_out_sweep.py's run_episode — same env construction and step loop —
+but takes a normalization snapshot (obs_rms) instead of loading one from disk, since this
+runs against the live, still-training model rather than a saved checkpoint.
+"""
+```
+
+
+## ./training/deterministic_eval.py:42 {#--training-deterministic_eval-py-42}
+
+```
+    """Run one full deterministic episode against a fresh env, isolated from the live
+    training vec_env (a separate VecNormalize copy, training=False) so this is guaranteed
+    read-only — it cannot perturb training's running normalization stats or LSTM state.
+    """
+```
+
+
+## ./training/entropy_schedule.py:42 {#--training-entropy_schedule-py-42}
+
+```
+    """Hard cap on actor std as a function of overall training progress in [0, 1].
+
+    Flat at STD_HARD_CAP until STD_ANNEAL_START_FRAC, then linear down to
+    STD_ANNEAL_FINAL by STD_ANNEAL_END_FRAC. Early training keeps full exploration; late
+    training forces the mean policy to become the policy that is actually evaluated.
+    """
+```
+
+
+## ./training/recurrent_ppo.py:72 {#--training-recurrent_ppo-py-72}
+
+```
+    """Passed to RecurrentPPO as `learning_rate`. Ignores SB3's own progress_remaining
+    argument (meaningless here per the chunked-call issue above) and returns whatever
+    the training loop last wrote to _lr_state, based on true overall progress."""
+```
+
+
+## ./training/recurrent_ppo.py:646 {#--training-recurrent_ppo-py-646}
+
+```
+    """
+    Continue training from a previously saved checkpoint on Difficulty 2 (Full Physics).
+    Loads the model weights AND the VecNormalize running statistics so the agent
+    doesn't lose its calibrated observation normalisation.
+    Uses a lower learning rate (1e-4) to consolidate long-horizon strategies
+    without catastrophically forgetting the curriculum knowledge.
+    """
+```
+
+
+## ./training/wrappers.py:38 {#--training-wrappers-py-38}
+
+```
+    """Overrides the harvest action dimension (index 2) with a fixed raw value before
+    it reaches the env (experiments/harvest_ablation/). Action space stays 3D — the
+    policy still outputs a harvest value, it's just discarded here."""
+```

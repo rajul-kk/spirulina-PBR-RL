@@ -1,16 +1,5 @@
-"""
-finish_run.py — close out a training run: read its best deterministic checkpoint, score it
-against the curriculum gates, and write the result back into the run registry.
-
-WHY: comparing runs in this project meant grepping five multi-megabyte logs by hand and
-holding the numbers in working memory. That is how v21's od 0.0094 came to be treated as a
-reproducible level for a while — it was the top of a 0.0054-0.0094 spread, and nothing made
-the spread visible. A registry with one row per run makes that mistake hard to repeat.
-
-Usage (from the repo root):
-    python scripts/finish_run.py --tag v24_std_anneal_run5
-    python scripts/finish_run.py --tag v24_std_anneal_run5 --result "no D2; noise-dependent"
-"""
+"""finish_run.py — close out a training run: read its best deterministic checkpoint, score it ...
+(full rationale: docs/decision_history.md#--scripts-finish_run-py-1)"""
 import argparse
 import csv
 import os

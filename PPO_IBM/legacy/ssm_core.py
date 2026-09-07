@@ -4,12 +4,8 @@ import torch.nn.functional as F
 import numpy as np
 
 class LinearSSMBlock(nn.Module):
-    """
-    A simplified, pure-PyTorch Linear State Space Model (SSM) block.
-    Inspired by S4/Mamba foundations, this module provides infinite receptive 
-    field memory without the fixed-window constraint of 1D CNNs, while remaining
-    highly parallelizable for training.
-    """
+    """A simplified, pure-PyTorch Linear State Space Model (SSM) block.
+    (full rationale: docs/decision_history.md#--legacy-ssm_core-py-7)"""
     def __init__(self, d_model: int, d_state: int = 16, dt_rank: int = 'auto'):
         super().__init__()
         self.d_model = d_model
@@ -34,18 +30,8 @@ class LinearSSMBlock(nn.Module):
         self.out_proj = nn.Linear(d_model, d_model, bias=False)
 
     def forward_sequence(self, x: torch.Tensor, h_init: torch.Tensor = None) -> torch.Tensor:
-        """
-        Process a full sequence in bulk during training.
-        Uses a parallelized scan alias for fast GPU training.
-        
-        Args:
-            x: (Batch, SeqLen, d_model)
-            h_init: Optional initial hidden state (Batch, d_model, d_state)
-            
-        Returns:
-            out: (Batch, SeqLen, d_model)
-            h_last: Final hidden state (Batch, d_model, d_state) to pass to next chunk
-        """
+        """Process a full sequence in bulk during training.
+        (full rationale: docs/decision_history.md#--legacy-ssm_core-py-37)"""
         batch, seq_len, d_model = x.shape
         
         # 1. Compute state parameters
@@ -114,17 +100,8 @@ class LinearSSMBlock(nn.Module):
         return out, h
         
     def step(self, x_t: torch.Tensor, h_prev: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """
-        O(1) Step function for environmental rollout inference.
-        
-        Args:
-            x_t: (Batch, d_model) current observation embedding
-            h_prev: (Batch, d_model, d_state) previous hidden state
-            
-        Returns:
-            out_t: (Batch, d_model) output
-            h_new: (Batch, d_model, d_state) updated hidden state
-        """
+        """O(1) Step function for environmental rollout inference.
+        (full rationale: docs/decision_history.md#--legacy-ssm_core-py-117)"""
         # 1. Compute state parameters for this single step
         dt = F.softplus(self.dt_expand(self.dt_proj(x_t))) # (B, D)
         A = -torch.exp(self.A_log) # (D, N)

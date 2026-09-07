@@ -4401,3 +4401,26 @@ matching rollout state to what training sees. Verified the reset mechanically wo
 (cell state returns to step-0 levels after each boundary); v45 tests whether it prevents
 recurrence. If not: try LSTM->GRU next (no unbounded cell state by construction).
 ```
+
+## ./legacy/TD3.py:335 {#--legacy-TD3-py-335-seed-reproducibility}
+
+```
+Found 2026-09-06 (env-dynamics diagnostic pass): run_td3_eval_episode() and
+td3_held_out_sweep.py's run_episode() called env.reset(seed=seed) but never
+np.random.seed(seed). This env's actual randomization (_randomize_strain, initial
+cell mass/position/quota) uses the legacy global np.random module, not gym's
+self.np_random -- so env.reset(seed=X) does NOT reproducibly seed the strain or
+initial state at all. Verified: calling reset(seed=1) twice in one process gave two
+different mu_max values. training/deterministic_eval.py (PPO's det-eval) already
+calls np.random.seed(seed) before sampling init_cells/constructing the env -- TD3's
+copy never carried that over. Practical impact: every TD3 det-eval and held-out sweep
+this project has run (v33-v45) evaluated against an uncontrolled random strain per
+episode instead of a reproducible one. init_cells sampling in td3_held_out_sweep.py
+was still reproducible (drawn from a properly-seeded local RandomState), so cold-start
+size was controlled -- only strain identity (mu_max, Ks_light, T_opt, etc.) wasn't.
+Doesn't invalidate this session's structural findings (LSTM saturation, regret-metric
+confound are strain-independent) but adds unaccounted noise to every chunk-to-chunk
+det-eval trend read this session.
+Fixed: added np.random.seed(seed) to both functions, matching PPO's pattern. Verified
+fix makes mu_max reproducible across repeated reset(seed=1) calls.
+```

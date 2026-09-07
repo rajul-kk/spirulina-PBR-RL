@@ -331,11 +331,14 @@ def build_demo_buffer(n_episodes, seed=0):
 
 # ═════════════════════════════════════════════════════════════════════════════
 # (full rationale: docs/decision_history.md#--legacy-TD3-py-335)
+# env.reset(seed=X) alone doesn't seed strain randomization -- see np.random.seed(seed) below
+# (full rationale: docs/decision_history.md#--legacy-TD3-py-335-seed-reproducibility)
 
 def run_td3_eval_episode(actor, difficulty, seed):
     """Noise-free rollout for the project's dual gate (see deterministic_eval.py /
     TD-MPC2's run_tdmpc2_eval_episode for the same rationale)."""
     from curriculum_schedule import _sample_init_cells
+    np.random.seed(seed)
     init_cells = _sample_init_cells("random", difficulty)
     env = GeneticPhotobioreactorEnv(max_cells=MAX_CELLS, initial_cells=init_cells, difficulty=difficulty)
     obs, _ = env.reset(seed=seed)

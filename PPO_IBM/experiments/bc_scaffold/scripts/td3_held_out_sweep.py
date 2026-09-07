@@ -35,6 +35,7 @@ def sample_init_cells(rng, adversarial_frac=0.10):
 
 
 def run_episode(actor, difficulty, init_cells, seed):
+    np.random.seed(seed)
     env = GeneticPhotobioreactorEnv(max_cells=MAX_CELLS, initial_cells=init_cells, difficulty=difficulty)
     obs, _ = env.reset(seed=seed)
     hidden = actor.initial_hidden(batch=1)

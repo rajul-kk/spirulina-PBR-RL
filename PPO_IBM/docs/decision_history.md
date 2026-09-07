@@ -5895,3 +5895,50 @@ runs against the live, still-training model rather than a saved checkpoint.
     it reaches the env (experiments/harvest_ablation/). Action space stays 3D — the
     policy still outputs a harvest value, it's just discarded here."""
 ```
+
+
+## ./environments/genetic_env.py:56 {#--environments-genetic_env-crash-penalty}
+
+```
+Terminal crash penalty, reduced -100 -> -10 (2026-09-08).
+
+Measured (experiments/env_diagnosis/reward_scale_check.py, expert at D2, n=57,600
+steps): mean per-step reward 0.1475, worst non-crash step 0.1235. At -100 the penalty
+was 678x the mean step and 809x the worst step -- a severe outlier. Under TD3's
+GAMMA=0.9995 (~2000-step bootstrap horizon) a single crash transition distorted
+Q-targets across a wide window; this was the diagnosed cause of the v35/v36 critic
+divergence, previously patched algorithm-side with a Huber critic loss rather than
+fixed at source.
+
+-10 chosen to match the env's existing -10.0 "breaking physics" penalty, giving 68x
+mean step reward instead of 678x. The explicit penalty is in any case the smaller
+signal: ending an episode early already forfeits the remaining per-step reward
+(~530 for a crash at step 3600 vs a ~1062 full episode), so termination itself
+carries most of the deterrent.
+
+Verified no physics/behaviour change: v45's 40-seed D2 held-out sweep returns
+byte-identical results before and after (95.7mg median, p25 62.1, 0% crash, 4/4 gate).
+```
+
+
+## ./environments/genetic_env.py:59 {#--environments-genetic_env-decline-warning}
+
+```
+Graduated extinction warning (added 2026-09-08).
+
+Measured problem: in the last 50 steps before a crash, mean per-step reward was still
+POSITIVE (+0.006 to +0.009) while the population collapsed (15 -> 8 cells). The agent
+received an encouraging signal right up to a terminal cliff -- no gradient pointing
+away from extinction. reward_od decays toward zero as OD falls but never goes negative,
+so absence-of-reward was the only signal.
+
+Fires only when the culture is BOTH inside the danger band (num_active <
+DECLINE_WARN_POP=50) AND not recovering (num_active <= previous). The "not recovering"
+condition matters: adversarial cold starts legitimately begin at 30-80 cells, and a
+low-but-growing culture must not be punished for its starting condition.
+
+Effect measured: pre-crash reward flips +0.006..+0.009 -> -0.028..-0.031. Healthy
+expert operation is unchanged (mean per-step 0.1475 before and after). Misfire cost on
+healthy adversarial starts is bounded: init=33 accrues -4.89 total (0.66% of a 736.8
+episode) and does not crash; init>=50 accrues exactly 0.
+```

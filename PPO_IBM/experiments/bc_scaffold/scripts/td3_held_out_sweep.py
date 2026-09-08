@@ -15,6 +15,7 @@ for _p in (ROOT, os.path.join(ROOT, "training"), os.path.join(ROOT, "environment
 
 from genetic_env import GeneticPhotobioreactorEnv
 from TD3 import RecurrentActor, OBS_DIM, ACTION_DIM, MAX_CELLS, DEVICE
+from actor_io import load_actor
 
 GATE = {"harvest": 90.0, "p25": 50.0, "crash": 0.08, "time_od": 0.011}
 
@@ -55,9 +56,10 @@ def main():
     ap.add_argument("--base-seed", type=int, default=1000)
     args = ap.parse_args()
 
-    actor = RecurrentActor(OBS_DIM, ACTION_DIM).to(DEVICE)
-    actor.load_state_dict(torch.load(args.actor_path, map_location=DEVICE))
-    actor.eval()
+    # Core (LSTM vs diagonal LRU) is detected from the checkpoint's own parameter names,
+    # so the same command scores either without a flag.
+    actor, core = load_actor(args.actor_path, OBS_DIM, ACTION_DIM, DEVICE)
+    print(f"  actor: {args.actor_path}  core={core}")
 
     rng = np.random.RandomState(args.base_seed)
     results = []

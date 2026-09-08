@@ -6229,3 +6229,72 @@ scan matters less, not more. Trust the end-to-end A/B, not the microbenchmark.
 This matters more for evaluation than for training: `env.step` is only ~10% of training wall
 clock (the TD3 update is ~90%), but det-eval (9 x 7200 steps per chunk) and the 40-seed
 held-out sweep (40 x 7200 steps) are almost pure env plus inference.
+
+## --legacy-actor_io-py-1
+
+`td3_held_out_sweep.py` and `population_range_check.py` both hard-coded the LSTM
+`RecurrentActor`, so neither could load a diagonal-LRU checkpoint:
+
+```
+Missing key(s):    lstm.weight_ih_l0, lstm.weight_hh_l0, lstm.bias_ih_l0, lstm.bias_hh_l0
+Unexpected key(s): lstm.nu_log, lstm.in_proj.weight, lstm.out_proj.weight, lstm.norm.{weight,bias}
+```
+
+The 40-seed held-out sweep IS the project gate, so this would have blocked scoring v48 at
+the moment the run finished. `load_actor()` picks the class by inspecting the checkpoint's
+own parameter names. Provenance is derived, not stored, so it works on every checkpoint
+already written -- no format change, nothing to keep in sync, and no new CLI flag (existing
+commands are unchanged). An unrecognised checkpoint now raises a readable error instead of
+dumping a key mismatch.
+
+## --experiments-env_diagnosis-lru_memory_check-py-1
+
+Answers the two questions specific to the LRU that no existing diagnostic covered: what
+decay horizons did it actually learn, and does its state stay bounded in a TRAINED policy
+(boundedness had only been verified at initialisation).
+
+Result on v48's best checkpoint at 100k steps, and it is largely NEGATIVE for the memory
+argument that motivated the LRU:
+
+```
+                  median horizon   p95    max    channels >60    channels >600
+  at init                      5     38    151      4/128 (3%)      0/128 (0%)
+  trained                      5     73    187      8/128 (6%)      0/128 (0%)
+  mean |relative| horizon change vs init: 242%
+```
+
+ZERO of 128 channels learned a horizon spanning the 600-step harvest interval, and only 6%
+exceed the 60-step training window. The decay parameters did train (242% mean relative
+change), so this is a learned outcome, not frozen initialisation -- the policy chose short
+horizons.
+
+The immediate consequence: v48's +36% harvest advantage over v47 at matched steps is NOT
+attributable to longer memory. Whatever the LRU is buying, it is coming from optimisation
+dynamics, bounded state, parameter count (34,691 vs 133,635) or conditioning -- not from
+remembering more. Any writeup claiming a memory benefit for this run would be unsupported.
+
+This is however the expected result under the current configuration, and is the confound
+that was deliberately accepted when HIDDEN_RESET_INTERVAL was left at SEQ_LEN=60 for v48:
+the rollout state is zeroed every 60 steps, so a channel with a horizon beyond 60 cannot be
+exploited, and training samples 60-step windows from a zero state, so nothing rewards
+learning one. The architecture was never given the opportunity. Testing the memory claim
+requires the R2D2-style stored-state/burn-in sampling deferred to v49; this diagnostic gives
+that experiment a concrete falsifiable prediction (the >600 channel count should become
+non-zero).
+
+Boundedness holds in the trained policy, in both rollout modes:
+
+```
+  reset every 60 steps : max |h| = 12.73, 2nd-half vs 1st-half drift +2.0%
+  free-running, 7200   : max |h| = 38.05, drift +3.8%; plateaus by step 1000
+                         (37.36 at 1000 -> 37.70 at 3000 -> 36.47 at 7199)
+```
+
+Free-running is 3x larger in magnitude but flat, confirming the structural claim that the
+LRU cannot exhibit the unbounded cell-state growth behind the v33-v44 collapses.
+
+Note the free-running rollout harvested 71.2mg against 154.2mg with the reset in place, on
+the same seed and start. That is the train/inference state-distribution mismatch predicted
+when the reset was kept, measured: carrying state the policy never saw in training costs
+about half the yield. It confirms the reset should NOT simply be removed -- the horizon has
+to be raised on the training side first.

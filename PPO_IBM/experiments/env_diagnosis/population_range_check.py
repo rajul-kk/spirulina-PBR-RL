@@ -15,6 +15,7 @@ import torch
 
 from genetic_env import GeneticPhotobioreactorEnv
 from TD3 import RecurrentActor, OBS_DIM, ACTION_DIM, MAX_CELLS, DEVICE, HIDDEN_RESET_INTERVAL
+from actor_io import load_actor
 
 EXPERT_OD_SETPOINT = 0.015
 EXPERT_FRAC_CAP = 0.30
@@ -65,9 +66,8 @@ def main():
     ap.add_argument("--seeds", type=int, default=4)
     args = ap.parse_args()
 
-    actor = RecurrentActor(OBS_DIM, ACTION_DIM).to(DEVICE)
-    actor.load_state_dict(torch.load(args.actor_path, map_location=DEVICE))
-    actor.eval()
+    actor, core = load_actor(args.actor_path, OBS_DIM, ACTION_DIM, DEVICE)
+    print(f"  actor: {args.actor_path}  core={core}")
 
     pops = [150, 300, 500, 1000, 2000, 3500, 5000]
     print("=" * 86)

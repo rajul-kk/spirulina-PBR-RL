@@ -125,6 +125,7 @@ def apply_saved_population(raw_env, saved_state: Dict[str, object], start_mode: 
     raw_env.harvest_integral = 0.0   # harvest pump counter unknown for stitched starts
     raw_env.current_harvest_rate = 0.0
     raw_env.cumulative_harvested_mg = 0.0  # curriculum metric — episode-scoped, must reset
+    raw_env.cumulative_harvested_mg_back_half = 0.0
     raw_env.od_sum_back_half = 0.0
     raw_env.od_count_back_half = 0
     raw_env.I_surface = 0.0          # reset BH1750 source; will update on first step

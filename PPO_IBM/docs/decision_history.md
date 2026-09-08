@@ -6044,3 +6044,35 @@ incentive.
 Expert per-step reward is unchanged (0.1475 -> 0.1473), since the expert operates near
 target -- so this does not rebase comparisons for well-behaved policies.
 ```
+
+
+## ./environments/genetic_env.py {#--environments-genetic_env-back-half-harvest}
+
+```
+Back-half harvest metric, reported ALONGSIDE full-episode (2026-09-08).
+
+Rationale: a culture reaches quasi-steady operation in ~30-40h of a 144h episode, so
+the first half of every episode largely measures WHICH COLD START WAS DRAWN, while the
+second half is much closer to a measure of control quality. finalresults.md already
+documents the consequence: the same constant action yields 31-368mg (12x spread)
+depending on the draw.
+
+Precedent: time_avg_od ALREADY restricts to step_count >= 3600 for exactly this reason.
+Harvest simply never got the same treatment. BACK_HALF_STEP is now a shared constant so
+both metrics use one definition.
+
+Measured effect (scripted expert, D2, same seed):
+  init=300 : full 214.2  back-half 177.8  (83% of yield in back half)
+  init=2000: full 599.7  back-half 236.2  (39% of yield in back half)
+For the large start, 61% of full-episode yield is front-loaded -- harvesting down
+inherited biomass, a property of the draw rather than of control. Spread between the two
+starts falls from 2.80x (full-episode) to 1.33x (back-half): a ~2.1x reduction in the
+metric's cold-start dependence.
+
+Deliberately NOT switched to as the gate criterion yet. Both windows are reported so the
+divergence is visible and the gate change can be made on evidence; switching now would
+rebase every historical harvest number and threshold (90/50mg) at the same time as the
+reward-shape change, confounding two experiments. Known downside to weigh later: early
+harvesting is legitimately part of good control, so a back-half-only gate would reward a
+policy that neglects the first 72h.
+```

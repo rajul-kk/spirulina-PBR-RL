@@ -348,6 +348,7 @@ def run_td3_eval_episode(actor, difficulty, seed, init_cells=None):
     actor.train()
     return {
         "harvested_mg": float(info.get("cumulative_harvested_mg", 0.0)),
+        "harvested_mg_back_half": float(info.get("harvested_mg_back_half", 0.0)),
         "time_avg_od": float(info.get("time_avg_od", 0.0)),
         "crashed": step < env.max_steps,
         "init_cells": int(init_cells),
@@ -663,6 +664,14 @@ def train(resume=False):
         print("  [Det/bucket] " + "  ".join(
             f"{r['init_cells']}:{r['harvested_mg']:.0f}" + ("*" if r["crashed"] else "")
             for r in det_recs))
+        # Both windows reported: full-episode inherits cold-start transient variance,
+        # (full rationale: docs/decision_history.md#--environments-genetic_env-back-half-harvest)
+        _bh = [r["harvested_mg_back_half"] for r in yield_recs]
+        _fe = [r["harvested_mg"] for r in yield_recs]
+        if _bh:
+            print(f"  [Det/window] full-episode median={np.median(_fe):.1f}  "
+                  f"back-half median={np.median(_bh):.1f}  "
+                  f"back-half share={100 * np.median(_bh) / max(np.median(_fe), 1e-9):.0f}%")
         if det_stats["episodes"] >= DET_MASTERY_MIN_EPISODES and det_stats["crash_rate"] == 0.0:
             if save_best_checkpoint(actor, critic, det_stats["median_harvested_mg"], global_step):
                 print(f"  [BEST] new best det checkpoint saved -> {BEST_CHECKPOINT_DIR} "

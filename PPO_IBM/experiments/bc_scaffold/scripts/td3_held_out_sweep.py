@@ -42,6 +42,7 @@ def run_episode(actor, difficulty, init_cells, seed):
     return {
         "seed": seed, "init_cells": init_cells, "steps": step, "crashed": step < env.max_steps,
         "harvested_mg": float(info.get("cumulative_harvested_mg", 0.0)),
+        "harvested_mg_back_half": float(info.get("harvested_mg_back_half", 0.0)),
         "time_avg_od": float(info.get("time_avg_od", 0.0)),
     }
 
@@ -93,6 +94,11 @@ def main():
     print(f"  yield scored on {len(yielding)} non-adversarial episodes:")
     print(f"  harvested_mg  median : {med_h:.1f}   p25: {p25_h:.1f}   cvar10: {cvar10:.1f}   min: {harvested.min():.1f}   max: {harvested.max():.1f}")
     print(f"  time_avg_od   median : {med_od:.4f}   p25: {np.percentile(time_od,25):.4f}")
+    bh = np.array([r["harvested_mg_back_half"] for r in yielding])
+    print(f"  harvest window: full-episode median={med_h:.1f}  "
+          f"back-half median={np.median(bh):.1f}  "
+          f"back-half share={100*np.median(bh)/max(med_h,1e-9):.0f}%  "
+          f"(back-half p25={np.percentile(bh,25):.1f})")
 
     if adv:
         adv_crash = 100 * float(np.mean([r["crashed"] for r in adv]))

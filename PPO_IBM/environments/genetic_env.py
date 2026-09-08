@@ -63,6 +63,9 @@ class GeneticPhotobioreactorEnv(gym.Env):
         # (full rationale: docs/decision_history.md#--environments-genetic_env-od-above-target)
         self.OD_ABOVE_SLOPE = 0.03          # reward lost per 1x OD_TARGET above target
         self.OD_ABOVE_FLOOR = -0.05         # bounded downside for gross overgrowth
+        # Back-half window, shared by time_avg_od and the back-half harvest metric.
+        # (full rationale: docs/decision_history.md#--environments-genetic_env-back-half-harvest)
+        self.BACK_HALF_STEP = 3600          # half of max_steps (7200)
 
         # Action: [Stirring, Light, Harvest fraction] — CO2 and Nutrient dosing remain
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-78)
@@ -117,6 +120,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         self.dosing_integral = 0.0  # cumulative mg N added (internal PID tracking only)
         self.harvest_integral = 0.0  # cumulative volume harvested (L) — pump counter, obs[2] source
         self.cumulative_harvested_mg = 0.0  # running total mg harvested across the episode (per-step dilution)
+        self.cumulative_harvested_mg_back_half = 0.0
         self._harvest_action_sum = 0.0      # Fix #16 (v19): interval-averaged harvest action
         self._harvest_action_count = 0
         self.od_sum_back_half = 0.0
@@ -231,6 +235,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         self.dosing_integral = 0.0  # reset internal PID tracking each episode
         self.harvest_integral = 0.0  # cumulative volume harvested (L), accumulates per-step via dilution
         self.cumulative_harvested_mg = 0.0  # running total mg harvested across the episode (curriculum metric)
+        self.cumulative_harvested_mg_back_half = 0.0
         self._harvest_action_sum = 0.0      # Fix #16 (v19): must reset per episode, or the
         self._harvest_action_count = 0      # first event of a new episode averages stale steps
         self.od_sum_back_half = 0.0         # for time-averaged OD (curriculum metric)
@@ -431,7 +436,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         (full rationale: docs/decision_history.md#--environments-genetic_env-py-418)"""
         # Curriculum metric: time-averaged OD over the back half of the episode (steps
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-564)
-        if self.step_count >= 3600:
+        if self.step_count >= self.BACK_HALF_STEP:
             self.od_sum_back_half += self.od
             self.od_count_back_half += 1
 
@@ -1147,6 +1152,8 @@ class GeneticPhotobioreactorEnv(gym.Env):
             self.co2_b = self.co2_b * (1.0 - frac_diluted) + 6.2 * frac_diluted
 
         self.cumulative_harvested_mg += harvested_this_step_mg
+        if self.step_count >= self.BACK_HALF_STEP:
+            self.cumulative_harvested_mg_back_half += harvested_this_step_mg
         self.harvest_integral        += frac_diluted * self.volume_L  # cumulative volume harvested (L)
 
         # Recompute standing mass/OD post-dilution — this is what the tank actually holds
@@ -1335,6 +1342,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             "kLa_h-1": float(getattr(self, 'kLa', 0.0)),
             "dissolved_co2_mgL": float(getattr(self, 'dissolved_co2', 0.0)),
             "cumulative_harvested_mg": float(getattr(self, 'cumulative_harvested_mg', 0.0)),
+            "harvested_mg_back_half": float(getattr(self, 'cumulative_harvested_mg_back_half', 0.0)),
             "time_avg_od": float(self.od_sum_back_half / max(self.od_count_back_half, 1)),
             "start_mode": getattr(self, 'episode_start_mode', 'low'),
             "reward_term_sums": dict(getattr(self, 'reward_term_sums', {})),

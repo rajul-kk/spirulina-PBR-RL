@@ -68,7 +68,8 @@ class GeneticPhotobioreactorEnv(gym.Env):
         # Above-target OD reward slope. Constant gradient so overgrown cultures still get
         # (full rationale: docs/decision_history.md#--environments-genetic_env-od-above-target)
         self.OD_ABOVE_SLOPE = 0.03          # reward lost per 1x OD_TARGET above target
-        self.OD_ABOVE_FLOOR = -0.05         # bounded downside for gross overgrowth
+        self.OD_ABOVE_FLOOR = -0.05         # knee where the linear decay hands off to the log tail
+        self.OD_TAIL_COEF = 0.02            # log-tail gain; keeps the gradient nonzero past the knee
         # Back-half window, shared by time_avg_od and the back-half harvest metric.
         # (full rationale: docs/decision_history.md#--environments-genetic_env-back-half-harvest)
         self.BACK_HALF_STEP = 3600          # half of max_steps (7200)
@@ -465,9 +466,14 @@ class GeneticPhotobioreactorEnv(gym.Env):
         if od_x <= 1.0:
             reward_od = 0.15 * float(od_x * np.exp(1.0 - od_x))
         else:
-            # Linear above target, not exponential: the old e^(1-x) tail flattened the
-            # (full rationale: docs/decision_history.md#--environments-genetic_env-od-above-target)
-            reward_od = max(self.OD_ABOVE_FLOOR, 0.15 - self.OD_ABOVE_SLOPE * (od_x - 1.0))
+            # Linear above target, then LOGARITHMIC past the knee. A hard floor here left
+            # (full rationale: docs/decision_history.md#--environments-genetic_env-od-tail-deadzone)
+            linear = 0.15 - self.OD_ABOVE_SLOPE * (od_x - 1.0)
+            if linear >= self.OD_ABOVE_FLOOR:
+                reward_od = linear
+            else:
+                knee = 1.0 + (0.15 - self.OD_ABOVE_FLOOR) / self.OD_ABOVE_SLOPE
+                reward_od = self.OD_ABOVE_FLOOR - self.OD_TAIL_COEF * float(np.log(od_x / knee))
 
         # (Fix #28 attempt, reverted): a rolling-window OD-average reward term was tried here
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-626)

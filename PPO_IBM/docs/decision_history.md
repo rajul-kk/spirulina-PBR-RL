@@ -6298,3 +6298,63 @@ the same seed and start. That is the train/inference state-distribution mismatch
 when the reset was kept, measured: carrying state the policy never saw in training costs
 about half the yield. It confirms the reset should NOT simply be removed -- the horizon has
 to be raised on the training side first.
+
+## --environments-genetic_env-od-tail-deadzone
+
+The v47 above-target reward, `max(OD_ABOVE_FLOOR, 0.15 - OD_ABOVE_SLOPE*(x-1))`, has a hard
+floor that binds at x = 1 + (0.15-(-0.05))/0.03 = 7.67x OD_TARGET. Beyond that point the
+reward is a constant -0.05 with a gradient of EXACTLY zero: a punishing dead zone giving no
+local signal about which action reduces OD.
+
+This was diagnosed from v48's high-population regression. Measured on v48's checkpoint at
+~1.2M steps, deterministic rollouts at D2:
+
+```
+   init    medOD   medOD/target   %steps in dead zone   harvest   sum reward_od
+    120   0.0108           0.90                  0.0%      71.9          +895.7
+   1100   0.0198           1.65                  0.0%     335.6          +932.2
+   1500   0.0983           8.19                 52.6%      73.4           -38.7
+   2500   0.1613          13.45                 72.1%      60.0          -232.5
+   4000   0.2187          18.22                 89.7%      71.8          -343.4
+```
+
+There is a discontinuity in behaviour between 1100 and 1500 initial cells. Below it the
+policy holds OD near target and reward_od sums to about +930; above it OD runs to 18x target,
+90% of the episode is spent in the flat region, and reward_od sums to -343. That ~1300 swing
+is the whole of the negative Monte-Carlo return that q_magnitude_check.py found, and the
+policy responded by ceasing to harvest at all: 4000-cell yield fell 1403mg -> 72mg over two
+chunks.
+
+This is the same defect the v47 change was meant to fix, one segment further out. Compare at
+x=18.2: the v45 tail `0.15*x*e^(1-x)` gives +1e-7 (no reward, no gradient); the v47 floor
+gives -0.05 (real penalty, gradient exactly zero). v47 correctly repaired the 1x-7.67x band
+-- that is why time_avg_od fell from 0.0400 to ~0.019 at low population -- but converted a
+neutral dead zone into a punishing one.
+
+Fix: hand off from the linear decay to a LOGARITHMIC tail at the knee,
+`OD_ABOVE_FLOOR - OD_TAIL_COEF*ln(x/knee)` with OD_TAIL_COEF=0.02. A bounded penalty
+necessarily has a vanishing gradient far out, so the goal is a gradient that shrinks slowly
+and never reaches zero, rather than one that is clipped to zero.
+
+```
+      x    v45 exp   v47 floor   new log   new gradient
+   1.50    0.13647    0.13500    0.13500     -0.030000
+   7.67    0.00146   -0.05000   -0.05001     -0.002608
+  13.45    0.00001   -0.05000   -0.06124     -0.001487
+  18.22    0.00000   -0.05000   -0.06731     -0.001098
+  50.00    0.00000   -0.05000   -0.08750     -0.000400
+```
+
+Continuous at the knee (agreement to 3.3e-11), monotonically decreasing above target,
+minimum tail gradient 3.3e-04 per unit x (never zero). Per-episode reward_od over 7200 steps
+held at constant x: unchanged at 939.6 in the healthy band (x=1.65), and -360 -> -370/-441/-485
+at x=8.19/13.45/18.22. The healthy region is untouched and the tail penalty grows by only
+3-35%, so this restores a gradient without rescaling the reward.
+
+Consequence for the run plan: v48 (LRU) is executing the pre-fix reward from memory and is
+NOT affected mid-run, so it keeps the old tail. v49 (LSTM) starts on the fixed tail. The two
+are therefore no longer a single-variable core comparison going forward. The matched-step
+comparison at 100k steps (v47 chunk 1 vs v48 chunk 1, both on the identical pre-fix reward)
+is already banked and remains valid. v48's held-out gate is also unaffected, because that
+sweep draws lognormal(100,400) -- entirely inside the healthy band where the fix changes
+nothing.

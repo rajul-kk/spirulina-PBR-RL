@@ -6076,3 +6076,100 @@ reward-shape change, confounding two experiments. Known downside to weigh later:
 harvesting is legitimately part of good control, so a back-half-only gate would reward a
 policy that neglects the first 72h.
 ```
+
+## --legacy-lru_core-py-1
+
+Diagonal Linear Recurrent Unit, used as a drop-in replacement for `nn.LSTM` in the TD3
+actor and twin critics (see `legacy/TD3_lru.py`). Motivated by Lu et al., *Rethinking
+Transformers in Solving POMDPs* (ICML 2024), which reports LRU/LSTM beating GPT on all
+eight PyBullet occlusion tasks (88.2 LRU vs 39.3 GPT) with markedly better ground-truth
+hidden-state recovery -- the same task shape as strain inference under this project's
+per-episode domain randomization. Chosen over an attention core because that paper's
+evidence points away from transformers for exactly this task, and over `ssm_core.py`'s
+S4/Mamba-style block on measured CPU cost (below).
+
+Two properties matter here beyond accuracy:
+
+1. `lam = exp(-exp(nu_log))` lies in (0,1) for any real parameter value, so the
+   recurrence is unconditionally stable and `|h|` is bounded by construction. This
+   removes the failure mode behind the v33-v44 collapses (unbounded LSTM cell-state
+   growth, roughly linear in step count). Measured on a real 7200-step D2 episode with
+   NO hidden reset: |h| = 3.06 at step 10, 7.08 at step 100, 12.44 at step 1000, and a
+   maximum of 12.61 over the whole episode -- it plateaus rather than growing.
+2. 34,691 actor parameters vs the LSTM's 133,635 (3.9x fewer).
+
+## --legacy-lru_core-decay-matrix-scan
+
+The parallel scan is done by materializing the causal decay matrix K[d,t,i] =
+lam_d^(t-i) for t>=i and contracting with one einsum, rather than by the log-space
+cumulative-sum trick in `ssm_core.py`.
+
+Reason 1, cost. At TD3's shapes (B=24, T=60, D=128) K is (D,T,T) = 460k floats. An
+S4/Mamba scan instead materializes ~8 intermediates of shape (B,T,D,N) = 2.95M floats
+each. Measured fwd+bwd per iteration, CPU:
+
+```
+                      1 thread   2 threads   4 threads   10 threads
+  LSTM(128)             99.99ms     87.13ms     61.51ms      97.35ms
+  ssm_core SSM(N=16)   585.53ms    395.25ms    264.46ms     216.82ms
+  ssm_core SSM(N=8)    434.18ms    278.29ms    180.82ms     121.75ms
+```
+
+The existing SSM block is 2-6x SLOWER than the LSTM it would replace, so "reuse
+ssm_core.py for speed" does not survive measurement. The diagonal LRU, needing only
+(B,T,D), runs 1.8x faster than the LSTM instead.
+
+Reason 2, numerics. The log-space form computes exp(-cumsum(log dA)), which overflows
+for small decay factors over long windows (lam=0.5 at L=60 gives lam^-60 ~ 1e18).
+K = exp(-a*(t-i)) with (t-i) >= 0 only ever exponentiates a negative number, so it
+cannot overflow.
+
+`step()` reproduces `forward()` to 1.19e-07 max absolute difference over a 12-step
+sequence, so the rollout path and the training path are the same function.
+
+## --legacy-TD3_lru-py-1
+
+Separate entry point rather than a flag inside `TD3.py`, because `TD3.py` is executing
+live for the v47 run and its checkpoints must not be touched. `TD3_lru.py` subclasses
+`RecurrentActor`/`RecurrentCritic` to swap the core, patches `TD3`'s module globals
+(including all four checkpoint paths, so an LRU run can never overwrite the LSTM
+baseline's artifacts), and then reuses `TD3.train()` verbatim. No duplicated training
+loop, and the LSTM baseline stays byte-identical.
+
+Two CPU-efficiency changes ride along, both exact rather than approximate:
+
+- The policy-batch and BC-batch actor forwards are fused into one call on a
+  batch-concatenated tensor. Rows are independent given a zero initial state, so this is
+  mathematically identical.
+- Polyak averaging uses `torch._foreach_mul_/add_` instead of a Python loop over ~14
+  parameter tensors.
+
+Equivalence was verified by running six updates of `TD3.td3_update` and
+`TD3_lru.td3_update` from identical states and seeds with the LSTM core in both: max
+actor parameter difference 1.71e-07, max critic 1.19e-07.
+
+Measured update cost, interleaved round-robin so background CPU load hits all three
+variants equally (8 rounds x 8 updates, under load from the concurrent v47 run):
+
+```
+  TD3.py   LSTM + loop update : 1022.66ms   1.00x
+  TD3_lru  LSTM + fused update:  917.96ms   1.11x
+  TD3_lru  LRU  + fused update:  623.45ms   1.64x
+```
+
+The update is worth optimizing because it dominates: profiled at 4 threads, env.step
+costs 4.01ms at init=300 and 5.74ms at init=2000, actor inference 1.87ms, while
+td3_update costs 337ms -- 84.25ms/step amortized over TRAIN_EVERY=4, i.e. ~90% of wall
+clock. A 1.64x update speedup therefore carries almost fully into end-to-end throughput.
+
+Thread count is set from `TD3_THREADS` (default 6). Torch defaults to one thread per
+core, which oversubscribes on these small tensors: the LSTM measured 61.51ms at 4
+threads but 97.35ms at 10.
+
+Deliberately NOT changed for the first LRU run: `HIDDEN_RESET_INTERVAL` stays at
+SEQ_LEN=60. The LRU's bounded state would permit carrying recurrent state across the
+full 7200-step episode, which is the whole memory argument for it, but training still
+samples 60-step windows from a zero state -- so a free-running rollout state would be
+out of distribution. Raising the horizon needs stored-state/burn-in sampling (R2D2-style)
+in the replay buffer, which is a second experiment. Keeping the reset fixed makes v48 a
+single-variable A/B against v47: core swapped, protocol identical.

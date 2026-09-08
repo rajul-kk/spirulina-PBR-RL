@@ -39,3 +39,22 @@ def load_actor(path, obs_dim=None, action_dim=None, device=None):
     actor.load_state_dict(state_dict)
     actor.eval()
     return actor, core
+
+
+def load_critic(path, obs_dim=None, action_dim=None, device=None):
+    """Same detection for the twin critic (its cores are named q1_lstm / q2_lstm)."""
+    from TD3 import RecurrentCritic, OBS_DIM, ACTION_DIM, DEVICE
+
+    device = device or DEVICE
+    state_dict = torch.load(path, map_location=device)
+    core = detect_core(state_dict)
+
+    if core == "lru":
+        from TD3_lru import LRUCritic as Cls
+    else:
+        Cls = RecurrentCritic
+
+    critic = Cls(obs_dim or OBS_DIM, action_dim or ACTION_DIM).to(device)
+    critic.load_state_dict(state_dict)
+    critic.eval()
+    return critic, core

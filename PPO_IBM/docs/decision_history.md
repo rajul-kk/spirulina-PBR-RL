@@ -6008,3 +6008,39 @@ gate cannot be silently disabled by changing the set.
 
 Cost: 9 eval episodes per chunk instead of 3.
 ```
+
+
+## ./environments/genetic_env.py {#--environments-genetic_env-od-above-target}
+
+```
+reward_od above target: exponential -> linear decay (2026-09-08).
+
+Diagnosed cause of v45's high-population collapse. population_range_check.py showed the
+policy near-expert at init=150 (ratio 0.99) but at ratio 0.03 for init>=1000 (10.9mg vs
+expert 370.8mg), sitting at time_avg_od 0.0356-0.0701 -- 3-6x OD_TARGET -- and simply
+not harvesting.
+
+Why: reward_od = 0.15*x*e^(1-x) collapses BOTH level and gradient above target.
+   OD      x     reward   gradient per 0.001 OD
+ 0.0190  1.58    0.1325      -0.00407
+ 0.0356  2.97    0.0623      -0.00344
+ 0.0701  5.84    0.0069      -0.00048   <- 8.5x weaker than at 1.58x
+An overgrown culture therefore received almost no signal to harvest down; the dense
+guidance term went quiet in exactly the regime where aggressive harvest is correct.
+Note this is NOT a coverage problem: training samples mid/high buckets (~35% of D2)
+plus 45% stitched starts saved at >15000 cells. The agent sees these states constantly.
+
+Fix keeps the peak at OD_TARGET (a reactor-optics setpoint, not a free parameter) and
+leaves the sub-target branch untouched; only the above-target tail changes to a constant
+slope with a bounded floor:
+   x<=1 : 0.15*x*e^(1-x)                      (unchanged)
+   x >1 : max(OD_ABOVE_FLOOR, 0.15 - 0.03*(x-1))
+Continuous at x=1 (0.15 -> 0.15). At x=5.84 the level is now LOWER (0.0048 vs 0.0069,
+so overgrowth pays less) while the gradient is constant -0.0025 per 0.001 OD -- 5.2x
+stronger, and it never vanishes across the realistic range. Beyond x=6 reward goes
+mildly negative, floored at -0.05 to bound the downside and avoid a crash-to-escape
+incentive.
+
+Expert per-step reward is unchanged (0.1475 -> 0.1473), since the expert operates near
+target -- so this does not rebase comparisons for well-behaved policies.
+```

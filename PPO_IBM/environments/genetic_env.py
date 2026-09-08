@@ -59,6 +59,10 @@ class GeneticPhotobioreactorEnv(gym.Env):
         # (full rationale: docs/decision_history.md#--environments-genetic_env-decline-warning)
         self.DECLINE_WARN_POP = 50          # danger band: below this many active cells
         self.DECLINE_WARN_MAX = 0.05        # per-step penalty at the extinction edge
+        # Above-target OD reward slope. Constant gradient so overgrown cultures still get
+        # (full rationale: docs/decision_history.md#--environments-genetic_env-od-above-target)
+        self.OD_ABOVE_SLOPE = 0.03          # reward lost per 1x OD_TARGET above target
+        self.OD_ABOVE_FLOOR = -0.05         # bounded downside for gross overgrowth
 
         # Action: [Stirring, Light, Harvest fraction] — CO2 and Nutrient dosing remain
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-78)
@@ -435,7 +439,12 @@ class GeneticPhotobioreactorEnv(gym.Env):
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-571)
         OD_TARGET = 0.012
         od_x = self.od / OD_TARGET
-        reward_od = 0.15 * float(od_x * np.exp(1.0 - od_x))
+        if od_x <= 1.0:
+            reward_od = 0.15 * float(od_x * np.exp(1.0 - od_x))
+        else:
+            # Linear above target, not exponential: the old e^(1-x) tail flattened the
+            # (full rationale: docs/decision_history.md#--environments-genetic_env-od-above-target)
+            reward_od = max(self.OD_ABOVE_FLOOR, 0.15 - self.OD_ABOVE_SLOPE * (od_x - 1.0))
 
         # (Fix #28 attempt, reverted): a rolling-window OD-average reward term was tried here
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-626)

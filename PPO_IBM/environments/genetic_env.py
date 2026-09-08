@@ -10,6 +10,12 @@ from typing import Optional, Dict
 # (full rationale: docs/decision_history.md#--environments-genetic_env-py-9)
 ENV_DEBUG = os.environ.get("ENV_DEBUG", "").strip().lower() in ("1", "true", "yes", "on")
 
+
+def _fclip(x, lo, hi):
+    """Scalar clip. numpy dispatch costs ~2.5us per call and this runs ~25x per step;
+    NaN propagates identically because both comparisons are False."""
+    return float(lo if x < lo else (hi if x > hi else x))
+
 class GeneticPhotobioreactorEnv(gym.Env):
     """Individual-Based Model (IBM) Photobioreactor Environment.
     (full rationale: docs/decision_history.md#--environments-genetic_env-py-14)"""
@@ -93,6 +99,8 @@ class GeneticPhotobioreactorEnv(gym.Env):
         
         # Boolean mask: True = Active Living Cell
         self.active_mask = np.zeros(self.max_cells, dtype=bool)
+        # Integer-index cache over active_mask; see _aidx(). None means "recompute".
+        self._aidx_cache = None
         
         self.ext_nutrients = 300.0  # mg/L — Zarrouk mineral salts (MgSO4, CaCl2, trace metals)
         self.n_pool = 410.0         # mg N/L — Zarrouk NaNO3 2.5 g/L
@@ -191,6 +199,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         self.num_active = self.initial_cells
         self.active_mask[:] = False
         self.active_mask[:self.num_active] = True
+        self._aidx_cache = None
         
         self.cells_z[:self.num_active] = np.random.uniform(0, self.reactor_depth, self.num_active)
         self.cells_x[:self.num_active] = np.random.uniform(0, self.reactor_width, self.num_active)
@@ -293,6 +302,15 @@ class GeneticPhotobioreactorEnv(gym.Env):
 
         return self._get_obs(), {}
 
+    def _aidx(self):
+        """Cached integer indices of active cells.
+        (full rationale: docs/decision_history.md#--environments-genetic_env-active-index-cache)"""
+        c = self._aidx_cache
+        if c is None or len(c) != self.num_active:
+            c = np.where(self.active_mask)[0]
+            self._aidx_cache = c
+        return c
+
     def _get_obs(self):
         # Calculate stats only if cells exist
         if self.num_active > 0:
@@ -330,7 +348,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             # Add base sensor noise floor (Difficulty scaled)
             noise_scale = 0.05
             # SEN0189 saturates at 1000 NTU — clip matches hardware ceiling
-            turbidity_obs = float(np.clip((turbidity_base * 1000.0 * flow_noise) + np.random.normal(0, noise_scale), 0.0, 1000.0))
+            turbidity_obs = _fclip((turbidity_base * 1000.0 * flow_noise) + np.random.normal(0, noise_scale), 0.0, 1000.0)
             self.turbidity_obs = turbidity_obs  # Store for debug logging
         else:
             self.od = 0.0
@@ -340,7 +358,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             self.turbidity_obs = turbidity_obs
             if not hasattr(self, 'max_historical_od'): self.max_historical_od = 0.0
 
-        bh1750_lux = float(np.clip(self.I_surface * 80.0 + np.random.normal(0.0, 500.0), 0.0, 65535.0))
+        bh1750_lux = _fclip(self.I_surface * 80.0 + np.random.normal(0.0, 500.0), 0.0, 65535.0)
 
         # Fix #18 (v21): long-window EMA of turbidity. The raw channel carries multiplicative
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-406)
@@ -376,7 +394,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
 
         # RPM-coupled EMA lag on pH and temperature (D1+)
         if self.difficulty >= 1:
-            rpm = float(np.clip(getattr(self, 'current_stir_rpm', 50.0), 50.0, 200.0))
+            rpm = _fclip(getattr(self, 'current_stir_rpm', 50.0), 50.0, 200.0)
             mix_quality = (rpm - 50.0) / 150.0
             lag_span = self._sensor_delay_max_steps - self._sensor_delay_min_steps
             lag_steps = int(np.clip(
@@ -389,11 +407,11 @@ class GeneticPhotobioreactorEnv(gym.Env):
             base_obs[1] = self._ph_obs_ema
             base_obs[4] = self._temp_obs_ema
             # Additive pH bias (SEN0161 ±0.1 pH calibration offset — per-episode constant)
-            base_obs[1] = float(np.clip(base_obs[1] + self._ph_bias, 0.0, 14.0))
+            base_obs[1] = _fclip(base_obs[1] + self._ph_bias, 0.0, 14.0)
 
         noisy_obs = base_obs * jitter * self._sensor_drift_mult[:self._obs_dim]
-        noisy_obs[3] = float(np.clip(noisy_obs[3], 0.0, 40000.0))   # DFR0300 hard ceiling (post-jitter)
-        noisy_obs[5] = float(np.clip(noisy_obs[5], 0.0, 65535.0))  # BH1750 hard ADC ceiling (16-bit)
+        noisy_obs[3] = _fclip(noisy_obs[3], 0.0, 40000.0)   # DFR0300 hard ceiling (post-jitter)
+        noisy_obs[5] = _fclip(noisy_obs[5], 0.0, 65535.0)  # BH1750 hard ADC ceiling (16-bit)
         if self._obs_dim > 7:
             # Fix #18: phase is the controller's own clock — restore it exactly, since the
             # jitter multiply above would otherwise corrupt a quantity known perfectly.
@@ -487,7 +505,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         prev_pop = getattr(self, "_prev_pop_for_warn", self.num_active)
         if self.num_active < self.DECLINE_WARN_POP and self.num_active <= prev_pop:
             depth = 1.0 - (self.num_active / float(self.DECLINE_WARN_POP))
-            reward_decline = -self.DECLINE_WARN_MAX * float(np.clip(depth, 0.0, 1.0))
+            reward_decline = -self.DECLINE_WARN_MAX * _fclip(depth, 0.0, 1.0)
         self._prev_pop_for_warn = self.num_active
 
         reward = reward_od + reward_biomass + reward_od_delta + reward_harvest + reward_decline
@@ -619,14 +637,14 @@ class GeneticPhotobioreactorEnv(gym.Env):
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-917)
             fouling_rate = max(0.0, 1.0 - stir_rpm / 200.0) * self.od * self.LIGHT_FOULING_COEF
             self.fouling_factor += fouling_rate * self.dt
-            self.fouling_factor = float(np.clip(self.fouling_factor, 0.0, 0.5))
+            self.fouling_factor = _fclip(self.fouling_factor, 0.0, 0.5)
 
             # Fix #19 (v22): NEPHELOMETER WINDOW FOULING (D1+).
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-924)
             if self.difficulty >= 1 and self.TURB_FOULING_COEF > 0.0:
                 turb_foul_rate = max(0.0, 1.0 - stir_rpm / 200.0) * self.od * self.TURB_FOULING_COEF
                 self.turb_fouling_factor += turb_foul_rate * self.dt
-                self.turb_fouling_factor = float(np.clip(self.turb_fouling_factor, 0.0, 0.25))
+                self.turb_fouling_factor = _fclip(self.turb_fouling_factor, 0.0, 0.25)
 
         # --- Physics (Chaotic Turbulence) ---
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-953)
@@ -650,7 +668,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             
             # Apply sticking to active cells only — O(num_active) not O(max_cells)
             # Generating 300k random numbers every step with 3k active cells was 25% of step time.
-            _active_idx = np.where(self.active_mask)[0]
+            _active_idx = self._aidx()
             _stick = np.random.uniform(0, 1, self.num_active) < prob_stick
             self.clump_mass[_active_idx[_stick]] += 1.0
             
@@ -660,24 +678,24 @@ class GeneticPhotobioreactorEnv(gym.Env):
 
             # Brownian/diffusive breakup (always active, weak)
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-991)
-            brownian_breakup = 0.005 * (self.clump_mass[self.active_mask] - 1.0) ** 0.5
+            brownian_breakup = 0.005 * (self.clump_mass[self._aidx()] - 1.0) ** 0.5
 
             # Total breakup rate: shear + Brownian diffusion
-            breakup_rate = 0.5 * clump_shear * (self.clump_mass[self.active_mask] ** 0.5) + brownian_breakup
+            breakup_rate = 0.5 * clump_shear * (self.clump_mass[self._aidx()] ** 0.5) + brownian_breakup
 
             # Apply breakup to all active clumps
-            self.clump_mass[self.active_mask] -= breakup_rate * self.dt
+            self.clump_mass[self._aidx()] -= breakup_rate * self.dt
 
             # Physical Lower Bound: 1.0 (Single Cell)
-            self.clump_mass[self.active_mask] = np.maximum(self.clump_mass[self.active_mask], 1.0)
+            self.clump_mass[self._aidx()] = np.maximum(self.clump_mass[self._aidx()], 1.0)
             
         
         if self.num_active > 0 and mix_intensity > 0.01:
             # --- 2D Kinematic Turbulence (Airlift / Convection Loop) ---
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1007)
             
-            x_pos = self.cells_x[self.active_mask]
-            z_pos = self.cells_z[self.active_mask]
+            x_pos = self.cells_x[self._aidx()]
+            z_pos = self.cells_z[self._aidx()]
             
             # 1. Vertical Velocity (Vz)
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1015)
@@ -692,7 +710,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             
             # 3. Turbulence (Random Perturbations)
             # Perlin-like noise
-            indices = np.where(self.active_mask)[0]
+            indices = self._aidx()
             turb_freq = 5.0
             turb_phase = 10.0 * self.time_t
             
@@ -700,8 +718,8 @@ class GeneticPhotobioreactorEnv(gym.Env):
             v_turb_z = 0.002 * mix_intensity * np.cos(turb_freq * x_pos * 10 - turb_phase + indices)
             
             # 4. Sinking & Diffusion
-            r_eff = self.clump_mass[self.active_mask] ** (1.0/3.0)
-            v_sink = 0.001 * (self.clump_mass[self.active_mask] ** (2.0/3.0))
+            r_eff = self.clump_mass[self._aidx()] ** (1.0/3.0)
+            v_sink = 0.001 * (self.clump_mass[self._aidx()] ** (2.0/3.0))
             
             noise_x = np.random.normal(0, 1, self.num_active)
             noise_z = np.random.normal(0, 1, self.num_active)
@@ -713,23 +731,23 @@ class GeneticPhotobioreactorEnv(gym.Env):
             dz = (v_macro_z + v_turb_z - v_sink) * dt_sec + v_diff_z
             dx = (v_macro_x + v_turb_x) * dt_sec + v_diff_x
             
-            self.cells_z[self.active_mask] += dz
-            self.cells_x[self.active_mask] += dx
+            self.cells_z[self._aidx()] += dz
+            self.cells_x[self._aidx()] += dx
             
         else:
             # Low mixing -> Sedimentation
-            sink_speed = 0.005 * (self.clump_mass[self.active_mask] ** (2.0/3.0))
-            r_eff = self.clump_mass[self.active_mask] ** (1.0/3.0)
+            sink_speed = 0.005 * (self.clump_mass[self._aidx()] ** (2.0/3.0))
+            r_eff = self.clump_mass[self._aidx()] ** (1.0/3.0)
             
-            noise = np.random.normal(0, 1, sum(self.active_mask))
+            noise = np.random.normal(0, 1, self.num_active)
             dz = -sink_speed * self.dt + ((np.sqrt(2 * 1e-7 * dt_sec)/r_eff) * noise)
             
             # X Diffusion only
-            noise_x = np.random.normal(0, 1, sum(self.active_mask))
+            noise_x = np.random.normal(0, 1, self.num_active)
             dx = (np.sqrt(2 * 1e-7 * dt_sec)/r_eff) * noise_x
             
-            self.cells_z[self.active_mask] += dz
-            self.cells_x[self.active_mask] += dx
+            self.cells_z[self._aidx()] += dz
+            self.cells_x[self._aidx()] += dx
         
         # Boundary Conditions (Reflective)
         # Z Boundary
@@ -763,7 +781,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             I_s_green = I_surface * 0.2
             
             # Optical Density (Biomass)
-            total_mass_mg = np.sum(self.cells_mass[self.active_mask]) * 1e-9
+            total_mass_mg = np.sum(self.cells_mass[self._aidx()]) * 1e-9
             current_od = (total_mass_mg / self.volume_L) / 300.0
             
             # Attenuation Coefficients (k)
@@ -780,7 +798,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             
             # ── Turbulent Flash-Light Effect (Biologically Accurate) ──────────
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1119)
-            static_z = self.cells_z[self.active_mask]
+            static_z = self.cells_z[self._aidx()]
             # 2-layer gas: surface = top 10cm (z < 0.10m), bulk = bottom 20cm
             surface_cell_mask = static_z < 0.10
             self._f_surface_cells = float(np.mean(surface_cell_mask))
@@ -794,7 +812,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             
             # Calculate Light at each cell depth
             # Apply Clump Self-Shading (Geometric) — Mass^(-1/3) (Surface/Volume Scaling)
-            f_clump_shade = self.clump_mass[self.active_mask] ** (-1.0/3.0)
+            f_clump_shade = self.clump_mass[self._aidx()] ** (-1.0/3.0)
             
             # Biofouling Effect
             I_s_red *= np.exp(-self.fouling_factor)
@@ -815,8 +833,8 @@ class GeneticPhotobioreactorEnv(gym.Env):
             # --- Photo-Acclimation (Hysteresis) ---
             # EMA lag = tau_acclim (1–4h per strain); corrected from fixed 0.1 (~0.2h, 5–20× too fast)
             alpha_accum = self.dt / max(params['tau_acclim'], 0.01)
-            self.cells_acclimation[self.active_mask] += alpha_accum * (cells_I_total - self.cells_acclimation[self.active_mask])
-            I_effective = self.cells_acclimation[self.active_mask]
+            self.cells_acclimation[self._aidx()] += alpha_accum * (cells_I_total - self.cells_acclimation[self._aidx()])
+            I_effective = self.cells_acclimation[self._aidx()]
             
             # 2. Temperature Factor (Gaussian)
             temp_factor = np.exp(-0.5 * ((self.temp - params['T_opt'])/5.0)**2)
@@ -854,7 +872,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             
             # Droop Quota
             # Only update active quotas
-            current_quotas = self.cells_quota[self.active_mask]
+            current_quotas = self.cells_quota[self._aidx()]
             
             f_Q = np.maximum(0.0, 1.0 - params['Q_min'] / (current_quotas + 1e-6))
             
@@ -882,7 +900,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
                   self.debug_f_pH = f_pH
                   self.debug_f_O2 = float(np.mean(f_O2))
                   self.debug_shock = np.mean(shock_factor) # shock_factor calculated on active_mask in line 260
-                  self.debug_clump = np.mean(self.clump_mass[self.active_mask])
+                  self.debug_clump = np.mean(self.clump_mass[self._aidx()])
             # ---------------------------
             # ---------------------------
             
@@ -897,16 +915,16 @@ class GeneticPhotobioreactorEnv(gym.Env):
 
             # --- Cell Wall Fatigue (Accumulative Membrane Integrity) ---
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1253)
-            shear_stress = float(np.clip((stir_rpm - 80.0) / 100.0, 0.0, 1.0))
+            shear_stress = _fclip((stir_rpm - 80.0) / 100.0, 0.0, 1.0)
             self.membrane_integrity -= shear_stress * 0.001          # slow degradation at high RPM
             self.membrane_integrity += (1.0 - self.membrane_integrity) * 0.002  # ~5h to recover
-            self.membrane_integrity = float(np.clip(self.membrane_integrity, 0.0, 1.0))
+            self.membrane_integrity = _fclip(self.membrane_integrity, 0.0, 1.0)
             fatigue_tax = 1.0 - (0.15 * (1.0 - self.membrane_integrity))  # max 15% penalty
 
             # Phosphorus-Limited Growth — Ks_P now strain-specific (0.5–2.0 mg P/L, Spirulina range)
             Ks_P = params.get('Ks_P', 1.0)
             f_P = self.p_pool / (Ks_P + self.p_pool)
-            f_P = float(np.clip(f_P, 0.0, 1.0))
+            f_P = _fclip(f_P, 0.0, 1.0)
 
             # Carbon-Limited Growth — Arthrospira/Spirulina has an efficient bicarbonate CCM
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1267)
@@ -938,13 +956,13 @@ class GeneticPhotobioreactorEnv(gym.Env):
             # Clip multiplier to avoid single-step explosion (both up and down)
             growth_mult = np.clip(growth_mult, 0.5, 2.0)
             
-            self.cells_mass[self.active_mask] *= growth_mult
+            self.cells_mass[self._aidx()] *= growth_mult
 
             # Droop quota dilution: as cells grow, intracellular quota (N/biomass) is diluted.
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1301)
             q_dil = np.clip(np.maximum(0.0, net_mu) * self.dt, 0.0, 0.95)
-            self.cells_quota[self.active_mask] *= (1.0 - q_dil)
-            self.cells_quota[self.active_mask] = np.maximum(self.cells_quota[self.active_mask], 0.0)
+            self.cells_quota[self._aidx()] *= (1.0 - q_dil)
+            self.cells_quota[self._aidx()] = np.maximum(self.cells_quota[self._aidx()], 0.0)
 
             # --- PROBABILISTIC LYSIS DEATH (replaces dead-code hard starvation check) ---
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1308)
@@ -957,12 +975,13 @@ class GeneticPhotobioreactorEnv(gym.Env):
             lysis_rate  = 5e-4 + (2e-3 * (stress_factor ** 2))  # per hour; 5e-4 ~1.2%/day healthy baseline
             death_prob  = lysis_rate * self.dt             # per step
 
-            curr_active_indices = np.where(self.active_mask)[0]
+            curr_active_indices = self._aidx()
             survival_mask = np.random.uniform(0, 1, self.num_active) > death_prob
             dying_indices = curr_active_indices[~survival_mask]
 
             if len(dying_indices) > 0:
                 self.active_mask[dying_indices] = False
+                self._aidx_cache = None
                 self.num_active -= len(dying_indices)
                 self.cells_mass[dying_indices]        = 0.0
                 self.cells_quota[dying_indices]       = 0.0
@@ -970,7 +989,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
                 self.clump_mass[dying_indices]        = 1.0  # reset dead-cell slots
 
             # Cap mass at upper bound; no lower floor — let starving cells lose mass naturally
-            self.cells_mass[self.active_mask] = np.minimum(self.cells_mass[self.active_mask], 5e8)
+            self.cells_mass[self._aidx()] = np.minimum(self.cells_mass[self._aidx()], 5e8)
 
             # O4: cells below the death threshold face certain lysis on this cycle
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1336)
@@ -978,6 +997,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             if np.any(starving_mask):
                 starving_idx = np.where(starving_mask)[0]
                 self.active_mask[starving_idx] = False
+                self._aidx_cache = None
                 self.num_active -= len(starving_idx)
                 self.cells_mass[starving_idx]        = 0.0
                 self.cells_quota[starving_idx]       = 0.0
@@ -989,9 +1009,9 @@ class GeneticPhotobioreactorEnv(gym.Env):
             uptake_amount = uptake_rate * self.dt
 
             # Update intracellular quota from nitrogen uptake
-            self.cells_quota[self.active_mask] += uptake_amount
+            self.cells_quota[self._aidx()] += uptake_amount
             # Enforce Q_max: prevents unbounded hyperaccumulation (Droop model assumption)
-            self.cells_quota[self.active_mask] = np.minimum(self.cells_quota[self.active_mask], params['Q_max'])
+            self.cells_quota[self._aidx()] = np.minimum(self.cells_quota[self._aidx()], params['Q_max'])
 
             # N drain factor 0.01: max drain ~37.5 mg N/h at 7500 cells (calibrated; see calibration.md)
             total_uptake_mg = uptake_amount * self.num_active * 0.01
@@ -1032,6 +1052,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
 
                     # Activate Children
                     self.active_mask[child_indices] = True
+                    self._aidx_cache = None
                     self.cells_mass[child_indices] = self.cells_mass[parent_indices]
                     self.cells_z[child_indices] = self.cells_z[parent_indices]
                     self.cells_x[child_indices] = self.cells_x[parent_indices]
@@ -1066,7 +1087,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         # 2. Gas Exchange (O2 & CO2)
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1435)
         od = self.od
-        avg_clump = np.mean(self.clump_mass[self.active_mask]) if self.num_active > 0 else 1.0
+        avg_clump = np.mean(self.clump_mass[self._aidx()]) if self.num_active > 0 else 1.0
         
         # Resistance starts at 1.0 (water-like broth) and increases with OD/clumping.
         # od/0.5: broth viscosity doubles at OD=0.5 — consistent with real PBR measurements.
@@ -1075,25 +1096,25 @@ class GeneticPhotobioreactorEnv(gym.Env):
         co2_flow_lpm = co2_flow / 1000.0
         total_gas_lpm = max(1e-6, self.base_air_flow_lpm + co2_flow_lpm)
         co2_frac = ((self.ambient_co2_frac * self.base_air_flow_lpm) + co2_flow_lpm) / total_gas_lpm
-        co2_frac = float(np.clip(co2_frac, self.ambient_co2_frac, 0.12))
-        o2_frac = float(np.clip((self.ambient_o2_frac * self.base_air_flow_lpm) / total_gas_lpm, 0.05, self.ambient_o2_frac))
+        co2_frac = _fclip(co2_frac, self.ambient_co2_frac, 0.12)
+        o2_frac = _fclip((self.ambient_o2_frac * self.base_air_flow_lpm) / total_gas_lpm, 0.05, self.ambient_o2_frac)
 
         # kLa correlation is stir/gas-flow driven, not volume-parametrized (no volume_L
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1453)
         mix_term = np.clip(stir_rpm / 200.0, 0.25, 1.0)
         gas_term = np.clip(total_gas_lpm / self.base_air_flow_lpm, 0.5, 6.0)
         base_kLa = (0.6 + 5.0 * (mix_term ** 1.3)) * (gas_term ** 0.35)
-        k_La = float(np.clip(base_kLa / flow_resistance, 0.05, 12.0))
+        k_La = _fclip(base_kLa / flow_resistance, 0.05, 12.0)
         self.kLa = k_La
         
         # Dissolved Oxygen Dynamics
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1464)
-        total_mass_mg = np.sum(self.cells_mass[self.active_mask]) * 1e-9 # pg * 1e-9 = mg? 
+        total_mass_mg = np.sum(self.cells_mass[self._aidx()]) * 1e-9 # pg * 1e-9 = mg? 
         # 1 pg = 10^-12 g. 1 mg = 10^-3 g. So 1 pg = 10^-9 mg. Correct.
 
         # Bootstrap last_mass if this is step 0 (belt-and-suspenders over reset() init)
         if self.step_count == 0:
-            self.last_mass = np.sum(self.cells_mass[self.active_mask])
+            self.last_mass = np.sum(self.cells_mass[self._aidx()])
         
         # Simplify: Delta Mass roughly tracks O2.
         if self.step_count > 0:
@@ -1102,7 +1123,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             delta_mass_mg = 0.0
         
         # Guard: clamp delta_mass_mg to prevent NaN from stale last_mass on first step
-        delta_mass_mg = float(np.clip(delta_mass_mg, -1e6, 1e6))
+        delta_mass_mg = _fclip(delta_mass_mg, -1e6, 1e6)
 
         # --- Periodic Harvest / Dilution (Semi-Continuous Operation) ---
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1484)
@@ -1122,9 +1143,9 @@ class GeneticPhotobioreactorEnv(gym.Env):
                     1.0 - self.HARVEST_PUMP_ERROR, 1.0 + self.HARVEST_PUMP_ERROR))
         else:
             harvest_frac_applied = 0.0
-        frac_diluted = float(np.clip(harvest_frac_applied, 0.0, 0.95)) if is_harvest_event else 0.0
+        frac_diluted = _fclip(harvest_frac_applied, 0.0, 0.95) if is_harvest_event else 0.0
         if frac_diluted > 0.0 and self.num_active > 0:
-            active_idx = np.where(self.active_mask)[0]
+            active_idx = self._aidx()
             # Per-cell Bernoulli removal (not round(frac*n)) — at realistic D and small
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1522)
             remove_local = np.random.uniform(0.0, 1.0, len(active_idx)) < frac_diluted
@@ -1132,6 +1153,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             if len(remove_idx) > 0:
                 harvested_this_step_mg = float(np.sum(self.cells_mass[remove_idx])) * 1e-9
                 self.active_mask[remove_idx]       = False
+                self._aidx_cache = None
                 self.num_active                   -= len(remove_idx)
                 self.cells_mass[remove_idx]        = 0.0
                 self.cells_quota[remove_idx]       = 0.0
@@ -1157,7 +1179,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         self.harvest_integral        += frac_diluted * self.volume_L  # cumulative volume harvested (L)
 
         # Recompute standing mass/OD post-dilution — this is what the tank actually holds
-        total_mass_mg = np.sum(self.cells_mass[self.active_mask]) * 1e-9
+        total_mass_mg = np.sum(self.cells_mass[self._aidx()]) * 1e-9
         # Update OD — normalised by volume (concentration, not total mass)
         self.od = (total_mass_mg / self.volume_L) / 300.0
         # print(f"DEBUG: Mass={total_mass_mg}, OD={self.od}")
@@ -1191,12 +1213,12 @@ class GeneticPhotobioreactorEnv(gym.Env):
         kLa_inter = k_La * mix_intensity * 0.5
         do2_flux  = kLa_inter * (self.do2_b - self.do2_s) * self.dt
 
-        self.do2_s = float(np.clip(self.do2_s + (o2_production * w_s / vol_s) + o2_xfer_s + do2_flux / vol_s, 0.0, 40.0))
-        self.do2_b = float(np.clip(self.do2_b + (o2_production * w_b / vol_b) + o2_xfer_b - do2_flux / vol_b, 0.0, 30.0))
+        self.do2_s = _fclip(self.do2_s + (o2_production * w_s / vol_s) + o2_xfer_s + do2_flux / vol_s, 0.0, 40.0)
+        self.do2_b = _fclip(self.do2_b + (o2_production * w_b / vol_b) + o2_xfer_b - do2_flux / vol_b, 0.0, 30.0)
 
         # DIC balance per layer
         # Henry's law: [CO2(aq)] = K_H * pCO2; K_H=29 mol/(L·atm), MW=44 → 1276 mg/(L·atm) at 30°C
-        co2_sat = float(np.clip(1276.0 * co2_frac, 0.3, 60.0))
+        co2_sat = _fclip(1276.0 * co2_frac, 0.3, 60.0)
         co2_xfer_s = kLa_s * (co2_sat - self.co2_s) * self.dt
         co2_xfer_b = kLa_b * (co2_sat - self.co2_b) * self.dt
         co2_flux   = kLa_inter * (self.co2_b - self.co2_s) * self.dt
@@ -1205,11 +1227,11 @@ class GeneticPhotobioreactorEnv(gym.Env):
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1600)
         co2_uptake = max(0.0, delta_mass_mg) * 1.835
         co2_release = max(0.0, -delta_mass_mg) * 1.835
-        co2_bio_s = float(np.clip((co2_release * w_s - co2_uptake * w_s) / vol_s, -1.0, 1.0))
-        co2_bio_b = float(np.clip((co2_release * w_b - co2_uptake * w_b) / vol_b, -1.0, 1.0))
+        co2_bio_s = _fclip((co2_release * w_s - co2_uptake * w_s) / vol_s, -1.0, 1.0)
+        co2_bio_b = _fclip((co2_release * w_b - co2_uptake * w_b) / vol_b, -1.0, 1.0)
 
-        self.co2_s = float(np.clip(self.co2_s + co2_xfer_s + co2_bio_s + co2_flux / vol_s, 0.0, 80.0))
-        self.co2_b = float(np.clip(self.co2_b + co2_xfer_b + co2_bio_b - co2_flux / vol_b, 0.0, 80.0))
+        self.co2_s = _fclip(self.co2_s + co2_xfer_s + co2_bio_s + co2_flux / vol_s, 0.0, 80.0)
+        self.co2_b = _fclip(self.co2_b + co2_xfer_b + co2_bio_b - co2_flux / vol_b, 0.0, 80.0)
 
         # Volume-weighted averages — used by reward, PBRS, observations
         self.do2         = (self.do2_s * vol_s + self.do2_b * vol_b) / self.volume_L
@@ -1224,16 +1246,16 @@ class GeneticPhotobioreactorEnv(gym.Env):
         bicarb_added_mM = (co2_to_hco3_mg / 44.0 / self.volume_L) * f_to_hco3
         # NOTE: this ceiling (5.0) is 40x below the Zarrouk medium baseline bicarbonate is
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1623)
-        self.bicarbonate = float(np.clip(self.bicarbonate - bicarb_consumed_mM + bicarb_added_mM, 0.0, 5.0))
+        self.bicarbonate = _fclip(self.bicarbonate - bicarb_consumed_mM + bicarb_added_mM, 0.0, 5.0)
 
         # pH via Henderson-Hasselbalch: pH = pKa1 + log10([HCO3-]/[CO2(aq)])
         # pKa1 temperature correction: -0.002/°C (symmetric around 25°C; Stumm & Morgan 1996)
         pKa1 = 6.35 - 0.002 * (self.temp - 25.0)
         # mg/L ÷ g/mol = mM (dimensional identity: mg/L × mol/g = 10^-3 mol/L = mM)
         co2_aq_mM = max(self.co2_b, 0.001) / 44.0
-        ph_eq = float(np.clip(pKa1 + np.log10(max(self.bicarbonate, 0.001) / co2_aq_mM), 5.0, 11.0))
+        ph_eq = _fclip(pKa1 + np.log10(max(self.bicarbonate, 0.001) / co2_aq_mM), 5.0, 11.0)
         # pH tracks CO2 dissolution rate (kLa ~1.5-5/h); 2.0/h gives ~30-min response — physically correct
-        self.ph = float(np.clip(self.ph + 2.0 * self.dt * (ph_eq - self.ph), 5.0, 11.0))
+        self.ph = _fclip(self.ph + 2.0 * self.dt * (ph_eq - self.ph), 5.0, 11.0)
         
         # --- Advanced Physics: Pigment & Salt ---
         

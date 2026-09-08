@@ -104,6 +104,7 @@ def apply_saved_population(raw_env, saved_state: Dict[str, object], start_mode: 
     raw_env.pigment = saved_state["pigment"]
     raw_env.num_active = saved_state["num_active"]
     raw_env.active_mask = copy.deepcopy(saved_state["active_mask"])
+    raw_env._aidx_cache = None   # stitched mask differs in position, not only in count
     raw_env.ext_nutrients = saved_state["ext_nutrients"]
     raw_env.p_pool        = float(saved_state.get("p_pool", 80.0))
     raw_env.do2_s         = float(saved_state.get("do2_s", saved_state.get("do2", 7.0)))

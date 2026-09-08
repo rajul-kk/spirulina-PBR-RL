@@ -6173,3 +6173,59 @@ samples 60-step windows from a zero state -- so a free-running rollout state wou
 out of distribution. Raising the horizon needs stored-state/burn-in sampling (R2D2-style)
 in the replay buffer, which is a second experiment. Keeping the reset fixed makes v48 a
 single-variable A/B against v47: core swapped, protocol identical.
+
+## --environments-genetic_env-active-index-cache
+
+`step()` indexed `self.active_mask` 25 times per call. Boolean-mask indexing is O(max_cells)
+regardless of how many cells are alive: with `max_cells=7500` and a typical 350-2700 active,
+each site scanned 7500 elements to gather a few hundred. `_aidx()` computes
+`np.where(active_mask)[0]` once and caches it, so the same sites become O(num_active)
+integer gathers.
+
+The mask genuinely mutates during a step -- cell death, starvation, division, and harvest
+removal -- so a single whole-step cache would be wrong. The cache is explicitly invalidated
+at all four mutation sites, plus in `reset()` and in `curriculum_starts.apply_saved_population`
+(a stitched state can differ in cell *positions* while keeping the same count, which a
+count-based check would miss). `_aidx()` additionally recomputes whenever
+`len(cache) != num_active`, as a backstop against a missed invalidation.
+
+Two smaller fixes rode along:
+
+- Lines 724/728 used builtin `sum(self.active_mask)`, iterating 7500 numpy bools in Python,
+  where `self.num_active` was already available. Note this branch is near-dead in practice:
+  it requires `mix_intensity <= 0.01`, i.e. stir below 2 RPM, and the action range floors
+  stir at 50 RPM -- so it only runs when `num_active == 0`. Fixed for correctness, not speed.
+- 27 scalar `float(np.clip(x, lo, hi))` calls became `_fclip`, a plain-Python clip. numpy
+  scalar dispatch costs ~2.5us and this ran ~19x per step (measured at 253us/step, 8% of
+  step time). NaN propagates identically, since `nan < lo` and `nan > hi` are both False.
+
+`_fclip` MUST return `float(...)`. The first attempt returned `x` unchanged, which skipped
+the float32->float64 widening that `float(np.clip(...))` performed on float32 inputs, and
+silently changed the physics (init=2000 harvest 126.78 -> 129.05mg over 1500 steps). This was
+caught only by the trajectory test below, not by any smoke test.
+
+Verification. Both changes are intended to be exactly semantics-preserving, so they were
+checked by SHA256 over the full trajectory -- obs, reward, num_active, od, temp, ph, and the
+entire `cells_mass`, `clump_mass` and `active_mask` arrays at EVERY step -- across six cases
+spanning D0/D1/D2 and 45-4000 initial cells. Bit-exact at 1500 steps and again over full
+7200-step episodes, the latter covering 12 harvest events, mass die-off (4000 -> 313 active),
+and a crash termination at step 5401.
+
+Measured `env.step`, interleaved A/B against the pre-change file, under load from two
+concurrent training runs (so precision is limited; medians shown):
+
+```
+  init=300  (active ~596)   4.813 -> 3.436ms   1.40x
+  init=1200 (active ~2387)  5.725 -> 4.563ms   1.25x
+  init=2000 (active ~2032)  5.720 -> 4.405ms   1.30x
+  init=4000 (active ~3981)  8.159 -> 7.363ms   1.11x
+```
+
+Roughly 1.25x typical. Note the isolated microbenchmark of boolean-vs-integer indexing
+predicted the opposite gradient (5% at 345 active, 36% at 2224); it was wrong because at high
+population the arithmetic on the gathered elements dominates, so removing the fixed 7500-element
+scan matters less, not more. Trust the end-to-end A/B, not the microbenchmark.
+
+This matters more for evaluation than for training: `env.step` is only ~10% of training wall
+clock (the TD3 update is ~90%), but det-eval (9 x 7200 steps per chunk) and the 40-seed
+held-out sweep (40 x 7200 steps) are almost pure env plus inference.

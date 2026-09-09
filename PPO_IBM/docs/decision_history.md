@@ -6358,3 +6358,48 @@ comparison at 100k steps (v47 chunk 1 vs v48 chunk 1, both on the identical pre-
 is already banked and remains valid. v48's held-out gate is also unaffected, because that
 sweep draws lognormal(100,400) -- entirely inside the healthy band where the fix changes
 nothing.
+
+## --legacy-TD3-py-best-ckpt-difficulty
+
+`save_best_checkpoint` compared raw det-eval medians with no regard for which curriculum
+tier produced them. Det medians are not comparable across tiers -- an easier tier yields
+more -- so a strong D0 policy permanently blocks every later D2 policy from being banked.
+
+v48 hit this. Its D0 peak of 321.4mg at 200k steps was never beaten by any D2 chunk (which
+topped out at 255.2), so the "best" checkpoint stayed frozen at a D0-era policy for the rest
+of a 1.31M-step run. Measured by 40-seed D2 held-out sweep, that banked checkpoint scored
+25.7mg median / 11.3 p25, while the discarded current checkpoint at ~1.3M scored 86.4 / 68.1
+-- the marker had preserved a policy 3.4x worse than the one it was rejecting.
+
+Fixed by ranking difficulty first and harvest only within a tier. A higher tier always wins
+regardless of mg; within one tier, higher mg wins. Markers written before this change carry
+no `difficulty=` field and are read as tier -1, so the first on-tier checkpoint supersedes
+them rather than being blocked by a stale number.
+
+Verified: D0/321.4 saved, then D2/255.2 SUPERSEDES it (lower mg, harder tier), D2/112.0
+rejected, D1/300.0 rejected (easier tier, big mg), D2/260.0 accepted.
+
+## --experiments-bc_scaffold-results-v48-lru-held-out
+
+40-seed D2 held-out sweeps of v48 (LRU), both checkpoints, after stopping at ~1.31M steps.
+
+```
+                       median   p25    cvar10  crash  time_od   gate
+  best   (200k, D0)      25.7   11.3      5.4   0.0%   0.0312   NO (1/4)
+  current(~1.3M, D2)     86.4   68.1     17.6   0.0%   0.0223   NO (3/4)
+  v45 reference          95.7   62.1        -   0.0%   0.0181   YES (4/4)
+```
+
+The 1.3M LRU checkpoint misses the gate by 3.6mg on median while carrying a HIGHER p25 than
+v45 (68.1 vs 62.1) -- a stronger lower tail, weaker median. It reached that while running the
+OD dead-zone reward (which punished the >=1500-cell portion of its training distribution) and
+while its det median was actively falling. v45 remains the project best.
+
+Second finding, and the more important one for methodology: this checkpoint's det-eval median
+was 321.4mg (best) and ~112-255mg (D2 chunks), against held-out medians of 25.7 and 86.4. The
+fixed stratified det set is not a skill estimate. Two reasons: (1) it includes 1100-4000 cell
+instances yielding hundreds of mg, while the held-out sweep draws lognormal(100,400) only, so
+the det median is inflated by buckets the sweep never samples; (2) nine instances with fixed
+seeds and fixed strain are overfittable, whereas the sweep randomises seed AND strain. The
+stratified set did its intended job -- it exposed the high-population collapse that the old
+100-400 deque would have hidden -- but its absolute median must not be read as competence.

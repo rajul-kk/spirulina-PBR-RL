@@ -438,24 +438,34 @@ def save_checkpoint(actor, actor_target, critic, critic_target, actor_opt, criti
 BEST_CHECKPOINT_DIR = "model_data/td3_checkpoints_best"
 
 
-def save_best_checkpoint(actor, critic, det_harvest, global_step):
+def save_best_checkpoint(actor, critic, det_harvest, global_step, difficulty=0):
     """Separate, never-overwritten-by-collapse snapshot — the regular checkpoint only ...
-    (full rationale: docs/decision_history.md#--legacy-td3-py-453)"""
+    (full rationale: docs/decision_history.md#--legacy-td3-py-453)
+
+    Difficulty ranks before harvest. Det medians are NOT comparable across tiers, because
+    an easier tier yields more; see decision_history #--legacy-TD3-py-best-ckpt-difficulty.
+    """
     os.makedirs(BEST_CHECKPOINT_DIR, exist_ok=True)
     marker_path = f"{BEST_CHECKPOINT_DIR}/best_info.txt"
-    prev_best = -1.0
+    prev_best, prev_diff = -1.0, -1
     if os.path.exists(marker_path):
         try:
             with open(marker_path) as fh:
-                prev_best = float(fh.read().split("det_harvest=")[1].split()[0])
+                txt = fh.read()
+            prev_best = float(txt.split("det_harvest=")[1].split()[0])
+            # Markers written before this fix carry no difficulty; treat them as tier -1 so
+            # the first on-tier checkpoint always supersedes them.
+            prev_diff = int(txt.split("difficulty=")[1].split()[0]) if "difficulty=" in txt else -1
         except Exception:
-            prev_best = -1.0
-    if det_harvest <= prev_best:
+            prev_best, prev_diff = -1.0, -1
+    if difficulty < prev_diff:
+        return False
+    if difficulty == prev_diff and det_harvest <= prev_best:
         return False
     torch.save(actor.state_dict(), f"{BEST_CHECKPOINT_DIR}/actor.pth")
     torch.save(critic.state_dict(), f"{BEST_CHECKPOINT_DIR}/critic.pth")
     with open(marker_path, "w") as fh:
-        fh.write(f"step={global_step} det_harvest={det_harvest:.2f}\n")
+        fh.write(f"step={global_step} det_harvest={det_harvest:.2f} difficulty={difficulty}\n")
     return True
 
 
@@ -673,9 +683,10 @@ def train(resume=False):
                   f"back-half median={np.median(_bh):.1f}  "
                   f"back-half share={100 * np.median(_bh) / max(np.median(_fe), 1e-9):.0f}%")
         if det_stats["episodes"] >= DET_MASTERY_MIN_EPISODES and det_stats["crash_rate"] == 0.0:
-            if save_best_checkpoint(actor, critic, det_stats["median_harvested_mg"], global_step):
+            if save_best_checkpoint(actor, critic, det_stats["median_harvested_mg"], global_step,
+                                    difficulty=current_difficulty):
                 print(f"  [BEST] new best det checkpoint saved -> {BEST_CHECKPOINT_DIR} "
-                      f"(harvest={det_stats['median_harvested_mg']:.1f}mg, 0% crash)")
+                      f"(harvest={det_stats['median_harvested_mg']:.1f}mg, 0% crash, D{current_difficulty})")
 
         target = ADVANCE_TARGETS.get(current_difficulty)
         criteria_passed = det_criteria_passed = False

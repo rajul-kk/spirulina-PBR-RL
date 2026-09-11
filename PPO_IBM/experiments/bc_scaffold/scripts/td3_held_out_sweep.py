@@ -14,7 +14,7 @@ for _p in (ROOT, os.path.join(ROOT, "training"), os.path.join(ROOT, "environment
         sys.path.insert(0, _p)
 
 from genetic_env import GeneticPhotobioreactorEnv
-from TD3 import RecurrentActor, OBS_DIM, ACTION_DIM, MAX_CELLS, DEVICE
+from TD3 import RecurrentActor, OBS_DIM, ACTION_DIM, MAX_CELLS, DEVICE, HIDDEN_RESET_INTERVAL
 from actor_io import load_actor
 
 GATE = {"harvest": 90.0, "p25": 50.0, "crash": 0.08, "time_od": 0.011}
@@ -26,25 +26,35 @@ def sample_init_cells(rng, adversarial_frac=0.10):
     return int(np.exp(rng.uniform(np.log(100), np.log(400))))
 
 
-def run_episode(actor, difficulty, init_cells, seed):
+def run_episode(actor, difficulty, init_cells, seed, reset_interval=HIDDEN_RESET_INTERVAL):
+    """reset_interval matches the training rollout and det-eval by default. Passing None
+    free-runs the recurrent state, which is what this script did before 2026-09-11 -- an
+    out-of-distribution regime; see decision_history #--td3_held_out_sweep-hidden-reset."""
     np.random.seed(seed)
     env = GeneticPhotobioreactorEnv(max_cells=MAX_CELLS, initial_cells=init_cells, difficulty=difficulty)
     obs, _ = env.reset(seed=seed)
     hidden = actor.initial_hidden(batch=1)
-    done, step, info = False, 0, {}
+    done, step, info, since = False, 0, {}, 0
     with torch.no_grad():
         while not done:
+            if reset_interval is not None and since >= reset_interval:
+                hidden = actor.initial_hidden(batch=1)
+                since = 0
             obs_t = torch.tensor(obs, dtype=torch.float32, device=DEVICE).view(1, 1, -1)
             action_t, hidden = actor(obs_t, hidden)
             action = action_t.view(-1).cpu().numpy()
             obs, reward, terminated, truncated, info = env.step(action)
             done = terminated or truncated
             step += 1
+            since += 1
+    harvested = float(info.get("cumulative_harvested_mg", 0.0))
     return {
         "seed": seed, "init_cells": init_cells, "steps": step, "crashed": step < env.max_steps,
-        "harvested_mg": float(info.get("cumulative_harvested_mg", 0.0)),
+        "harvested_mg": harvested,
         "harvested_mg_back_half": float(info.get("harvested_mg_back_half", 0.0)),
         "time_avg_od": float(info.get("time_avg_od", 0.0)),
+        "pop_final": int(env.num_active),
+        "pop_retained": env.num_active / max(float(init_cells), 1.0),
     }
 
 
@@ -54,7 +64,12 @@ def main():
     ap.add_argument("--difficulty", type=int, default=2)
     ap.add_argument("--n", type=int, default=40)
     ap.add_argument("--base-seed", type=int, default=1000)
+    ap.add_argument("--free-run", action="store_true",
+                    help="do NOT reset recurrent state (pre-2026-09-11 behaviour; out of distribution)")
+    ap.add_argument("--high-pop", type=int, default=0,
+                    help="also run N log-uniform starts in 600-5000, the range the main sweep never tests")
     args = ap.parse_args()
+    reset_iv = None if args.free_run else HIDDEN_RESET_INTERVAL
 
     # Core (LSTM vs diagonal LRU) is detected from the checkpoint's own parameter names,
     # so the same command scores either without a flag.
@@ -69,7 +84,7 @@ def main():
         init_cells = sample_init_cells(rng)
         if init_cells <= 80:
             n_adv += 1
-        r = run_episode(actor, args.difficulty, init_cells, seed)
+        r = run_episode(actor, args.difficulty, init_cells, seed, reset_iv)
         results.append(r)
         tag = "ADV" if init_cells <= 80 else "   "
         print(f"  [{i+1:3d}/{args.n}] seed={seed:5d} {tag} init={init_cells:5d}  "
@@ -91,6 +106,7 @@ def main():
 
     print(f"\n{'='*70}")
     print(f"  TD3+BC HELD-OUT SWEEP  (D{args.difficulty}, n={args.n}, {n_adv} adversarial cold starts)")
+    print(f"  recurrent state: {'FREE-RUNNING (out of distribution)' if args.free_run else f'reset every {HIDDEN_RESET_INTERVAL} steps (matches training)'}")
     print(f"{'='*70}")
     print(f"  crash_rate (all eps) : {crash_rate*100:.1f}%")
     print(f"  yield scored on {len(yielding)} non-adversarial episodes:")
@@ -101,6 +117,9 @@ def main():
           f"back-half median={np.median(bh):.1f}  "
           f"back-half share={100*np.median(bh)/max(med_h,1e-9):.0f}%  "
           f"(back-half p25={np.percentile(bh,25):.1f})")
+
+    ret = np.array([r["pop_retained"] for r in yielding])
+    print(f"  pop retained: median={100*np.median(ret):.0f}%  p25={100*np.percentile(ret,25):.0f}%")
 
     if adv:
         adv_crash = 100 * float(np.mean([r["crashed"] for r in adv]))
@@ -125,9 +144,25 @@ def main():
           f"crash<={GATE['crash']*100:.0f}% time_od>={GATE['time_od']}")
     ok = (med_h >= GATE["harvest"] and p25_h >= GATE["p25"]
           and crash_rate <= GATE["crash"] and med_od >= GATE["time_od"])
-    print(f"  holds on held-out sample: {'YES' if ok else 'NO'}")
-    print("  NOTE: this sweep samples lognormal(100,400)+10% adversarial, so it does NOT")
-    print("        test the 600-5000 range that training samples. Use population_range_check.py.")
+    print(f"  holds on held-out sample: {'YES' if ok else 'NO'}"
+          f"   [legacy 4-criterion gate, comparable to every historical run]")
+    if args.high_pop > 0:
+        hp_rng = np.random.RandomState(args.base_seed + 500_000)
+        hp = []
+        print("")
+        print(f"  HIGH-POPULATION BLOCK (n={args.high_pop}, log-uniform 600-5000) -- the regime the")
+        print("  main sweep never samples, and where policies have been observed to diverge most:")
+        for i in range(args.high_pop):
+            ic = int(np.exp(hp_rng.uniform(np.log(600), np.log(5000))))
+            hp.append(run_episode(actor, args.difficulty, ic, args.base_seed + 500_000 + i, reset_iv))
+        hh = np.array([r["harvested_mg"] for r in hp])
+        hret = np.array([r["pop_retained"] for r in hp])
+        print(f"    harvested_mg  median={np.median(hh):.1f}  p25={np.percentile(hh,25):.1f}")
+        print(f"    pop retained  median={100*np.median(hret):.0f}%  p25={100*np.percentile(hret,25):.0f}%")
+        print(f"    crash_rate    {100*float(np.mean([r['crashed'] for r in hp])):.1f}%")
+
+    print("  NOTE: the main sweep samples lognormal(100,400)+10% adversarial. Pass --high-pop N")
+    print("        to also probe 600-5000, or use population_range_check.py.")
 
 
 if __name__ == "__main__":

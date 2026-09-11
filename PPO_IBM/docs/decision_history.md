@@ -6403,3 +6403,51 @@ the det median is inflated by buckets the sweep never samples; (2) nine instance
 seeds and fixed strain are overfittable, whereas the sweep randomises seed AND strain. The
 stratified set did its intended job -- it exposed the high-population collapse that the old
 100-400 deque would have hidden -- but its absolute median must not be read as competence.
+
+## --td3_held_out_sweep-hidden-reset
+
+The held-out sweep never reset the actor's recurrent state, while both the training rollout
+(TD3.py:569) and det-eval (TD3.py:338) reset every HIDDEN_RESET_INTERVAL=60 steps. The sweep
+was therefore free-running the policy for 7200 steps -- the exact regime HIDDEN_RESET_INTERVAL
+was introduced to prevent, and out of distribution relative to how the policy was trained.
+
+Measured on v49's final checkpoint, 40 seeds, D2:
+
+```
+  free-run (old behaviour) : 123.1 median / 82.9 p25 / time_od 0.0181
+  reset every 60 (matches) : 135.8 median / 83.9 p25 / time_od 0.0177
+```
+
+Every historical held-out number (v45 95.7, v48 86.4, v49 123.1) was measured free-running and
+is understated by roughly 10%. They remain internally comparable, since all were measured the
+same way, but the absolute values are depressed.
+
+Reset-to-match is now the default; `--free-run` reproduces the old behaviour exactly (verified:
+123.1 to the decimal) so historical numbers stay checkable, and the mode is printed in the
+header so a result can never be silently incomparable.
+
+## --td3_held_out_sweep-high-pop-retention
+
+Two additions, after the growth diagnosis showed policies diverging most in a regime the gate
+never samples.
+
+`--high-pop N` runs an extra log-uniform block over 600-5000 initial cells. The main sweep
+draws lognormal(100,400) and its own footer had long warned it does not cover 600-5000; this
+is the first time that gap is measurable from the same script.
+
+Population retained (final/initial) is now reported for both blocks. On v49 final:
+
+```
+  low block  (100-400) : pop retained median 707%, p25 490%
+  high block (600-5000): pop retained median  28%, p25   7%
+```
+
+v49 multiplies the culture sevenfold where the gate looks, and ends with 28% of it where the
+gate does not. Its high-block harvest reads high (241.9mg median) precisely because that yield
+is drawdown of the starting culture rather than production.
+
+A harvested/grown ratio was trialled alongside this and REMOVED at the user's request. Nothing
+was lost diagnostically: retention shows the same divergence, costs nothing per step (the ratio
+required a np.sum over active cells on every one of 7200 steps), and is easier to read. The
+legacy 4-criterion gate was deliberately left untouched throughout, so no historical result
+changes meaning.

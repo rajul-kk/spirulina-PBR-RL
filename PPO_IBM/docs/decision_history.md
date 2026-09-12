@@ -6485,3 +6485,45 @@ Caveat measured while setting this up: the expert's setpoint is NOT its operatin
 realized `time_avg_od` is 0.0183 -- essentially identical to v50's 0.0181. So v50 does not beat
 the expert by choosing a different OD; it beats it by harvesting better at the same OD. That
 weakens "the setpoint is mis-tuned" as a diagnosis.
+
+## --expert_constant_sweep-py-1
+
+One-at-a-time sensitivity sweep of the scripted expert's constants, D2, inits 380 and 2500,
+seeds 900001/900005. The point is not to retune the expert but to ask which constants encode
+a transferable control principle and which are fitted to this simulator -- the latter being
+what a BC prior would carry onto real hardware.
+
+```
+  baseline (setpoint .015, gain 1.0, cap .30, stir 70, light 950): 384.8mg, od .0183, retained 151%
+
+  EXPERT_OD_SETPOINT  .009->.022   377->400mg   spread  6%   FLAT
+  EXPERT_GAIN         0.5->4.0     389->380mg   spread  2%   FLAT
+  EXPERT_FRAC_CAP     .15->.50     447->347mg   spread 26%   MODERATE
+  stir rpm            60->140      382->268mg   spread 31%   MODERATE
+  light umol          600->1400    264->386->326 spread 37%  MODERATE
+```
+
+Conclusion, which CONTRADICTS the hypothesis that motivated the sweep. `EXPERT_OD_SETPOINT`
+was argued to be a simulator-fitted number whose bias BC would transfer to hardware. It is
+not: harvest varies 6% across a 2.4x range of setpoints. `EXPERT_GAIN` varies 2% across an 8x
+range. Both encode principles, not fitted values.
+
+The stir figure is also an artifact of the grid: the 31% spread comes entirely from 140 rpm,
+far outside the operating band. Within 60-80 rpm the response is 382.1/384.8/385.5 -- 0.9%.
+The existing comment in bc_pretrain.py that stir and light are "genuinely fine as
+near-constants ... across 60-80rpm / 900-1000umol" is confirmed for stir.
+
+The one genuine sim2real risk is `EXPERT_LIGHT_RANGE`. 950 umol sits on a real peak (-31% at
+600, -15% at 1400), and that optimum is a function of light path, cell density and
+photoinhibition -- all simulator-modelled. On hardware with different geometry the peak moves
+and the BC prior carries the wrong light level.
+
+Separately, an available improvement: `EXPERT_FRAC_CAP=0.15` yields +16.1% over 0.30 (446.9 vs
+384.8mg) while retaining 335% of the culture versus 151%. Harvesting less per event compounds
+standing biomass. It does so at od 0.0508, 4.2x OD_TARGET, which `reward_od` penalizes
+heavily -- so the higher-yielding expert scores worse under our own reward. That tension is
+unresolved and is further evidence that OD_TARGET=0.012 is low relative to what actually
+produces biomass (see also v50 and the expert both operating near od 0.018).
+
+NOT acted on yet: changing FRAC_CAP would regenerate the demo set mid-comparison, the same
+class of mistake as the v47 dead zone. Queue behind the BC ablation.

@@ -8,3 +8,41 @@
   EXPERT_OD_SETPOINT  (baseline 0.015)
          value   harvest   vs base       od  retained  crash
          0.009     377.3     -2.0%   0.0132       90%     0%
+         0.012     379.5     -1.4%   0.0155      123%     0%
+         0.015     384.8     +0.0%   0.0183      151%     0%  <-- baseline
+         0.018     392.2     +1.9%   0.0216      182%     0%
+         0.022     400.1     +4.0%   0.0264      226%     0%
+    -> best=0.022  spread=6% of median  FLAT (robust prior)
+
+  EXPERT_GAIN  (baseline 1.0)
+         value   harvest   vs base       od  retained  crash
+           0.5     388.7     +1.0%   0.0209      178%     0%
+             1     384.8     +0.0%   0.0183      151%     0%  <-- baseline
+             2     384.7     -0.0%   0.0172      139%     0%
+             4     380.1     -1.2%   0.0168      142%     0%
+    -> best=0.5  spread=2% of median  FLAT (robust prior)
+
+  EXPERT_FRAC_CAP  (baseline 0.3)
+         value   harvest   vs base       od  retained  crash
+          0.15     446.9    +16.1%   0.0508      335%     0%
+           0.3     384.8     +0.0%   0.0183      151%     0%  <-- baseline
+           0.5     346.5    -10.0%   0.0180      151%     0%
+    -> best=0.15  spread=26% of median  MODERATE
+
+  stir rpm  (baseline 70.0)
+         value   harvest   vs base       od  retained  crash
+            60     382.1     -0.7%   0.0184      158%     0%
+            70     384.8     +0.0%   0.0183      151%     0%  <-- baseline
+            80     385.5     +0.2%   0.0183      158%     0%
+           140     267.7    -30.4%   0.0171      160%     0%
+    -> best=80  spread=31% of median  MODERATE
+
+  light umol  (baseline 950.0)
+         value   harvest   vs base       od  retained  crash
+           600     264.1    -31.4%   0.0170      161%     0%
+           950     384.8     +0.0%   0.0183      151%     0%  <-- baseline
+          1400     325.5    -15.4%   0.0175      160%     0%
+    -> best=950  spread=37% of median  MODERATE
+
+  A SHARP optimum means the constant is fitted to this simulator and the BC prior it
+  generates would carry that bias onto hardware. FLAT means it encodes a principle.

@@ -6597,3 +6597,55 @@ actor_loss still real-valued at policy-delay steps. (2) BC_COEF=0.0, 40 syntheti
 actor output std 0.06-0.11 across varied inputs, not saturated (vs the live run's exact
 0.00000 std collapse). v51 restarted from step 0 under the fix; first attempt's log kept as
 `logs/training_run_v51_bc_ablation.attempt1_actor_collapse.log`.
+
+## --td3-py-bc-ablation-conclusive-result
+
+v51's second attempt (BC_COEF=0.0, under the lam-decouple fix) STILL collapsed, two chunks
+later than attempt 1: chunk 1 showed real, population-structured harvest (17.7mg, buckets
+0/4/3/13/23/57/68/72 -- monotone in population, clearly not noise), then chunk 2 fell to
+0.0mg across every bucket and stayed there.
+
+Probed the chunk-2 checkpoint directly at two population scales (700 and 4000 cells, OD
+0.014-0.016 and 0.075-0.084 respectively):
+
+```
+  init=700   min=[-1, 0.99998, -1]      max=[1, 1, -0.99992]   std=[0.990, 2.9e-6, 3.2e-6]
+  init=4000  min=[-1, 0.99993, -1]      max=[1, 1, -0.99992]   std=[0.751, 6.0e-6, 3.2e-6]
+```
+
+`light` saturated near +1 (max PAR) and `harvest` saturated near -1 (~0 fraction) at BOTH
+population scales despite very different OD ranges -- a state-independent, degenerate policy.
+Only `stir` retains real signal.
+
+Ruled out a second formula bug before accepting this as the finding: the critic's target
+computation (`next_action` from `actor_target`, Gaussian target-policy-smoothing noise
+clamped by POLICY_NOISE/NOISE_CLIP, `torch.min(q1_next, q2_next)`) is standard, correct
+Fujimoto et al. 2018 TD3 machinery, entirely separate from the lam normalization fixed
+earlier, and unaffected by BC_COEF. No further code defect was found.
+
+CONCLUSION, decisive and not pursued further: without a behavioral anchor, even a
+formula-correct vanilla TD3 actor reliably diverges to a degenerate, state-independent
+policy in this environment within 1-3 D0 chunks (~100k-300k steps). This is the textbook
+actor-critic extrapolation/divergence failure mode -- the critic, trained partly on
+demo-derived transitions (DEMO_FRACTION=0.25 was left ON), correctly values good harvest
+behavior, but the actor's pure `-Q(s,pi(s))` ascent walks it toward boundary actions the
+critic has not been well-corrected on, and ANNEALING exploration noise (by design, decreasing
+over training) makes escape progressively less likely once trapped -- a positive feedback
+lock-in. This is exactly the pathology TD3+BC and related behavior-regularized methods (BCQ,
+CQL) exist to prevent.
+
+ANSWER to the ablation's motivating question (does the BC anchor, now that the expert is
+surpassed, still help or does it hold the policy back): the anchor is NOT merely helpful --
+it is LOAD-BEARING for training stability in this setup. Removing it does not yield "a
+policy that explores more freely and finds something better than the expert"; it yields
+training collapse. The two-run pattern (collapse #1 caused by a real formula bug, collapse #2
+occurring under the corrected formula) makes this a controlled result, not an artifact.
+
+Deliberately NOT pursued: further stabilization attempts (entropy bonus, reduced policy
+delay, non-annealing exploration noise, partial BC coefficients). Those are legitimate
+follow-up experiments but are a different, larger question ("can vanilla TD3 be stabilized
+here at all") than the one v51 was scoped to answer ("does BC still help now that the expert
+is beaten"). v51 answers that question conclusively: yes, decisively, it is necessary.
+
+v51 is CLOSED. Checkpoints archived to archive_v51_bc_ablation/; both attempt logs preserved
+(`.attempt1_actor_collapse.log`, `.attempt2_final.log`).

@@ -6568,3 +6568,32 @@ that does not decay with level, because it does not depend on level at all.
 Fix planned for v52: gate the sign of `reward_od_delta` on position relative to OD_TARGET --
 reward OD growth below target, penalise it above. Not applied yet; v51 (BC ablation) was
 already launched and changing the reward mid-comparison is the same error as the v47 dead zone.
+
+## --legacy-TD3-py-bc-ablation-lam-decouple
+
+v51's first attempt (BC_COEF=0.0) collapsed the actor to a fixed, fully-saturated output
+within ~230k steps: harvest=-1.0000, stir=-1.0000, light=+1.0000, EXACTLY, std=0.00000 across
+600 steps of varying OD (0.0143-0.0159). Det-eval showed 0.0mg harvest and IDENTICAL
+time_avg_od=0.0352 across two consecutive chunks. Once tanh saturates to +/-1 its local
+gradient (1-tanh^2) vanishes, so this is an absorbing state -- the remaining ~1.8M steps would
+have replayed the same dead policy.
+
+Root cause: `lam = clamp(TD3BC_ALPHA / |Q|, max=100)` scales the Q-term specifically to
+balance it against a comparably-sized BC term (Fujimoto & Gu 2021, TD3+BC). With BC_COEF=0
+there is no BC term to balance against, but the code applied the same normalization anyway --
+damping the Q-gradient (measured at lam=0.35, i.e. 35pct strength, on v51's own critic) with
+no counterbalancing pull-back from BC. That is the actor-extrapolation-exploitation pathway
+BC exists to prevent in the first place, made worse rather than removed. So BC_COEF=0 was not
+testing "vanilla TD3" -- it was testing "TD3 with a damped, unregularized Q-gradient," a
+confound rather than a clean ablation.
+
+Fix: apply the alpha/|Q| normalization only when BC_COEF > 0; otherwise use lam=1.0, the
+standard unnormalized TD3 actor loss `-Q_pred.mean()`, letting the twin-critic-min and target
+policy smoothing (already present, unrelated to BC) do their normal job -- exactly the
+original Fujimoto et al. 2018 TD3 formula, which has no such lam term.
+
+Verified: (1) BC_COEF=1.0 (default) path is untouched -- lam still computed via alpha/|Q|,
+actor_loss still real-valued at policy-delay steps. (2) BC_COEF=0.0, 40 synthetic updates:
+actor output std 0.06-0.11 across varied inputs, not saturated (vs the live run's exact
+0.00000 std collapse). v51 restarted from step 0 under the fix; first attempt's log kept as
+`logs/training_run_v51_bc_ablation.attempt1_actor_collapse.log`.

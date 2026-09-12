@@ -397,7 +397,16 @@ def td3_update(actor, actor_target, critic, critic_target, actor_opt, critic_opt
     if update_idx % POLICY_DELAY == 0:
         pred_action, _ = actor(obs)
         q_pred = critic.q1_only(obs, pred_action)
-        lam = torch.clamp(TD3BC_ALPHA / (q_pred.abs().mean().detach() + 1e-3), max=100.0)
+        # The alpha/|Q| normalization exists to balance the RL objective against a
+        # comparably-sized BC term (Fujimoto & Gu 2021); with BC_COEF==0 there is no BC
+        # term to balance against, so applying it would silently dampen the Q-gradient
+        # with no counterbalancing pull-back -- the actor extrapolation-exploitation
+        # pathology BC exists to prevent, compounded rather than removed.
+        # (full rationale: docs/decision_history.md#--legacy-TD3-py-bc-ablation-lam-decouple)
+        if BC_COEF > 0:
+            lam = torch.clamp(TD3BC_ALPHA / (q_pred.abs().mean().detach() + 1e-3), max=100.0)
+        else:
+            lam = 1.0   # vanilla TD3 actor loss when the BC anchor is off
         q_term = -lam * q_pred.mean()
 
         bc_obs, bc_act, _, _, _ = demo_buffer._sample_raw(BATCH_SIZE)

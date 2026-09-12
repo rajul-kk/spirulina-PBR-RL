@@ -1,1 +1,0 @@
-step=1300000 det_harvest=255.90 difficulty=2

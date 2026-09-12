@@ -54,14 +54,16 @@ NOISE_CLIP = 0.5
 # TD3+BC actor regularization (Fujimoto & Gu 2021):
 # (full rationale: docs/decision_history.md#--legacy-TD3-py-69)
 TD3BC_ALPHA = 2.5    # paper default
-BC_COEF = 1.0
+# BC anchor strength, env-overridable so the expert prior can be ablated without editing
+# code. (full rationale: docs/decision_history.md#--legacy-TD3-py-bc-ablation-knobs)
+BC_COEF = float(os.environ.get("TD3_BC_COEF", "1.0"))
 EXPLORATION_NOISE_START = 0.25
 EXPLORATION_NOISE_END = 0.03
 EXPLORATION_NOISE_ANNEAL_FRAC = 0.3  # fraction of TOTAL_TRAINING_STEPS to anneal over
 TD3_REGRET_BLEND = 0.08
 
 N_DEMO_EPISODES = 24                 # matches bc/bc_pretrain.py's default episode count
-DEMO_FRACTION = 0.25                 # share of every training batch drawn from demos
+DEMO_FRACTION = float(os.environ.get("TD3_DEMO_FRACTION", "0.25"))  # share of each batch from demos
 DEMO_DIFFICULTY_WEIGHTS = {0: 0.4, 1: 0.4, 2: 0.2}  # matches bc/bc_pretrain.py
 
 # Scripted-expert control law, numerically identical to bc/bc_pretrain.py (not imported,

@@ -1,0 +1,10 @@
+============================================================================================
+  EXPERT CONSTANT SENSITIVITY   D2  inits=[380, 2500]  seeds=[900001, 900005]
+  baseline: {'setpoint': 0.015, 'gain': 1.0, 'cap': 0.3, 'stir': 70.0, 'light': 950.0}
+============================================================================================
+
+  BASELINE: harvest=384.8mg  od=0.0183  retained=151%  crash=0%
+
+  EXPERT_OD_SETPOINT  (baseline 0.015)
+         value   harvest   vs base       od  retained  crash
+         0.009     377.3     -2.0%   0.0132       90%     0%

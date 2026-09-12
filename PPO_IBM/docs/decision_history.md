@@ -6451,3 +6451,37 @@ was lost diagnostically: retention shows the same divergence, costs nothing per 
 required a np.sum over active cells on every one of 7200 steps), and is easier to read. The
 legacy 4-criterion gate was deliberately left untouched throughout, so no historical result
 changes meaning.
+
+## --legacy-TD3-py-bc-ablation-knobs
+
+`BC_COEF` and `DEMO_FRACTION` read from `TD3_BC_COEF` / `TD3_DEMO_FRACTION`, defaulting to
+the unchanged 1.0 and 0.25, so the expert prior can be ablated by environment variable
+rather than by editing code mid-experiment. `TD3_lru.py` reads both through `base.` at call
+time, so the same knobs apply to the LRU trainer.
+
+Motivation: the scripted expert is no longer an upper bound. v50 out-harvests it by 15-25pct
+at 4000 cells (1085-1277mg vs 941-1023) while retaining more culture, so the TD3+BC anchor now
+pulls the actor toward a policy it has surpassed. Whether that anchor still helps is an
+empirical question, and until now there was no way to ask it without a code change.
+
+Framing worth keeping: this is the same trade-off as hand-crafted molecular fingerprints
+versus learned GNN representations. Yang et al., *Analyzing Learned Molecular Representations
+for Property Prediction* (JCIM 2019, the Chemprop paper) finds hybrid representations beat
+either alone, and that fixed descriptors stay necessary because learned encoders struggle with
+global properties on small data. Our 2M-step budget over a 7200-step horizon is that
+small-data regime, which is the strongest argument for keeping the demos.
+
+The control-specific literature suggests a better answer than either keeping or dropping the
+prior. In residual RL (Johannink et al., *Residual Reinforcement Learning for Robot Control*,
+2019 -- whose hand-designed component is also a P-controller) the policy learns an additive
+correction on top of the fixed controller, and the reported result is that it holds return
+constant and CORRECTS a biased controller as bias grows, where the hand-engineered controller
+alone degrades. Under BC regularization a biased expert instead pulls the policy toward its
+bias. That distinction is the sim2real argument: with `EXPERT_OD_SETPOINT` fitted to this
+simulator, BC transfers the bias while a residual formulation would learn to cancel it.
+
+Caveat measured while setting this up: the expert's setpoint is NOT its operating point. With
+`EXPERT_OD_SETPOINT=0.015`, harvest firing only every 600 steps lets growth outrun the law, and
+realized `time_avg_od` is 0.0183 -- essentially identical to v50's 0.0181. So v50 does not beat
+the expert by choosing a different OD; it beats it by harvesting better at the same OD. That
+weakens "the setpoint is mis-tuned" as a diagnosis.

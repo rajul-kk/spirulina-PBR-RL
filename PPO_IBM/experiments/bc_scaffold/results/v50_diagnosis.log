@@ -1,1 +1,26 @@
 ########## Q-MAGNITUDE on v50 FINAL (collapsed, 2M) ##########
+================================================================================================
+  Q-MAGNITUDE CHECK  model_data/td3_lru_checkpoints  core=lru  D2  gamma=0.9995
+================================================================================================
+    init   harvest   MC return       Q_min         gap     gap%   |q1-q2|  crash
+  --------------------------------------------------------------------------------------------
+     120      83.5      240.15      107.07     -135.47     -56%     0.147  False
+     250     152.9      250.02      112.64     -136.45     -55%     0.135  False
+     380     189.8      246.92      115.46     -130.11     -53%     0.086  False
+     700     162.5      251.35      117.40     -131.67     -52%     0.091  False
+    1100      47.4      -16.15      -29.61       -1.45      -9%     0.832  False
+    1500      25.9      -52.01      -44.99       21.92      42%     0.485  False
+    2500      26.6      -89.73      -51.77       46.63      52%     0.015  False
+    4000      33.7     -103.19      -49.81       60.57      59%     0.384  False
+      45       0.4      189.15      101.97      -86.21     -46%     0.112  False
+
+  Interpretation
+    low/mid (<1500 cells)    median MC return=  246.92  Q=  112.64  gap= -131.67 (-53%)  |q1-q2|=0.135
+    high (>=1500 cells)      median MC return=  -89.73  Q=  -49.81  gap=   46.63 (52%)  |q1-q2|=0.384
+
+    Relative overestimation is 52% at high vs -53% at low population.
+    A much larger gap at high population indicates CRITIC DIVERGENCE in the
+    high-return regime. A similar gap in both, with high-population harvest
+    still depressed, would instead indicate ACTOR POLICY DRIFT.
+
+########## HELD-OUT: v50 BEST (1.3M, D2) reset-mode + high-pop ##########

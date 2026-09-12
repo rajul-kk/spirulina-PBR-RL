@@ -6527,3 +6527,44 @@ produces biomass (see also v50 and the expert both operating near od 0.018).
 
 NOT acted on yet: changing FRAC_CAP would regenerate the demo set mid-comparison, the same
 class of mistake as the v47 dead zone. Queue behind the BC ablation.
+
+## --environments-genetic_env-od-delta-unconditional
+
+The real cause of the recurring high-population overgrowth, found after three failed attempts
+at the OD level penalty.
+
+```python
+reward_od_delta = 0.0 if is_harvest_event else 0.01 * float(np.tanh(rel_delta_od / 2e-4))
+```
+
+This term rewards OD INCREASING at any OD level. It carries no notion of target: the same
++0.01 is paid for growing OD from 0.006 (half target, desirable) as from 0.12 (10x target,
+gross overgrowth). `tanh(rel_delta/2e-4)` saturates at a ~0.04pct relative change per step, so
+in practice the term is just +/-0.01 on the sign of the OD trend.
+
+Against the level penalty in the far tail:
+
+```
+  od_delta for rising OD                            : +0.01     per step
+  log-tail level gradient at 10x target (OD 0.1217) : -0.000164 per 0.001 OD
+```
+
+Cancelling +0.01 would require OD to rise 0.061 in ONE step. So rising OD is net positive at
+every OD level on every non-harvest step -- an unconditional incentive to grow OD without
+bound, roughly 60x stronger than the term opposing it.
+
+This is why three redesigns of the level penalty did not fix overgrowth. v45 sat at 3-6x
+target, v48 collapsed, v50 collapsed; each time the term that OPPOSES overgrowth was being
+repaired while a different term PAID for it. v49 escaped only because its policy harvested
+enough to stay inside the band where the level penalty still has gradient (its od held at
+0.0177; the knee is at 0.0920).
+
+It also dissolves the "bounded penalty implies vanishing gradient" tension recorded in
+#--environments-genetic_env-od-tail-deadzone. That tension is real for a LEVEL penalty, and no
+tail shape escapes it -- exponential, hard floor and logarithmic all fail identically. A
+DIRECTIONAL term has no such limit: penalising a rising OD while above target gives a gradient
+that does not decay with level, because it does not depend on level at all.
+
+Fix planned for v52: gate the sign of `reward_od_delta` on position relative to OD_TARGET --
+reward OD growth below target, penalise it above. Not applied yet; v51 (BC ablation) was
+already launched and changing the reward mid-comparison is the same error as the v47 dead zone.

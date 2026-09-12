@@ -70,6 +70,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         self.OD_ABOVE_SLOPE = 0.03          # reward lost per 1x OD_TARGET above target
         self.OD_ABOVE_FLOOR = -0.05         # knee where the linear decay hands off to the log tail
         self.OD_TAIL_COEF = 0.02            # log-tail gain; keeps the gradient nonzero past the knee
+        self.OD_DELTA_SIGN_WIDTH = 0.05     # width (in od_x units) of the smooth sign transition
         # Back-half window, shared by time_avg_od and the back-half harvest metric.
         # (full rationale: docs/decision_history.md#--environments-genetic_env-back-half-harvest)
         self.BACK_HALF_STEP = 3600          # half of max_steps (7200)
@@ -490,7 +491,15 @@ class GeneticPhotobioreactorEnv(gym.Env):
         OD_RATE_FLOOR = 1e-4
         delta_od = self.od - self._prev_od_for_rate
         rel_delta_od = delta_od / max(self._prev_od_for_rate, OD_RATE_FLOOR)
-        reward_od_delta = 0.0 if is_harvest_event else 0.01 * float(np.tanh(rel_delta_od / 2e-4))
+        # Directional: rewards OD growth below target, penalizes it above -- gated by a
+        # smooth sign(1-od_x) so the deterrent strength does NOT decay with how far above
+        # target OD already is (unlike the level term, which necessarily vanishes far out;
+        # see od-tail-deadzone). This was previously unconditional in sign, rewarding
+        # growth at ANY level and overpowering the level penalty ~60x in the far tail --
+        # the actual cause of the recurring high-population overgrowth collapse.
+        # (full rationale: docs/decision_history.md#--environments-genetic_env-od-delta-directional)
+        od_delta_sign = float(np.tanh((1.0 - od_x) / self.OD_DELTA_SIGN_WIDTH))
+        reward_od_delta = 0.0 if is_harvest_event else od_delta_sign * 0.01 * float(np.tanh(rel_delta_od / 2e-4))
         self._prev_od_for_rate = self.od
 
         # 4. Periodic harvest yield — fires only on harvest-event steps (0.0 otherwise),

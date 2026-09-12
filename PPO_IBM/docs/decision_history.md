@@ -6649,3 +6649,41 @@ is beaten"). v51 answers that question conclusively: yes, decisively, it is nece
 
 v51 is CLOSED. Checkpoints archived to archive_v51_bc_ablation/; both attempt logs preserved
 (`.attempt1_actor_collapse.log`, `.attempt2_final.log`).
+
+## --environments-genetic_env-od-delta-directional
+
+Fix for the mechanism in #--environments-genetic_env-od-delta-unconditional: `reward_od_delta`
+now gates its sign on position relative to target, via a smooth `tanh((1-od_x)/width)` factor
+(width=0.05 in od_x units) rather than a hard step, so there is no discontinuity/chattering
+exactly at the target crossing.
+
+```
+  od_x   0.50   0.90   0.99   1.00    1.01    1.10    2.00   10.00   18.00
+  term  +0.010 +0.009 +0.00002 -0.002 -0.0038 -0.0098 -0.010  -0.010  -0.010
+```
+
+Verified via the ACTUAL `_compute_reward` call (not a standalone reimplementation), isolating
+each call's contribution. Two properties confirmed: (1) full +/-0.01 strength is reached
+within roughly 10pct of target on either side -- the transition band is narrow, not a broad
+decay region: (2) the penalty magnitude for growth above target is CONSTANT at -0.01 from
+2x to 18x target -- it does not decay with level, unlike the necessarily-vanishing level
+penalty (`reward_od`'s tail). This is what closes the escape hatch: OD growth away from
+target is now opposed at full, level-independent strength everywhere above the transition
+band, rather than being unconditionally rewarded and ~60x stronger than the opposing level
+gradient in the far tail.
+
+Smoke-tested for exceptions/NaN across D0/D2 and populations 300-4000 with a fixed
+non-adaptive policy (2000 steps each): all finite, no exceptions. Effect already visible
+before any training: `od_delta` sums positive at init=300 (OD stays near/below target,
++16.8/+11.5) and NEGATIVE at init=1500/4000 (OD runs up under the fixed policy and is now
+penalized, -13.8/-9.5) -- exactly the intended asymmetry.
+
+This is an intentional behavior change, not a refactor, so no bit-exactness claim is made or
+appropriate here (compare to the env-optimization and float32-precision fixes elsewhere in
+this file, which WERE required to be exact).
+
+Applied for v52 (LRU core, same curriculum/protocol as v50) to directly test whether this
+closes the high-population collapse that v48 and v50 both showed under the unconditional
+version. Not yet applied to an LSTM run; v49 never needed it (its policy stayed inside the
+level penalty's effective band), so an LSTM+this-fix run is a natural follow-up but not
+launched yet.

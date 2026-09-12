@@ -24,3 +24,143 @@
     still depressed, would instead indicate ACTOR POLICY DRIFT.
 
 ########## HELD-OUT: v50 BEST (1.3M, D2) reset-mode + high-pop ##########
+  actor: model_data/td3_lru_checkpoints_best/actor.pth  core=lru
+  [  1/40] seed= 1000     init=  117  steps= 7200  crashed=False  harvested=   61.1mg  time_avg_od=0.0155
+  [  2/40] seed= 1001     init=  195  steps= 7200  crashed=False  harvested=   88.7mg  time_avg_od=0.0154
+  [  3/40] seed= 1002     init=  134  steps= 7200  crashed=False  harvested=   87.0mg  time_avg_od=0.0164
+  [  4/40] seed= 1003 ADV init=   49  steps= 7200  crashed=False  harvested=    0.6mg  time_avg_od=0.0066
+  [  5/40] seed= 1004     init=  321  steps= 7200  crashed=False  harvested=  231.7mg  time_avg_od=0.0188
+  [  6/40] seed= 1005     init=  279  steps= 7200  crashed=False  harvested=  168.6mg  time_avg_od=0.0172
+  [  7/40] seed= 1006     init=  128  steps= 7200  crashed=False  harvested=   47.9mg  time_avg_od=0.0153
+  [  8/40] seed= 1007     init=  110  steps= 7200  crashed=False  harvested=  133.9mg  time_avg_od=0.0181
+  [  9/40] seed= 1008     init=  374  steps= 7200  crashed=False  harvested=  224.2mg  time_avg_od=0.0179
+  [ 10/40] seed= 1009     init=  177  steps= 7200  crashed=False  harvested=   72.8mg  time_avg_od=0.0162
+  [ 11/40] seed= 1010 ADV init=   79  steps= 7200  crashed=False  harvested=    3.3mg  time_avg_od=0.0103
+  [ 12/40] seed= 1011     init=  266  steps= 7200  crashed=False  harvested=  135.0mg  time_avg_od=0.0177
+  [ 13/40] seed= 1012     init=  104  steps= 7200  crashed=False  harvested=   94.2mg  time_avg_od=0.0161
+  [ 14/40] seed= 1013     init=  248  steps= 7200  crashed=False  harvested=  139.3mg  time_avg_od=0.0166
+  [ 15/40] seed= 1014     init=  215  steps= 7200  crashed=False  harvested=  153.1mg  time_avg_od=0.0169
+  [ 16/40] seed= 1015     init=  350  steps= 7200  crashed=False  harvested=  173.6mg  time_avg_od=0.0175
+  [ 17/40] seed= 1016 ADV init=   33  steps= 7200  crashed=False  harvested=    1.9mg  time_avg_od=0.0095
+  [ 18/40] seed= 1017     init=  120  steps= 7200  crashed=False  harvested=  204.0mg  time_avg_od=0.0207
+  [ 19/40] seed= 1018     init=  173  steps= 7200  crashed=False  harvested=   98.5mg  time_avg_od=0.0173
+  [ 20/40] seed= 1019     init=  128  steps= 7200  crashed=False  harvested=   86.1mg  time_avg_od=0.0155
+  [ 21/40] seed= 1020     init=  102  steps= 7200  crashed=False  harvested=   47.1mg  time_avg_od=0.0149
+  [ 22/40] seed= 1021     init=  191  steps= 7200  crashed=False  harvested=  184.5mg  time_avg_od=0.0194
+  [ 23/40] seed= 1022     init=  344  steps= 7200  crashed=False  harvested=  162.1mg  time_avg_od=0.0180
+  [ 24/40] seed= 1023     init=  110  steps= 7200  crashed=False  harvested=   75.5mg  time_avg_od=0.0157
+  [ 25/40] seed= 1024 ADV init=   51  steps= 7200  crashed=False  harvested=   82.4mg  time_avg_od=0.0155
+  [ 26/40] seed= 1025     init=  153  steps= 7200  crashed=False  harvested=  138.7mg  time_avg_od=0.0186
+  [ 27/40] seed= 1026     init=  133  steps= 7200  crashed=False  harvested=  143.3mg  time_avg_od=0.0183
+  [ 28/40] seed= 1027     init=  219  steps= 7200  crashed=False  harvested=  164.3mg  time_avg_od=0.0169
+  [ 29/40] seed= 1028     init=  121  steps= 7200  crashed=False  harvested=   68.2mg  time_avg_od=0.0158
+  [ 30/40] seed= 1029     init=  120  steps= 7200  crashed=False  harvested=   81.8mg  time_avg_od=0.0163
+  [ 31/40] seed= 1030     init=  138  steps= 7200  crashed=False  harvested=   25.1mg  time_avg_od=0.0126
+  [ 32/40] seed= 1031     init=  219  steps= 7200  crashed=False  harvested=   96.2mg  time_avg_od=0.0177
+  [ 33/40] seed= 1032     init=  156  steps= 7200  crashed=False  harvested=  177.6mg  time_avg_od=0.0179
+  [ 34/40] seed= 1033     init=  331  steps= 7200  crashed=False  harvested=  346.3mg  time_avg_od=0.0203
+  [ 35/40] seed= 1034     init=  116  steps= 7200  crashed=False  harvested=   86.3mg  time_avg_od=0.0166
+  [ 36/40] seed= 1035     init=  176  steps= 7200  crashed=False  harvested=    3.4mg  time_avg_od=0.0115
+  [ 37/40] seed= 1036     init=  264  steps= 7200  crashed=False  harvested=  183.4mg  time_avg_od=0.0173
+  [ 38/40] seed= 1037     init=  179  steps= 7200  crashed=False  harvested=  209.9mg  time_avg_od=0.0199
+  [ 39/40] seed= 1038     init=  210  steps= 7200  crashed=False  harvested=  218.9mg  time_avg_od=0.0196
+  [ 40/40] seed= 1039     init=  108  steps= 7200  crashed=False  harvested=  120.6mg  time_avg_od=0.0172
+
+======================================================================
+  TD3+BC HELD-OUT SWEEP  (D2, n=40, 4 adversarial cold starts)
+  recurrent state: reset every 60 steps (matches training)
+======================================================================
+  crash_rate (all eps) : 0.0%
+  yield scored on 36 non-adversarial episodes:
+  harvested_mg  median : 134.4   p25: 85.0   cvar10: 30.9   min: 3.4   max: 346.3
+  time_avg_od   median : 0.0172   p25: 0.0160
+  harvest window: full-episode median=134.4  back-half median=132.6  back-half share=99%  (back-half p25=84.6)
+  pop retained: median=684%  p25=537%
+  adversarial (4 eps, survival-scored): crash_rate=0.0%  harvest(not gated)=2.6
+
+  per-bucket (pooled medians hide within-range spread):
+    adversarial <=80   n= 4  median=    2.6  min=   0.6  max=   82.4  crash=0%
+    low 81-200         n=23  median=   87.0  min=   3.4  max=  209.9  crash=0%
+    low 200-400        n=13  median=  168.6  min=  96.2  max=  346.3  crash=0%
+
+  vs D2 curriculum gate: harvest>=90.0 p25>=50.0 crash<=8% time_od>=0.011
+  holds on held-out sample: YES   [legacy 4-criterion gate, comparable to every historical run]
+
+  HIGH-POPULATION BLOCK (n=12, log-uniform 600-5000) -- the regime the
+  main sweep never samples, and where policies have been observed to diverge most:
+    harvested_mg  median=316.3  p25=249.5
+    pop retained  median=146%  p25=106%
+    crash_rate    0.0%
+  NOTE: the main sweep samples lognormal(100,400)+10% adversarial. Pass --high-pop N
+        to also probe 600-5000, or use population_range_check.py.
+
+########## HELD-OUT: v50 FINAL (2M, collapsed) ##########
+  actor: model_data/td3_lru_checkpoints/actor.pth  core=lru
+  [  1/40] seed= 1000     init=  117  steps= 7200  crashed=False  harvested=   60.8mg  time_avg_od=0.0154
+  [  2/40] seed= 1001     init=  195  steps= 7200  crashed=False  harvested=   94.4mg  time_avg_od=0.0156
+  [  3/40] seed= 1002     init=  134  steps= 7200  crashed=False  harvested=   80.8mg  time_avg_od=0.0164
+  [  4/40] seed= 1003 ADV init=   49  steps= 7200  crashed=False  harvested=    0.1mg  time_avg_od=0.0064
+  [  5/40] seed= 1004     init=  321  steps= 7200  crashed=False  harvested=  230.1mg  time_avg_od=0.0190
+  [  6/40] seed= 1005     init=  279  steps= 7200  crashed=False  harvested=  162.8mg  time_avg_od=0.0171
+  [  7/40] seed= 1006     init=  128  steps= 7200  crashed=False  harvested=   48.5mg  time_avg_od=0.0152
+  [  8/40] seed= 1007     init=  110  steps= 7200  crashed=False  harvested=  130.8mg  time_avg_od=0.0181
+  [  9/40] seed= 1008     init=  374  steps= 7200  crashed=False  harvested=  228.0mg  time_avg_od=0.0187
+  [ 10/40] seed= 1009     init=  177  steps= 7200  crashed=False  harvested=   76.3mg  time_avg_od=0.0163
+  [ 11/40] seed= 1010 ADV init=   79  steps= 7200  crashed=False  harvested=    1.4mg  time_avg_od=0.0105
+  [ 12/40] seed= 1011     init=  266  steps= 7200  crashed=False  harvested=  130.3mg  time_avg_od=0.0178
+  [ 13/40] seed= 1012     init=  104  steps= 7200  crashed=False  harvested=   99.9mg  time_avg_od=0.0165
+  [ 14/40] seed= 1013     init=  248  steps= 7200  crashed=False  harvested=  141.8mg  time_avg_od=0.0168
+  [ 15/40] seed= 1014     init=  215  steps= 7200  crashed=False  harvested=  155.1mg  time_avg_od=0.0169
+  [ 16/40] seed= 1015     init=  350  steps= 7200  crashed=False  harvested=  169.7mg  time_avg_od=0.0176
+  [ 17/40] seed= 1016 ADV init=   33  steps= 7200  crashed=False  harvested=    1.1mg  time_avg_od=0.0096
+  [ 18/40] seed= 1017     init=  120  steps= 7200  crashed=False  harvested=  224.5mg  time_avg_od=0.0224
+  [ 19/40] seed= 1018     init=  173  steps= 7200  crashed=False  harvested=   97.6mg  time_avg_od=0.0174
+  [ 20/40] seed= 1019     init=  128  steps= 7200  crashed=False  harvested=   89.0mg  time_avg_od=0.0159
+  [ 21/40] seed= 1020     init=  102  steps= 7200  crashed=False  harvested=   48.5mg  time_avg_od=0.0152
+  [ 22/40] seed= 1021     init=  191  steps= 7200  crashed=False  harvested=  183.4mg  time_avg_od=0.0197
+  [ 23/40] seed= 1022     init=  344  steps= 7200  crashed=False  harvested=  157.1mg  time_avg_od=0.0181
+  [ 24/40] seed= 1023     init=  110  steps= 7200  crashed=False  harvested=   70.6mg  time_avg_od=0.0156
+  [ 25/40] seed= 1024 ADV init=   51  steps= 7200  crashed=False  harvested=   95.9mg  time_avg_od=0.0159
+  [ 26/40] seed= 1025     init=  153  steps= 7200  crashed=False  harvested=  156.2mg  time_avg_od=0.0192
+  [ 27/40] seed= 1026     init=  133  steps= 7200  crashed=False  harvested=  149.0mg  time_avg_od=0.0186
+  [ 28/40] seed= 1027     init=  219  steps= 7200  crashed=False  harvested=  155.2mg  time_avg_od=0.0174
+  [ 29/40] seed= 1028     init=  121  steps= 7200  crashed=False  harvested=   65.2mg  time_avg_od=0.0157
+  [ 30/40] seed= 1029     init=  120  steps= 7200  crashed=False  harvested=   89.2mg  time_avg_od=0.0168
+  [ 31/40] seed= 1030     init=  138  steps= 7200  crashed=False  harvested=   12.9mg  time_avg_od=0.0124
+  [ 32/40] seed= 1031     init=  219  steps= 7200  crashed=False  harvested=   92.9mg  time_avg_od=0.0179
+  [ 33/40] seed= 1032     init=  156  steps= 7200  crashed=False  harvested=  174.6mg  time_avg_od=0.0184
+  [ 34/40] seed= 1033     init=  331  steps= 7200  crashed=False  harvested=  337.4mg  time_avg_od=0.0235
+  [ 35/40] seed= 1034     init=  116  steps= 7200  crashed=False  harvested=   92.1mg  time_avg_od=0.0172
+  [ 36/40] seed= 1035     init=  176  steps= 7200  crashed=False  harvested=    3.4mg  time_avg_od=0.0114
+  [ 37/40] seed= 1036     init=  264  steps= 7200  crashed=False  harvested=  193.4mg  time_avg_od=0.0181
+  [ 38/40] seed= 1037     init=  179  steps= 7200  crashed=False  harvested=  207.6mg  time_avg_od=0.0200
+  [ 39/40] seed= 1038     init=  210  steps= 7200  crashed=False  harvested=  226.7mg  time_avg_od=0.0198
+  [ 40/40] seed= 1039     init=  108  steps= 7200  crashed=False  harvested=  119.7mg  time_avg_od=0.0174
+
+======================================================================
+  TD3+BC HELD-OUT SWEEP  (D2, n=40, 4 adversarial cold starts)
+  recurrent state: reset every 60 steps (matches training)
+======================================================================
+  crash_rate (all eps) : 0.0%
+  yield scored on 36 non-adversarial episodes:
+  harvested_mg  median : 130.5   p25: 87.0   cvar10: 28.3   min: 3.4   max: 337.4
+  time_avg_od   median : 0.0174   p25: 0.0162
+  harvest window: full-episode median=130.5  back-half median=129.0  back-half share=99%  (back-half p25=86.9)
+  pop retained: median=698%  p25=525%
+  adversarial (4 eps, survival-scored): crash_rate=0.0%  harvest(not gated)=1.2
+
+  per-bucket (pooled medians hide within-range spread):
+    adversarial <=80   n= 4  median=    1.2  min=   0.1  max=   95.9  crash=0%
+    low 81-200         n=23  median=   92.1  min=   3.4  max=  224.5  crash=0%
+    low 200-400        n=13  median=  162.8  min=  92.9  max=  337.4  crash=0%
+
+  vs D2 curriculum gate: harvest>=90.0 p25>=50.0 crash<=8% time_od>=0.011
+  holds on held-out sample: YES   [legacy 4-criterion gate, comparable to every historical run]
+
+  HIGH-POPULATION BLOCK (n=12, log-uniform 600-5000) -- the regime the
+  main sweep never samples, and where policies have been observed to diverge most:
+    harvested_mg  median=54.7  p25=31.7
+    pop retained  median=197%  p25=150%
+    crash_rate    0.0%
+  NOTE: the main sweep samples lognormal(100,400)+10% adversarial. Pass --high-pop N
+        to also probe 600-5000, or use population_range_check.py.

@@ -6687,3 +6687,50 @@ closes the high-population collapse that v48 and v50 both showed under the uncon
 version. Not yet applied to an LSTM run; v49 never needed it (its policy stayed inside the
 level penalty's effective band), so an LSTM+this-fix run is a natural follow-up but not
 launched yet.
+
+## --environments-genetic_env-od-delta-directional-v52-result
+
+v52 (LRU + the directional od_delta fix) completed the full 2M budget but collapsed FASTER
+and MORE TOTALLY than v50 did on the old reward: full 0.0mg across ALL FOUR high-population
+buckets (1100/1500/2500/4000) by D2 chunk 3 (vs v50's gradual decline starting around chunk
+5-8), sustained for 12 consecutive chunks, triggering an automatic CAPABILITY DEMOTION
+D2->D1, after which the run finished the remaining budget at D1.
+
+Probed the collapsed checkpoint directly. Unlike v51's actor collapse (state-independent,
+identical output regardless of input), this is POPULATION-CONDITIONAL: at 700 cells the
+harvest channel is genuinely responsive (std=0.183, fractions up to 0.29mg-equivalent); at
+4000 cells it is EXACTLY -1.00000 with ZERO variance across 1200 steps (never harvests,
+regardless of state), while OD sits at a stable 0.075-0.096 plateau (elevated, ~6-8x target,
+but NOT runaway/exploding the way v45/v48/v50 got).
+
+q_magnitude_check confirms MC returns are genuinely negative at high population again
+(1100:-26, 1500:-49, 2500:-102, 4000:-121), and the critic tracks this reasonably (not wildly
+overestimating). Twin-critic disagreement is notably elevated at the 1100-1500 transition
+(0.88, 0.93) vs v50's 0.09-0.49 there -- a genuinely different, noisier failure signature.
+
+REVISED DIAGNOSIS: the directional fix correctly removes the incentive to grow OD further (no
+more escape-hatch reward for climbing to 18x target), but does not address a SEPARATE problem
+it did not target: once population is high and OD is already elevated, `reward_od`'s LEVEL
+penalty is a STATE penalty (~-0.05 to -0.07/step at this OD range) that applies regardless of
+action, while the reward for a SUCCESSFUL corrective harvest is only the delta term's capped
++-0.01 -- a 5-7x scale mismatch. There is too little local incentive to motivate DISCOVERING
+the large, qualitatively-different harvest action needed for recovery from an
+already-elevated-OD state, so the actor converges to a defensive "never harvest here" local
+optimum rather than exploring toward it. This is a discovery/exploration problem, not a
+reward-sign problem, and the sign-gate fix does not touch it.
+
+MOST INFORMATIVE OBSERVATION: v49 (LSTM core) never showed this collapse, even under the OLDER,
+MORE buggy (unconditional-growth-reward) version of this term -- it held D2 for 15 sustained
+chunks. Two LRU runs (v48 and now v52) have both collapsed at high population; zero LSTM runs
+have. This is now the strongest signal that CORE, not reward shape, may be the primary
+differentiator for this specific failure mode -- though it remains n=2 vs n=1 (well, n=2 for
+LSTM counting v49 alone since it's the only LSTM run at D2 sustained so far), not yet
+conclusive.
+
+Best checkpoint banked at step=700000 (D2, det=181.47, from the first, still-healthy D2
+chunk) -- archived to archive_v52_lru_od_delta_directional/, along with the full run.
+
+NEXT STEP (v53): run the SAME od_delta directional fix on the LSTM core (matching v49's
+architecture) to isolate whether the LRU core itself is what's prone to this collapse,
+independent of reward shape. This is the single most informative remaining experiment to
+resolve the open question.

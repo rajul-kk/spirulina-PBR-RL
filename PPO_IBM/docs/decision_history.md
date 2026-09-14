@@ -6791,3 +6791,40 @@ elevated OD directly -- both are legitimate follow-up directions but are a new d
 bugfix, and were not attempted here given the compute already spent (four multi-hour-to-day
 runs: v48, v50, v52, v53) chasing this specific failure mode. v49's original recipe remains
 the project's standing best and working configuration.
+
+## --legacy-TD3-py-hidden-reset-decouple
+
+`HIDDEN_RESET_INTERVAL` was defined as `= SEQ_LEN`, tying two logically distinct things: the
+TRAINING batch window length (fed to `forward_sequence`, `O(T^2)` cost in the LRU's parallel
+scan since it materializes a `(D,T,T)` causal decay matrix) and the ROLLOUT/det-eval reset
+cadence (fed to the actor one step, `T=1`, at a time -- no `O(T^2)` cost regardless of value).
+
+Decoupled via `TD3_HIDDEN_RESET_INTERVAL`, defaulting to `SEQ_LEN` (zero behavior change for
+every existing/future run unless explicitly overridden). This makes it possible to give a
+BOUNDED architecture (the LRU) a longer rollout memory horizon without paying the training-time
+quadratic cost that would come from also raising `SEQ_LEN` (raising SEQ_LEN to 600 was
+estimated at ~100x the recurrent-core compute of SEQ_LEN=60, i.e. infeasible for a 2M-step run).
+
+Motivation: HIDDEN_RESET_INTERVAL=60 exists specifically to cap LSTM's UNBOUNDED cell-state
+growth (see #--legacy-TD3-py-107-lstm-cell-state-saturation) -- a genuine correctness fix for
+that architecture. The LRU's state is bounded by construction (verified: |h| plateaus rather
+than growing, max ~38 free-running over a full 7200-step episode) and inherited the same reset
+cadence without independent justification. Hypothesis: the repeated, artificial cold-start
+every 60 steps within a single long episode may inject a recurring, destabilizing transient
+that a bounded architecture doesn't need and that could compound with the value-instability
+already observed at high population in v48/v50/v52.
+
+Smoke-tested at TD3_HIDDEN_RESET_INTERVAL=600 (matching HARVEST_INTERVAL_STEPS, a natural
+timescale -- one full harvest cycle from reset to reset): rollout speed unaffected (1.8-2.7ms/
+step, same order as SEQ_LEN=60), state stays bounded (|h|~12.4-12.5 at the 600-step boundary,
+consistent with the plateau already measured).
+
+CAVEAT, stated up front rather than discovered after the fact: this introduces a genuine
+train/rollout distribution mismatch -- the network is still TRAINED on <=60-step-old hidden
+states (SEQ_LEN unchanged), but at rollout would now carry up to 600-step-old ones, a regime
+it never saw during gradient updates. An earlier free-running experiment (full 7200-step
+episode, no reset at all) measured this mismatch costing roughly half the yield at a moderate
+population (71.2 vs 154.2mg). Whether a more moderate 10x extension (600 vs 60) net-helps at
+HIGH population (where the actual failure occurs and more context might plausibly help
+recognize the regime) or net-hurts (mismatch dominates) is the open empirical question v54
+is designed to answer.

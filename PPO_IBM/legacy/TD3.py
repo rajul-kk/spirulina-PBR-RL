@@ -39,7 +39,14 @@ HIDDEN_DIM = 128
 LSTM_LAYERS = 1
 BATCH_SIZE = 24
 SEQ_LEN = 60  # long enough for real pre/post context around a harvest event; see HARVEST_BIAS_PROB
-HIDDEN_RESET_INTERVAL = SEQ_LEN  # cap LSTM state to the horizon actually seen in training
+# Rollout/det-eval reset cadence, independently overridable via TD3_HIDDEN_RESET_INTERVAL.
+# Defaults to SEQ_LEN (unchanged behavior) -- this caps LSTM cell state to the horizon
+# actually seen in training. Decoupled from SEQ_LEN (the TRAINING batch window length,
+# used only by forward_sequence/td3_update) so a bounded architecture like the LRU can be
+# given a longer rollout memory horizon WITHOUT paying forward_sequence's O(T^2) training
+# cost -- rollout/det-eval only ever call the actor one step (T=1) at a time.
+# (full rationale: docs/decision_history.md#--legacy-TD3-py-hidden-reset-decouple)
+HIDDEN_RESET_INTERVAL = int(os.environ.get("TD3_HIDDEN_RESET_INTERVAL", str(SEQ_LEN)))
 # (full rationale: docs/decision_history.md#--legacy-TD3-py-107-lstm-cell-state-saturation)
 ONLINE_BUFFER_CAPACITY = 5_000       # episodes
 LR_ACTOR = 3e-4

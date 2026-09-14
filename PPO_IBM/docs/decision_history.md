@@ -6734,3 +6734,60 @@ NEXT STEP (v53): run the SAME od_delta directional fix on the LSTM core (matchin
 architecture) to isolate whether the LRU core itself is what's prone to this collapse,
 independent of reward shape. This is the single most informative remaining experiment to
 resolve the open question.
+
+## --environments-genetic_env-od-delta-revert
+
+v53 (LSTM core + the directional od_delta fix) confirms the fix is harmful independent of
+core, closing out the question left open by v52. Trajectory: healthy D0 (239/281/289mg,
+ADVANCED to D1), one strong D1 chunk (296.6mg, high-pop buckets 1100:350-4000:1032, all
+healthy), then a decisive break -- one chunk at 7.6mg with buckets>=700 falling to
+single-digit-to-zero while 120-380 stayed reasonably healthy, then FULL zero across every
+bucket including 120/250/380 for several chunks, then partial low-bucket recovery while
+700+ stayed at exactly zero for the rest of D1's 12-chunk capability-demotion window,
+DEMOTED D1->D0, and even at D0 (the easiest tier) harvest stayed at 0.0mg for the remaining
+chunks through budget exhaustion.
+
+Probed the final checkpoint directly: harvest channel frozen near -1 (std ~1e-5, essentially
+zero) at EVERY population tested, including 300 cells with healthy OD (0.006-0.008, at/below
+target). This is qualitatively worse than v52's collapse, which stayed population-conditional
+(responsive at low population, frozen only at high population) throughout its whole run. Here
+the freeze generalized to the entire state space -- consistent with a feedback loop: once the
+policy stops harvesting anywhere, the critic stops seeing successful harvest outcomes from
+ANY state to reinforce, not just high-population ones, and the "never harvest" sub-policy
+becomes globally reinforced rather than staying localized.
+
+CONCLUSION, now clean across two cores: the directional od_delta fix (`od_delta_sign =
+tanh((1-od_x)/0.05)`, introduced in caec2d3) is broadly harmful, not an LRU-specific issue.
+Full pattern across the four core x reward cells attempted:
+
+```
+              old (unconditional) reward     new (directional) reward
+  LSTM              v49: HEALTHY                v53: COLLAPSED (full)
+  LRU          v48/v50: COLLAPSED               v52: COLLAPSED (population-conditional)
+```
+
+Three of four cells collapsed; only v49 survived. This does not cleanly separate into
+"core matters" or "reward matters" -- it is consistent with LSTM having more inherent
+stability margin against the old reward's unconditional-growth defect, while the new
+directional fix is harmful enough to break even that margin. The REVISED mechanism from
+v52 (reward_od's level penalty, a state penalty ~-0.05 to -0.07/step at elevated OD,
+dominates the delta term's capped +-0.01 recovery incentive by 5-7x, discouraging discovery
+of the corrective harvest action) is the better-supported explanation and was NOT fixed by
+this attempt -- it may in fact have made discovery of the recovery action actively easier to
+avoid, since a static "never harvest, hold near-constant OD" policy incurs zero delta penalty
+once the sign gate makes it neutral, rather than the old term's smaller-but-nonzero pressure
+in either direction.
+
+ACTION: reverted `reward_od_delta` to the pre-directional, unconditional-sign version
+(the exact formula validated by v49, 135.8mg/4-4 held-out, the project's only D2 held-out
+pass on either core). `OD_DELTA_SIGN_WIDTH` removed. The log-tail LEVEL fix from
+od-tail-deadzone is UNCHANGED and stays -- it was validated independently by v49 and is not
+implicated in this failure.
+
+NOT pursued further within this investigation: a redesigned fix targeting the actual
+diagnosed mechanism (level-penalty/delta-reward scale imbalance) would need to either scale
+up the recovery-direction reward substantially or address the level penalty's magnitude at
+elevated OD directly -- both are legitimate follow-up directions but are a new design, not a
+bugfix, and were not attempted here given the compute already spent (four multi-hour-to-day
+runs: v48, v50, v52, v53) chasing this specific failure mode. v49's original recipe remains
+the project's standing best and working configuration.

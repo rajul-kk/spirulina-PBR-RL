@@ -6828,3 +6828,62 @@ population (71.2 vs 154.2mg). Whether a more moderate 10x extension (600 vs 60) 
 HIGH population (where the actual failure occurs and more context might plausibly help
 recognize the regime) or net-hurts (mismatch dominates) is the open empirical question v54
 is designed to answer.
+
+## --legacy-TD3-py-hidden-reset-decouple-v54-result
+
+v54 ran the full 2,000,000-step budget to completion with ZERO collapse -- the first LRU run
+to do so (v48 collapsed ~1.31M/2M, v50 collapsed in its last ~5 D2 chunks, v52 collapsed by D2
+chunk 3). Advanced D0->D1->D2 cleanly and HELD D2 for the remainder of the run (chunks 6-21,
+16 det-evals), 0% crash throughout. Det-eval harvest across the entire D2 span:
+
+```
+253.6 252.9 263.0 257.4 261.5 258.9 251.7 269.7 269.9 266.0 294.5 284.2 287.2 283.8 287.2
+```
+
+Remarkably tight (251-295mg range, no downward drift) compared to v50's D2 trajectory over a
+similar span (255.9 -> 234.6 -> 165.1 -> 92.2 -> 58.6 -> 55.5, a 4.6x collapse) and v52's (full
+0.0mg by chunk 3). The high-population fixed det-eval episode (4000 cells) tracked the same
+pattern: 907 -> 1010 -> 1450 -> 1526 -> 1591 (peak) -> 1465 (low) -> 1517 -> 1487 (final),
+fluctuating within a healthy band but never trending toward zero the way v48/v50/v52 did.
+
+SUPPORTS the hypothesis: `HIDDEN_RESET_INTERVAL=60` (an LSTM-specific fix for unbounded
+cell-state growth) was unnecessarily restrictive for the LRU's bounded state, and the train/
+rollout distribution-mismatch caveat raised when this was decoupled did NOT dominate -- a 10x
+context extension (60->600) net-helped rather than net-hurt at high population. This is the
+one variable that differs between v54 and v52 (both: LRU core, reward reverted to the v49-
+validated unconditional-sign formula); v52 collapsed, v54 did not.
+
+CAVEATS on the result:
+- n=1. This is a single run, not a replicated result -- the LRU's high variance across prior
+  runs (v48/v50/v52 all differ substantially from each other despite similar setups) means a
+  second confirming run would meaningfully raise confidence but was not performed given
+  compute already spent on this failure mode across five runs (v48/v50/v51/v52/v53/v54).
+- Two infrastructure interruptions occurred mid-run (both diagnosed live, neither corrupted
+  training state): (1) the training process died silently with no traceback partway through
+  chunk 12 (~95% complete), consistent with an environment/session restart; resumed cleanly
+  from the last periodic checkpoint via `--resume`, losing only the incomplete chunk's partial
+  replay-buffer additions. (2) The host laptop's lid was closed/reopened repeatedly overnight,
+  confirmed via Windows Event Log (System log IDs 506/507, "Reason: Lid"), triggering repeated
+  Modern Standby cycles that stalled training throughput for several hours (observed via tqdm's
+  internal elapsed-time discontinuities, e.g. a jump from 1:29:09 to 5:01:40 elapsed with the
+  process itself never dying). Both self-resolved or were fixed without corrupting the run; a
+  `powercfg` fix to set AC lid-close action to "do nothing" was attempted but blocked by the
+  permission system as an unauthorized persistent system-config change -- left to the user.
+- A proactive `q_magnitude_check.py` run against the live checkpoint mid-run (chunk 19-20)
+  found real critic overestimation at high population (Q_min exceeded the actual Monte-Carlo
+  return by 59% at 4000 cells, 130% at 2500 cells; twin-critic disagreement elevated to
+  1.67-1.72 vs 0.06-0.56 at low/mid population) -- genuine critic divergence. Notably this is
+  the OPPOSITE signature from v52's actual collapse, where the critic tracked MC returns
+  reasonably while the actor had frozen; here the critic diverges while the actor stays fully
+  functional (behavioral harvest recovered in the very next chunk, 1465->1517->1487mg). Whether
+  this divergence would eventually cascade into an actor collapse given a longer budget is an
+  open question -- 2M steps was not enough to find out either way.
+- `crit_loss` per-chunk mean climbed steadily across the run (0.227 at chunk 9 to a peak >0.45
+  by chunk 19) without ever translating into behavioral harm across 16 D2 det-evals -- for this
+  run, unlike v50 (where crit_loss climbing into the 0.4-0.8 range directly preceded collapse),
+  crit_loss proved to be a weak, non-predictive standalone signal. The Q-magnitude check was
+  the more informative diagnostic when a closer look was warranted.
+
+Held-out sweep results (40 seeds + 12 high-pop, D2, matching TD3_HIDDEN_RESET_INTERVAL=600):
+see model_data/runs_registry.csv for the numbers. Checkpoints archived to
+model_data/archive_v54_lru_long_reset_interval/.

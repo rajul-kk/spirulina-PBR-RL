@@ -6887,3 +6887,45 @@ CAVEATS on the result:
 Held-out sweep results (40 seeds + 12 high-pop, D2, matching TD3_HIDDEN_RESET_INTERVAL=600):
 see model_data/runs_registry.csv for the numbers. Checkpoints archived to
 model_data/archive_v54_lru_long_reset_interval/.
+
+## --legacy-TD3-py-hidden-reset-decouple-v55-replication
+
+v55 is an exact replicate of v54 (LRU core, `TD3_HIDDEN_RESET_INTERVAL=600`, v49-validated
+reverted reward), launched to address the n=1 caveat on v54's result. **Replication succeeded
+cleanly**: full 2,000,000-step budget, zero collapse, D0->D1->D2 by chunk 6 (matching v54's
+exact pace), D2 held for the remaining 14 chunks straight through to budget exhaustion. Det-eval
+harvest across the whole D2 span:
+
+```
+253.6 248.8 271.9 267.9 258.7 280.6 276.6 280.2 278.6 278.4 267.6 277.2 275.2 278.5 270.9
+```
+
+Tight (245-286mg range, no drift). The 4000-cell fixed det-eval episode fluctuated 1203-1548mg
+across the run without ever trending toward zero -- the same healthy pattern v54 showed. One
+brief lid-close Modern Standby throughput stall occurred and self-recovered without
+intervention (same infrastructure pattern as v54, now seen twice).
+
+Held-out sweep (40 seeds + 12 high-pop, D2, reset-matched), final checkpoint: 118.3mg median /
+73.1 p25 / 0% crash / 0.0212 od -> 4/4 gate pass. High-pop block: 369.7mg median / 285.5 p25 /
+213% retained. Consistent with v54's final (122.6mg / 79.2 p25 / 390.1mg high-pop median / 168%
+retained) within normal run-to-run variance. **This confirms the `HIDDEN_RESET_INTERVAL`
+decoupling fix is reproducible at n=2, not a v54-specific fluke.**
+
+**Methodological gotcha, worth recording for any future replicate run:** `model_data/
+td3_lru_checkpoints_best/` was not cleared before launching v55 fresh (only `td3_lru_
+training_state.pkl` was removed). `save_best_checkpoint`'s comparison (`difficulty < prev_diff`
+-> reject; `difficulty == prev_diff and det_harvest <= prev_best` -> reject) means a fresh run
+that reuses the same `BEST_CHECKPOINT_DIR` will silently never update that directory unless its
+own det-eval genuinely exceeds the leftover marker from the previous run. v55's own det-eval
+median never exceeded v54's leftover 294.51mg marker (@ step 1,650,000), so `model_data/
+td3_lru_checkpoints_best/` held v54's checkpoint, unmodified, for the entirety of v55's run. A
+held-out sweep was launched against it before this was noticed and had to be killed -- it would
+have silently reproduced v54's exact numbers under a v55 label. **v55 therefore has no
+distinct "best" checkpoint of its own**; only the final (step 2,000,000) checkpoint is
+v55-native, and that is the only one swept and archived
+(`model_data/archive_v55_lru_long_reset_interval_replicate/`, with a `NOTE_no_distinct_best_
+checkpoint.txt` marker explaining why no `td3_lru_checkpoints_best/` subdirectory is present).
+**Rule going forward:** before launching a fresh run that reuses `CHECKPOINT_DIR`/
+`BEST_CHECKPOINT_DIR` from a prior run (rather than a fresh `--tag`-scoped path), archive or
+clear the best-checkpoint directory first, or verify post-hoc (as done here) that any "best"
+checkpoint swept genuinely postdates the run being reported before trusting its numbers.

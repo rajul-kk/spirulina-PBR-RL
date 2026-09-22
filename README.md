@@ -24,8 +24,8 @@ project directory this README describes.
   run ledger: one row per run (`v11`...) with its config, held-out numbers, and a compact
   narrative of what happened and why. Faster to scan than the decision history for "what has
   been tried."
-- **[`finalresults.md`](PPO_IBM/finalresults.md)** (full detail in
-  `finalresults_full_archive.md`) — covers the **PPO era only**, up to v31. Its "bottom line"
+- **[`finalresults.md`](PPO_IBM/finalresults.md)** (uncondensed version in
+  git history, `8020ed1`) — covers the **PPO era only**, up to v31. Its "bottom line"
   (a behaviour-cloned controller beating every RL run) **predates TD3+BC and is now out of
   date** — see "Current status" below for the current best result.
 

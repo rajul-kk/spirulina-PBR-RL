@@ -1,6 +1,6 @@
 # Novelty and Publishability Report
 
-> Rewritten 2026-09-18, superseding the 2026-08-17 audit below in full. That audit predated
+> Rewritten 2026-09-18, superseding the 2026-08-17 audit (in git history) in full. That audit predated
 > every TD3 run in this project (v33 onward) and its central claim is now false: it asserted
 > "no RL run ever produced a held-out-validated D2 policy" and recommended shipping a pure
 > behaviour-cloned controller instead. TD3+BC has passed the D2 held-out gate on every criterion
@@ -57,10 +57,9 @@ credit-assignment defect," a materially smaller and more defensible claim.
    full budget exhaustion with zero collapse, and **v55, an exact replicate, reproduced this
    cleanly** (14 clean D2 chunks, held-out numbers consistent with v54 to within normal
    run-to-run variance). This is the project's only n=2 result and its most novel finding.
-5. **In progress (v56):** a matched-reset LSTM run (`TD3_HIDDEN_RESET_INTERVAL=600` on the
-   LSTM core) is running to complete the {LSTM, LRU} × {reset 60, reset 600} grid as a more
-   controlled test of architecture-dependence — see `docs/decision_history.md` for the live
-   result once it concludes.
+5. **Grid completed (v56, LSTM at reset=600).** Passed the D2 gate, but retained 37-66% at
+   high population vs 153-219% for LRU at the same reset interval. The effect is real but
+   confined to the high-population tail. See `docs/lstm_lru_reset_interval_grid_report.md`.
 
 **What the literature says.** A targeted search (2026-09-18) for hidden-state reset cadence,
 context length, and bounded-vs-unbounded recurrent state in RL found no work addressing this
@@ -82,10 +81,8 @@ project.** It is a complete unit: a mechanistic diagnosis that retroactively exp
 "unrelated" failures, a fix validated by the project's first-ever held-out pass, a second
 independent failure mode in a different architecture that the same fix does not address, and a
 targeted follow-up experiment (with a replication) that isolates *why* — the fix's necessary
-cadence is a property of the architecture's state dynamics, not a universal constant. The
-grid-completion run (v56) in progress will either strengthen this (if the LSTM degrades at
-reset=600, as predicted) or produce an equally interesting revision (if it doesn't, suggesting
-longer context helps regardless of core) — either outcome is reportable.
+cadence is a property of the architecture's state dynamics, not a universal constant. v56
+confirmed the cross-core gap at matched reset interval (see item 5).
 
 **Caveats, stated plainly:** n=1 for every cell of the grid except LRU/600 (n=2); one
 simulator; no cross-architecture-family comparison beyond LSTM/LRU (no transformer, no S5/
@@ -270,49 +267,3 @@ Unchanged in kind from the original audit, restated against the current best con
   persistent state whose reset cadence could matter.
 
 ---
-
-## Appendix: original 2026-08-17 audit (superseded above, retained for history)
-
-> Audit date: 2026-08-17. Compares this project's contributions against literature located via
-> targeted web search through 2026-08-16 (see `docs/literature.md` for the underlying
-> citations). This is a search-based audit, not an exhaustive prior-art clearance — treat
-> "not found" as "not found by this search," not as proof of absence.
->
-> **This section is retained for historical record only. Its bottom-line claim ("no RL run
-> ever produced a held-out-validated D2 policy... the best policy this project produced is a
-> behaviour-cloned controller with no reinforcement learning applied") was true when written
-> and is FALSE as of TD3+BC's v45 (2026-09-06). Do not cite this section's conclusions; see
-> the rewrite above.**
-
-### The contributions, individually assessed (original)
-
-**C1 — TD-MPC2 applied to photobioreactor/harvest control:** combination, not invention — an
-existing SOTA algorithm applied to a structurally unremarkable new domain, publishable only in
-combination with the near-miss finding below.
-
-**C2 — Mechanistic, intervention-based demonstration that exploration noise was standing in
-for competence (Fix #22):** real but narrow — confirms known deterministic/stochastic-gap
-theory empirically via a clean causal intervention in a new applied domain; does not
-generalize the theory or propose a new fix beyond what it already suggests.
-
-**C3 — Dual-mode curriculum gate with held-out validation:** good engineering, not yet a
-citable technique — the apparatus that caught v14/v17/v26/TD-MPC2 v27 all passing in-training
-and failing held-out, but currently project-internal tooling rather than a generalized,
-separately-evaluated method.
-
-**C4 — Harvest/dilution-fraction control for Spirulina:** novel scope within an established
-sub-field (RL-controlled bioreactor dilution is established via Treloar et al., PLOS Comp
-Bio; RL-controlled microalgae harvest fraction specifically was, at the time, absent from a
-2024 systematic review) — not a novel control paradigm.
-
-**C5 — The BC-clone-beats-every-RL-run negative result:** solid at the time, modest
-generalizability even then — framed as a documented boundary condition (the harvest
-dimension's 1-in-600-step credit-assignment sparsity, Fix #16) rather than a general claim
-that RL fine-tuning is broken.
-
-### What was missing for publication (original)
-
-1. No statistical treatment across seeds (partially addressed by `statistical_validation.md`
-   for the PPO/TD-MPC2-era held-out sweeps only).
-2. No real-world or cross-simulator validation.
-3. Related-work depth: a handful of targeted searches, not a systematic review.

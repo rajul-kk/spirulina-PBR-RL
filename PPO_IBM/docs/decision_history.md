@@ -6831,214 +6831,81 @@ is designed to answer.
 
 ## --legacy-TD3-py-hidden-reset-decouple-v54-result
 
-v54 ran the full 2,000,000-step budget to completion with ZERO collapse -- the first LRU run
-to do so (v48 collapsed ~1.31M/2M, v50 collapsed in its last ~5 D2 chunks, v52 collapsed by D2
-chunk 3). Advanced D0->D1->D2 cleanly and HELD D2 for the remainder of the run (chunks 6-21,
-16 det-evals), 0% crash throughout. Det-eval harvest across the entire D2 span:
+v54 (LRU, rollout reset every 600 steps, v49 reward) is the first LRU run to finish the full 2M
+budget with no collapse. It reached D2 at chunk 6 and held it for 16 det-evals in a tight
+251-295mg band, where v50 fell 255.9->55.5mg and v52 hit 0.0mg by chunk 3. The reset interval
+is the only difference from v52, so the 60-step reset (an LSTM fix) was unnecessary and harmful
+for the bounded LRU. The train/rollout context mismatch (60-step training windows, 600-step
+rollouts) did not dominate.
 
-```
-253.6 252.9 263.0 257.4 261.5 258.9 251.7 269.7 269.9 266.0 294.5 284.2 287.2 283.8 287.2
-```
+Held-out, n=100+30: 137.0mg median [110.8, 153.0], p25 83.5, 0% crash, high-pop 193% retained.
 
-Remarkably tight (251-295mg range, no downward drift) compared to v50's D2 trajectory over a
-similar span (255.9 -> 234.6 -> 165.1 -> 92.2 -> 58.6 -> 55.5, a 4.6x collapse) and v52's (full
-0.0mg by chunk 3). The high-population fixed det-eval episode (4000 cells) tracked the same
-pattern: 907 -> 1010 -> 1450 -> 1526 -> 1591 (peak) -> 1465 (low) -> 1517 -> 1487 (final),
-fluctuating within a healthy band but never trending toward zero the way v48/v50/v52 did.
+Caveats:
+- A mid-run `q_magnitude_check.py` found real critic overestimation at high population (Q_min
+  59-130% above the Monte-Carlo return, twin disagreement 1.67-1.72) with no behavioral harm,
+  the opposite of v52's signature. Whether it would cascade over a longer budget is untested.
+- `crit_loss` climbed 0.23->0.45+ without predicting anything, so it's a weak standalone signal.
+- Two infrastructure interruptions, neither corrupting state: a silent process death in chunk 12
+  (resumed via `--resume`), and overnight lid-close Modern Standby stalls (Event Log IDs
+  506/507). A `powercfg` lid-action fix is left to the user.
 
-SUPPORTS the hypothesis: `HIDDEN_RESET_INTERVAL=60` (an LSTM-specific fix for unbounded
-cell-state growth) was unnecessarily restrictive for the LRU's bounded state, and the train/
-rollout distribution-mismatch caveat raised when this was decoupled did NOT dominate -- a 10x
-context extension (60->600) net-helped rather than net-hurt at high population. This is the
-one variable that differs between v54 and v52 (both: LRU core, reward reverted to the v49-
-validated unconditional-sign formula); v52 collapsed, v54 did not.
-
-CAVEATS on the result:
-- n=1. This is a single run, not a replicated result -- the LRU's high variance across prior
-  runs (v48/v50/v52 all differ substantially from each other despite similar setups) means a
-  second confirming run would meaningfully raise confidence but was not performed given
-  compute already spent on this failure mode across five runs (v48/v50/v51/v52/v53/v54).
-- Two infrastructure interruptions occurred mid-run (both diagnosed live, neither corrupted
-  training state): (1) the training process died silently with no traceback partway through
-  chunk 12 (~95% complete), consistent with an environment/session restart; resumed cleanly
-  from the last periodic checkpoint via `--resume`, losing only the incomplete chunk's partial
-  replay-buffer additions. (2) The host laptop's lid was closed/reopened repeatedly overnight,
-  confirmed via Windows Event Log (System log IDs 506/507, "Reason: Lid"), triggering repeated
-  Modern Standby cycles that stalled training throughput for several hours (observed via tqdm's
-  internal elapsed-time discontinuities, e.g. a jump from 1:29:09 to 5:01:40 elapsed with the
-  process itself never dying). Both self-resolved or were fixed without corrupting the run; a
-  `powercfg` fix to set AC lid-close action to "do nothing" was attempted but blocked by the
-  permission system as an unauthorized persistent system-config change -- left to the user.
-- A proactive `q_magnitude_check.py` run against the live checkpoint mid-run (chunk 19-20)
-  found real critic overestimation at high population (Q_min exceeded the actual Monte-Carlo
-  return by 59% at 4000 cells, 130% at 2500 cells; twin-critic disagreement elevated to
-  1.67-1.72 vs 0.06-0.56 at low/mid population) -- genuine critic divergence. Notably this is
-  the OPPOSITE signature from v52's actual collapse, where the critic tracked MC returns
-  reasonably while the actor had frozen; here the critic diverges while the actor stays fully
-  functional (behavioral harvest recovered in the very next chunk, 1465->1517->1487mg). Whether
-  this divergence would eventually cascade into an actor collapse given a longer budget is an
-  open question -- 2M steps was not enough to find out either way.
-- `crit_loss` per-chunk mean climbed steadily across the run (0.227 at chunk 9 to a peak >0.45
-  by chunk 19) without ever translating into behavioral harm across 16 D2 det-evals -- for this
-  run, unlike v50 (where crit_loss climbing into the 0.4-0.8 range directly preceded collapse),
-  crit_loss proved to be a weak, non-predictive standalone signal. The Q-magnitude check was
-  the more informative diagnostic when a closer look was warranted.
-
-Held-out sweep results (40 seeds + 12 high-pop, D2, matching TD3_HIDDEN_RESET_INTERVAL=600):
-see model_data/runs_registry.csv for the numbers. Checkpoints archived to
-model_data/archive_v54_lru_long_reset_interval/.
+Checkpoints: `model_data/archive_v54_lru_long_reset_interval/`.
 
 ## --legacy-TD3-py-hidden-reset-decouple-v55-replication
 
-v55 is an exact replicate of v54 (LRU core, `TD3_HIDDEN_RESET_INTERVAL=600`, v49-validated
-reverted reward), launched to address the n=1 caveat on v54's result. **Replication succeeded
-cleanly**: full 2,000,000-step budget, zero collapse, D0->D1->D2 by chunk 6 (matching v54's
-exact pace), D2 held for the remaining 14 chunks straight through to budget exhaustion. Det-eval
-harvest across the whole D2 span:
+v55 is an exact replicate of v54 and came out clean again: D2 by chunk 6, then 14 D2 det-evals in
+a 245-286mg band with no drift. Held-out, n=100+30: 131.1mg median [106.1, 147.1], p25 83.7, 0%
+crash, high-pop 219% retained. The reset-interval fix reproduces (n=2).
 
-```
-253.6 248.8 271.9 267.9 258.7 280.6 276.6 280.2 278.6 278.4 267.6 277.2 275.2 278.5 270.9
-```
-
-Tight (245-286mg range, no drift). The 4000-cell fixed det-eval episode fluctuated 1203-1548mg
-across the run without ever trending toward zero -- the same healthy pattern v54 showed. One
-brief lid-close Modern Standby throughput stall occurred and self-recovered without
-intervention (same infrastructure pattern as v54, now seen twice).
-
-Held-out sweep (40 seeds + 12 high-pop, D2, reset-matched), final checkpoint: 118.3mg median /
-73.1 p25 / 0% crash / 0.0212 od -> 4/4 gate pass. High-pop block: 369.7mg median / 285.5 p25 /
-213% retained. Consistent with v54's final (122.6mg / 79.2 p25 / 390.1mg high-pop median / 168%
-retained) within normal run-to-run variance. **This confirms the `HIDDEN_RESET_INTERVAL`
-decoupling fix is reproducible at n=2, not a v54-specific fluke.**
-
-**Methodological gotcha, worth recording for any future replicate run:** `model_data/
-td3_lru_checkpoints_best/` was not cleared before launching v55 fresh (only `td3_lru_
-training_state.pkl` was removed). `save_best_checkpoint`'s comparison (`difficulty < prev_diff`
--> reject; `difficulty == prev_diff and det_harvest <= prev_best` -> reject) means a fresh run
-that reuses the same `BEST_CHECKPOINT_DIR` will silently never update that directory unless its
-own det-eval genuinely exceeds the leftover marker from the previous run. v55's own det-eval
-median never exceeded v54's leftover 294.51mg marker (@ step 1,650,000), so `model_data/
-td3_lru_checkpoints_best/` held v54's checkpoint, unmodified, for the entirety of v55's run. A
-held-out sweep was launched against it before this was noticed and had to be killed -- it would
-have silently reproduced v54's exact numbers under a v55 label. **v55 therefore has no
-distinct "best" checkpoint of its own**; only the final (step 2,000,000) checkpoint is
-v55-native, and that is the only one swept and archived
-(`model_data/archive_v55_lru_long_reset_interval_replicate/`, with a `NOTE_no_distinct_best_
-checkpoint.txt` marker explaining why no `td3_lru_checkpoints_best/` subdirectory is present).
-**Rule going forward:** before launching a fresh run that reuses `CHECKPOINT_DIR`/
-`BEST_CHECKPOINT_DIR` from a prior run (rather than a fresh `--tag`-scoped path), archive or
-clear the best-checkpoint directory first, or verify post-hoc (as done here) that any "best"
-checkpoint swept genuinely postdates the run being reported before trusting its numbers.
+Gotcha: `model_data/td3_lru_checkpoints_best/` wasn't cleared before launch. `save_best_checkpoint`
+only overwrites when the new det-eval beats the leftover marker, and v55 never beat v54's
+294.51mg, so that directory held v54's checkpoint for the whole run. v55 has no best checkpoint
+of its own; only final is archived (`model_data/archive_v55_lru_long_reset_interval_replicate/`).
+Rule: archive or clear the best-checkpoint directory before a fresh run reuses it, or check
+afterwards that "best" postdates the run.
 
 ## --legacy-TD3-py-hidden-reset-decouple-v56-result
 
-v56 completes the {LSTM, LRU} x {reset 60, reset 600} grid: identical to v54/v55
-(`TD3_HIDDEN_RESET_INTERVAL=600`, decoupled from `SEQ_LEN=60`, v49-validated reward, stratified
-det-eval, difficulty-ranked best checkpoint) except the **LSTM** core instead of LRU -- the cell
-predicted to struggle, since `experiments/env_diagnosis/state_dynamics_check.py` had already
-measured the mechanism directly: LSTM cell-state magnitude shows only ~23% late-age growth-rate
-decay (still climbing) over a long rollout, vs ~96% for LRU (clearly asymptoting/bounded). A
-600-step reset was expected to let that unbounded growth saturate the cell before the next reset,
-the way it did pre-fix (v33-v44) at full free-run length.
+v56 is the LSTM with reset 600, completing the {LSTM, LRU} x {60, 600} grid. It was expected to
+fail: `state_dynamics_check.py` measured LSTM cell state still climbing late in a rollout (~23%
+growth-rate decay, vs ~96% for LRU).
 
-**Training trajectory (full 2,000,000-step budget, 21 chunks):**
+Training: D0->D1 at chunk 8. A real high-population collapse at D1 chunk 10 (harvest 88.0mg,
+p25 6.1, capfail 1->4/12) matched the v50/v52 signature, but unlike those it self-recovered by
+chunk 14. D2 at chunk 15, held through the end of the budget, 0% crash. Best checkpoint: step
+1.6M, det 235.19, D2 (verified not stale).
 
-- D0->D1 at chunk 8 (191.4mg).
-- A **real high-population collapse** at D1, chunk 10: harvest_mg=88.0, p25=6.1, capability-check
-  failure count climbing 1/12 -> 4/12 over chunks 10-13 -- the same signature as v48/v50/v52's
-  collapses.
-- Unlike any of those (all non-recovering, ending in demotion or budget exhaustion at a lower
-  tier), v56 **self-recovered by chunk 14** (capfail back to 0/12) with no intervention.
-- D1->D2 advance at chunk 15 (175.8mg). D2 held chunks 16-20: 235.2, 222.9, 209.8, 202.1,
-  171.7mg. Finished the full budget at D2, 0% crash across all 21 chunks.
-- Best checkpoint: step=1,600,000, det_harvest=235.19, D2 (verified genuine against the
-  `model_data/td3_lru_checkpoints_best/` stale-contamination pattern found elsewhere in this
-  project -- confirmed by file mtime and content, not stale).
+Held-out, n=100+30: best 135.4mg [116.6, 151.8], p25 84.3 [76.8, 103.9], 0% crash, a PASS with
+every CI clear of its gate; final 135.1mg, consistent. High-pop retained: 66% (best), 37% (final).
 
-**Held-out sweep (100 seeds + 30 high-pop, D2, reset-matched, matching v49/v54/v55 sizing),
-bootstrapped 95% CI, 10,000 resamples (`experiments/env_diagnosis/bootstrap_sweep_ci.py`):**
+It did not fail the gate. The architecture effect appears only in the high-population tail: at
+the same reset interval the LSTM retains 37-66% against the LRU's 153-219%, while main-sweep
+medians are indistinguishable. Still open (single seed): why v56 recovered from a collapse that
+v50 and v52 never recovered from.
 
-BEST checkpoint: harvest median 135.4mg [116.6, 151.8], p25 84.3mg [76.8, 103.9], crash 0.0%
-[0.0, 0.0], time_avg_od 0.0192 [0.0188, 0.0196] -> **gate PASS on all four criteria, CI fully
-clear of every gate.** FINAL checkpoint: median 135.1mg [115.9, 154.4], p25 85.4mg [77.2, 98.7],
-crash 0.0%, time_avg_od 0.0181 -> PASS, consistent with BEST.
-
-High-population block (600-5000 cells, log-uniform, the regime LSTM was predicted to fail):
-BEST 352.0mg median / 230.6mg p25, population retained median=66% / p25=43%. FINAL 235.0mg
-median / 118.8mg p25, retained median=37% / p25=19%.
-
-**Conclusion.** Contrary to the strong-failure prediction, v56 did **not** collapse
-catastrophically or fail the held-out gate -- it passed cleanly on every criterion, including
-after a genuine mid-training high-population collapse it recovered from unassisted. But the
-architecture-dependent signature the grid was designed to detect **is** still present, isolated
-to the metric it should affect: high-population retention. v56 (LSTM, reset=600) retains 37-66%
-at high population vs v54/v55 (LRU, reset=600, *identical* reset interval, only the core
-differs) retaining 153-213% -- a 3-4x gap -- even though v56's core D2 held-out numbers
-(135mg / 84mg p25) are statistically indistinguishable from, and if anything slightly above,
-v54/v55's (118-123mg / 73-82 p25).
-
-**Revised reading of the whole grid:** `TD3_HIDDEN_RESET_INTERVAL=600` does not break the LSTM
-outright the way the earlier free-running (no periodic reset at all) condition did -- it
-degrades high-population headroom specifically, consistent with (but visibly less severe than)
-the unbounded-cell-state mechanism measured by `state_dynamics_check.py`, while leaving
-typical-population performance and gate-passing fully intact. The reset-interval requirement is
-therefore better stated as *architecture-dependent in degree, not in kind*: LRU tolerates
-600-step resets with no measurable cost anywhere; LSTM tolerates them everywhere except the
-high-population tail, where its unbounded state still costs it real headroom.
-
-**Open thread, not resolved:** the self-recovering D1 collapse has no precedent in this
-project's other stressed runs (v50, v52 both collapsed non-recovering). Single-seed,
-unexplained -- flagged rather than rationalized. A plausible but untested hypothesis is that the
-600-step reset (vs v50/v52's 60-step, or v48/v52's fully bounded/unbounded-at-different-scale
-cores) happened to land a reset boundary during the collapse window in a way that let the critic
-correct the actor before the next high-population episode; this has not been checked against the
-step-level reset schedule and should not be treated as established.
-
-Checkpoints archived to `model_data/archive_v56_lstm_long_reset_interval/`. This closes the
-2x2 grid: v49 (LSTM/60), v50 (LRU/60, collapsed), v54+v55 (LRU/600, n=2, clean), v56 (LSTM/600,
-clean but reduced high-pop headroom).
+Checkpoints: `model_data/archive_v56_lstm_long_reset_interval/`. Grid summary:
+`docs/lstm_lru_reset_interval_grid_report.md`.
 
 ## --environments-genetic_env-reward-pre-pbrs-archive
 
-**Record of the additive hand-tuned reward that PBRS replaced (2026-09-23).** Every TD3 and PPO
-result in this project up to and including v56 was trained under the formulation below. Kept
-here verbatim-in-substance because those runs cannot be re-read without it, and because its
-failure history is the justification for the replacement.
+The additive reward that PBRS replaced on 2026-09-23. Every run up to v56 was trained under it.
 
-`_compute_reward` returned the sum of five terms:
+`_compute_reward` summed five terms (`OD_TARGET = 0.012`, `od_x = od / OD_TARGET`):
 
-1. **`reward_od`** — standing OD level, pure function of `od`. With `OD_TARGET = 0.012` and
-   `od_x = od / OD_TARGET`: below target, `0.15 * od_x * exp(1 - od_x)`; above target, linear
-   decay `0.15 - OD_ABOVE_SLOPE*(od_x - 1)` (`OD_ABOVE_SLOPE = 0.03`) until it hit
-   `OD_ABOVE_FLOOR = -0.05`, then a log tail `OD_ABOVE_FLOOR - OD_TAIL_COEF*log(od_x/knee)`
-   (`OD_TAIL_COEF = 0.02`). The log tail was itself a fix: a hard floor there had gradient
-   exactly zero past 7.67x target, a dead zone high-population episodes spent 53-90% of their
-   steps inside (C3 in `novelty_report.md`).
-2. **`reward_biomass`** — per-cell growth *rate*, a transition quantity:
-   `0.20 * tanh(per_cell_growth / 5.0)` where
-   `per_cell_growth = (delta_mass_mg / num_active) * 1000`, minus a flat `0.010` when
-   `per_cell_growth < 0.01`.
-3. **`reward_od_delta`** — OD rate-of-change, also a transition quantity:
-   `0.01 * tanh(rel_delta_od / 2e-4)`, zeroed on harvest-event steps. A directional sign-gated
-   variant of this term caused v52 (LRU) and v53 (LSTM) to collapse outright and was reverted
-   to the unconditional form on 2026-09-14.
-4. **`reward_harvest`** — periodic yield, `0.5 * tanh(harvested_this_step_mg /
-   TARGET_MG_PER_EVENT)` (`TARGET_MG_PER_EVENT = 12.32`), fired only on harvest-event steps,
-   less `0.3 * (0.4 - post_harvest_ratio)` when a harvest dropped OD below 0.4x target.
-5. **`reward_decline`** — extinction warning, `-DECLINE_WARN_MAX * (1 - num_active/
-   DECLINE_WARN_POP)` (`DECLINE_WARN_POP = 50`, `DECLINE_WARN_MAX = 0.05`), applied only while
-   population was both inside the danger band and non-increasing.
+1. `reward_od`, standing OD level: `0.15 * od_x * exp(1 - od_x)` below target. Above target,
+   linear `0.15 - 0.03*(od_x - 1)` down to a knee at -0.05, then a log tail
+   `-0.05 - 0.02*log(od_x/knee)`. The log tail replaced a hard floor whose zero gradient past
+   7.67x target was a dead zone (C3 in `novelty_report.md`).
+2. `reward_biomass`, per-cell growth rate: `0.20 * tanh(g / 5.0)` with
+   `g = delta_mass_mg / num_active * 1000`, minus 0.010 when `g < 0.01`.
+3. `reward_od_delta`, OD rate of change: `0.01 * tanh(rel_delta_od / 2e-4)`, zero on harvest
+   steps. Its directional variant collapsed v52/v53 and was reverted.
+4. `reward_harvest`: `0.5 * tanh(harvested_mg / 12.32)` on harvest steps, minus
+   `0.3 * (0.4 - post_harvest_ratio)` if the harvest drops OD below 0.4x target. Kept under PBRS.
+5. `reward_decline`: `-0.05 * (1 - num_active/50)` while population is under 50 and not rising.
 
-Plus a terminal `CRASH_PENALTY = 10.0` subtracted on crash (reduced from -100, and before that
--1000, because the outlier magnitude was destabilizing the TD3 critic -- see
-`#--environments-genetic_env-crash-penalty`).
+Plus a terminal `CRASH_PENALTY = 10.0`, also kept.
 
-**Why it was replaced.** Terms 1-3 and 5 were dense *shaping*, hand-tuned and simply summed,
-with no policy-invariance guarantee. Terms 2 and 3 in particular rewarded transition quantities
-directly, which is structurally the wrong tool -- a rate term is an unprincipled approximation
-of what a potential difference does correctly and automatically. The project spent four full
-training runs (v48, v50, v52, v53) and several weeks of compute debugging perverse incentives
-created by these terms interacting, with each fix attempt (bounded tail, hard floor, log tail,
-directional sign gate) either shifting the failure elsewhere or making it worse. See
-`#--environments-genetic_env-od-delta-unconditional`, `#--environments-genetic_env-od-tail-
-deadzone`, and the v50/v52/v53 rows in `model_data/runs_registry.csv` for the full trail.
+Why it was replaced: terms 1-3 and 5 were hand-tuned shaping with no policy-invariance
+guarantee, and terms 2-3 rewarded transition quantities directly. Their interactions cost four
+runs (v48, v50, v52, v53) to debug.

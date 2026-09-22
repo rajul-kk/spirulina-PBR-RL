@@ -1,6 +1,7 @@
 # Final Results — Reward/Curriculum Validation and Fix Cycle
 
-> Condensed. Full detail, including every intermediate measurement, is in `finalresults_full_archive.md`.
+> Condensed. The uncondensed version (every intermediate measurement) is in git history:
+> `git show 8020ed1:PPO_IBM/finalresults_full_archive.md`.
 
 ## Bottom line
 

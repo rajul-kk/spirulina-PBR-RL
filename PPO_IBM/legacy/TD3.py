@@ -16,7 +16,7 @@ import torch.optim as optim
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "training"))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "environments"))
 
-from curriculum_starts import apply_saved_population, choose_episode_start
+from curriculum_starts import apply_saved_population, choose_episode_start, resync_shaping_potential
 from training_state import find_latest_checkpoint, load_state, save_state
 from curriculum_schedule import (
     ADVANCE_TARGETS, MASTERY_MIN_EPISODES, MASTERY_WINDOW, MASTERY_REQUIRED_STREAK,
@@ -292,7 +292,7 @@ def collect_expert_demo_episode(difficulty, rng, seed):
         next_obs, reward, terminated, truncated, info = env.step(action)
         done = terminated or truncated
         ep_obs.append(obs); ep_act.append(action); ep_rew.append(reward)
-        ep_nobs.append(next_obs); ep_done.append(float(done))
+        ep_nobs.append(next_obs); ep_done.append(float(terminated))  # bootstrap mask: truncation still bootstraps
         obs = next_obs
 
     return {
@@ -509,6 +509,7 @@ def train(resume=False):
     print("--- TD3 (Twin Delayed DDPG) for GeneticPhotobioreactorEnv ---")
     print(f"Device: {DEVICE} | obs_dim={OBS_DIM} action_dim={ACTION_DIM} | gamma={GAMMA}")
     print(f"Budget: {TOTAL_TRAINING_STEPS:,} steps | Gate: project dual (stochastic + deterministic)")
+    print(f"Hidden reset every {HIDDEN_RESET_INTERVAL} steps | SEQ_LEN={SEQ_LEN}")
     print(f"Demo replay: {N_DEMO_EPISODES} scripted-expert episodes, "
           f"{DEMO_FRACTION*100:.0f}% of every training batch, never evicted\n")
 
@@ -570,6 +571,7 @@ def train(resume=False):
         if start_cfg["mode"] == "stitched" and saved_env_state is not None:
             apply_saved_population(env, saved_env_state)
             obs = env._get_obs()
+            resync_shaping_potential(env)
         actor_hidden = actor.initial_hidden(batch=1)
         steps_since_hidden_reset = 0
 
@@ -598,7 +600,7 @@ def train(resume=False):
             next_obs, reward, terminated, truncated, info = env.step(action)
             done = terminated or truncated
             ep_obs.append(obs); ep_act.append(action); ep_rew.append(reward)
-            ep_nobs.append(next_obs); ep_done.append(float(done))
+            ep_nobs.append(next_obs); ep_done.append(float(terminated))  # bootstrap mask: truncation still bootstraps
             obs = next_obs
             global_step += 1
 
@@ -648,6 +650,7 @@ def train(resume=False):
                 if start_cfg["mode"] == "stitched" and saved_env_state is not None:
                     apply_saved_population(env, saved_env_state)
                     obs = env._get_obs()
+                    resync_shaping_potential(env)
                 actor_hidden = actor.initial_hidden(batch=1)
                 steps_since_hidden_reset = 0
                 ep_obs, ep_act, ep_rew, ep_nobs, ep_done = [], [], [], [], []

@@ -12,7 +12,7 @@ for _p in (_ROOT, _os.path.join(_ROOT, "training"), _os.path.join(_ROOT, "enviro
 import numpy as np
 import gymnasium as gym
 
-from curriculum_starts import apply_saved_population, choose_episode_start, mastery_metrics_view
+from curriculum_starts import apply_saved_population, choose_episode_start, resync_shaping_potential, mastery_metrics_view
 
 TOTAL_TRAINING_STEPS = 8_000_000
 CHUNK_STEPS = 100_000
@@ -204,6 +204,7 @@ class CurriculumStartWrapper(gym.Wrapper):
         if start_cfg["mode"] == "stitched" and self.controller.saved_state is not None:
             apply_saved_population(raw_env, self.controller.saved_state)
             obs = raw_env._get_obs()
+            resync_shaping_potential(raw_env)
 
         raw_env.episode_init_cells = int(getattr(raw_env, "num_active", raw_env.initial_cells))
 

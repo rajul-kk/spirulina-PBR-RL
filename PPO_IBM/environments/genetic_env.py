@@ -1355,12 +1355,16 @@ class GeneticPhotobioreactorEnv(gym.Env):
             # Reduced from -1000: that scale was 300-1000x larger than typical achievable
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1729)
             reward -= self.CRASH_PENALTY
-            done = True
+            terminated, truncated = True, False
         else:
-            done = self.step_count >= self.max_steps
+            # Time limit is truncation, not termination: the culture is still alive, so value
+            # learners must bootstrap through it. Reporting it as terminal also leaks a
+            # policy-dependent gamma*Phi(s_T) bonus under PBRS (Ng et al. assume Phi(terminal)=0).
             # No terminal bonus in semi-continuous mode — harvest yield (cumulative_harvested_mg)
             # accumulates continuously via reward_harvest each step (see _compute_reward).
-        
+            terminated, truncated = False, self.step_count >= self.max_steps
+        done = terminated or truncated
+
         # Per-step debug trace. Gated behind ENV_DEBUG (default OFF) because it dominated every
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1741)
         if ENV_DEBUG and ((self.step_count % 500 == 0) or done):
@@ -1377,7 +1381,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
              else:
                  print(f"[EnvDebug] Step: {self.step_count}, Active: {self.num_active}, Mass: {total_mass_mg:.2f}, OD: {self.od:.4f}, Turb: {turb:.4f}, pH: {self.ph:.2f}, Shock: {d_shock:.2f}, Clump: {d_clump:.2f}, MeanX: {mean_x:.2f}, RGB: {ratio:.2f}, Rew: {reward:.3f}, Done: {done}")
              
-        return self._get_obs(), float(reward), done, False, {
+        return self._get_obs(), float(reward), terminated, truncated, {
             "pop": self.num_active,
             "fouling": self.fouling_factor,
             "peak_od": float(getattr(self, 'max_historical_od', getattr(self, 'od', 0.0))),

@@ -13,7 +13,7 @@ from collections import deque, defaultdict
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "training"))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "environments"))
 
-from curriculum_starts import apply_saved_population, choose_episode_start, mastery_metrics_view
+from curriculum_starts import apply_saved_population, choose_episode_start, resync_shaping_potential, mastery_metrics_view
 from training_state import find_latest_checkpoint, load_state, replay_buffer_state, restore_replay_buffer, save_state
 # Project curriculum gate — this file used to keep its own local ADVANCE_TARGETS keyed on
 # (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-21)
@@ -924,6 +924,7 @@ def train_td_mpc2(resume: bool = False, use_privileged_distill: bool = False,
         if start_cfg["mode"] == "stitched" and saved_env_state is not None:
             apply_saved_population(raw_env, saved_env_state)
             raw_obs = raw_env._get_obs()
+            resync_shaping_potential(raw_env)
         obs_buf.reset(raw_obs, device=device)
         obs_tensor = torch.tensor(raw_obs, dtype=torch.float32, device=device).unsqueeze(0)
         _, m_t = agent.compressor(obs_tensor, obs_buf.get_state())
@@ -1034,6 +1035,7 @@ def train_td_mpc2(resume: bool = False, use_privileged_distill: bool = False,
                 if start_cfg["mode"] == "stitched" and saved_env_state is not None:
                     apply_saved_population(raw_env, saved_env_state)
                     raw_obs = raw_env._get_obs()
+                    resync_shaping_potential(raw_env)
                 obs_buf.reset(raw_obs, device=device)
                 obs_tensor = torch.tensor(raw_obs, dtype=torch.float32, device=device).unsqueeze(0)
                 _, m_t = agent.compressor(obs_tensor, obs_buf.get_state())

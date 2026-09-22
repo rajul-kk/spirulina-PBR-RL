@@ -133,6 +133,16 @@ def apply_saved_population(raw_env, saved_state: Dict[str, object], start_mode: 
     raw_env.episode_start_mode = start_mode
 
 
+def resync_shaping_potential(raw_env) -> None:
+    """Re-seed the PBRS potential after apply_saved_population() + _get_obs().
+
+    reset() caches Phi of the fresh culture; the swapped-in population makes that cache stale,
+    so the first step would pay gamma*Phi(stitched) - Phi(fresh) -- a spurious reward of up to
+    the full Phi range. Must run AFTER _get_obs(), which is what refreshes env.od."""
+    if hasattr(raw_env, "_potential"):
+        raw_env._phi_prev = raw_env._potential()
+
+
 def cap_stitched_metrics(
     episode_metrics: Iterable[Dict[str, object]],
     max_stitched_share: float = MAX_STITCHED_SHARE_FOR_MASTERY,

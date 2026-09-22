@@ -7,7 +7,7 @@ import torch.nn.functional as F
 import numpy as np
 import scipy.linalg
 from collections import deque
-from curriculum_starts import apply_saved_population, choose_episode_start, mastery_metrics_view
+from curriculum_starts import apply_saved_population, choose_episode_start, resync_shaping_potential, mastery_metrics_view
 from training_state import find_latest_checkpoint, load_state, replay_buffer_state, restore_replay_buffer, save_state
 
 # ─── CONSTANTS ────────────────────────────────────────────────────────────────
@@ -829,6 +829,7 @@ def train_var_mpc(resume: bool = False):
         if start_cfg["mode"] == "stitched" and saved_env_state is not None:
             apply_saved_population(raw_env, saved_env_state)
             raw_obs = raw_env._get_obs()
+            resync_shaping_potential(raw_env)
 
         obs_buf.reset(raw_obs, device=device)
         episode_reward = 0.0
@@ -936,6 +937,7 @@ def train_var_mpc(resume: bool = False):
                 if start_cfg["mode"] == "stitched" and saved_env_state is not None:
                     apply_saved_population(raw_env, saved_env_state)
                     raw_obs = raw_env._get_obs()
+                    resync_shaping_potential(raw_env)
 
                 obs_buf.reset(raw_obs, device=device)
                 episode_reward = 0.0

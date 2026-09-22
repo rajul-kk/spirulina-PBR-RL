@@ -117,7 +117,8 @@ def run_policy(policy_type, max_steps=40000):
             else:  # random
                 action = env.action_space.sample()
 
-            o, r, done, _, info = env.step(action)
+            o, r, term, trunc, info = env.step(action)
+            done = term or trunc
             steps.append(t)
             od.append(float(o[0]))
             n_pool.append(float(o[2]))

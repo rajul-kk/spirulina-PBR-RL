@@ -19,7 +19,8 @@ for diff in [0, 1, 2]:
     env.reset()
     ep_reward = 0.0
     for step in range(2400):
-        obs, r, done, _, _ = env.step(action)
+        obs, r, term, trunc, _ = env.step(action)
+        done = term or trunc
         ep_reward += r
         if done:
             break

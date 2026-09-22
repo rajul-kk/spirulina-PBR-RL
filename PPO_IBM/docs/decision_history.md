@@ -6997,3 +6997,48 @@ step-level reset schedule and should not be treated as established.
 Checkpoints archived to `model_data/archive_v56_lstm_long_reset_interval/`. This closes the
 2x2 grid: v49 (LSTM/60), v50 (LRU/60, collapsed), v54+v55 (LRU/600, n=2, clean), v56 (LSTM/600,
 clean but reduced high-pop headroom).
+
+## --environments-genetic_env-reward-pre-pbrs-archive
+
+**Record of the additive hand-tuned reward that PBRS replaced (2026-09-23).** Every TD3 and PPO
+result in this project up to and including v56 was trained under the formulation below. Kept
+here verbatim-in-substance because those runs cannot be re-read without it, and because its
+failure history is the justification for the replacement.
+
+`_compute_reward` returned the sum of five terms:
+
+1. **`reward_od`** — standing OD level, pure function of `od`. With `OD_TARGET = 0.012` and
+   `od_x = od / OD_TARGET`: below target, `0.15 * od_x * exp(1 - od_x)`; above target, linear
+   decay `0.15 - OD_ABOVE_SLOPE*(od_x - 1)` (`OD_ABOVE_SLOPE = 0.03`) until it hit
+   `OD_ABOVE_FLOOR = -0.05`, then a log tail `OD_ABOVE_FLOOR - OD_TAIL_COEF*log(od_x/knee)`
+   (`OD_TAIL_COEF = 0.02`). The log tail was itself a fix: a hard floor there had gradient
+   exactly zero past 7.67x target, a dead zone high-population episodes spent 53-90% of their
+   steps inside (C3 in `novelty_report.md`).
+2. **`reward_biomass`** — per-cell growth *rate*, a transition quantity:
+   `0.20 * tanh(per_cell_growth / 5.0)` where
+   `per_cell_growth = (delta_mass_mg / num_active) * 1000`, minus a flat `0.010` when
+   `per_cell_growth < 0.01`.
+3. **`reward_od_delta`** — OD rate-of-change, also a transition quantity:
+   `0.01 * tanh(rel_delta_od / 2e-4)`, zeroed on harvest-event steps. A directional sign-gated
+   variant of this term caused v52 (LRU) and v53 (LSTM) to collapse outright and was reverted
+   to the unconditional form on 2026-09-14.
+4. **`reward_harvest`** — periodic yield, `0.5 * tanh(harvested_this_step_mg /
+   TARGET_MG_PER_EVENT)` (`TARGET_MG_PER_EVENT = 12.32`), fired only on harvest-event steps,
+   less `0.3 * (0.4 - post_harvest_ratio)` when a harvest dropped OD below 0.4x target.
+5. **`reward_decline`** — extinction warning, `-DECLINE_WARN_MAX * (1 - num_active/
+   DECLINE_WARN_POP)` (`DECLINE_WARN_POP = 50`, `DECLINE_WARN_MAX = 0.05`), applied only while
+   population was both inside the danger band and non-increasing.
+
+Plus a terminal `CRASH_PENALTY = 10.0` subtracted on crash (reduced from -100, and before that
+-1000, because the outlier magnitude was destabilizing the TD3 critic -- see
+`#--environments-genetic_env-crash-penalty`).
+
+**Why it was replaced.** Terms 1-3 and 5 were dense *shaping*, hand-tuned and simply summed,
+with no policy-invariance guarantee. Terms 2 and 3 in particular rewarded transition quantities
+directly, which is structurally the wrong tool -- a rate term is an unprincipled approximation
+of what a potential difference does correctly and automatically. The project spent four full
+training runs (v48, v50, v52, v53) and several weeks of compute debugging perverse incentives
+created by these terms interacting, with each fix attempt (bounded tail, hard floor, log tail,
+directional sign gate) either shifting the failure elsewhere or making it worse. See
+`#--environments-genetic_env-od-delta-unconditional`, `#--environments-genetic_env-od-tail-
+deadzone`, and the v50/v52/v53 rows in `model_data/runs_registry.csv` for the full trail.

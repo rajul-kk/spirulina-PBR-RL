@@ -61,15 +61,27 @@ class GeneticPhotobioreactorEnv(gym.Env):
         # Terminal crash penalty. Was -100 (678x mean per-step reward, an outlier that
         # (full rationale: docs/decision_history.md#--environments-genetic_env-crash-penalty)
         self.CRASH_PENALTY = 10.0
-        # Graduated extinction warning: measured reward stayed POSITIVE while a culture
-        # (full rationale: docs/decision_history.md#--environments-genetic_env-decline-warning)
-        self.DECLINE_WARN_POP = 50          # danger band: below this many active cells
-        self.DECLINE_WARN_MAX = 0.05        # per-step penalty at the extinction edge
-        # Above-target OD reward slope. Constant gradient so overgrown cultures still get
-        # (full rationale: docs/decision_history.md#--environments-genetic_env-od-above-target)
-        self.OD_ABOVE_SLOPE = 0.03          # reward lost per 1x OD_TARGET above target
-        self.OD_ABOVE_FLOOR = -0.05         # knee where the linear decay hands off to the log tail
-        self.OD_TAIL_COEF = 0.02            # log-tail gain; keeps the gradient nonzero past the knee
+        # DECLINE_WARN_*, OD_ABOVE_SLOPE/FLOOR, OD_TAIL_COEF removed 2026-09-23: they
+        # parameterized the additive shaping terms that PBRS replaced. Their values and the
+        # formulas that used them are preserved in
+        # docs/decision_history.md#--environments-genetic_env-reward-pre-pbrs-archive
+
+        # --- Potential-based reward shaping (PBRS), 2026-09-23 ---------------------------
+        # Replaces the four additive hand-tuned shaping terms (od level, biomass growth rate,
+        # od delta, decline warning) with one potential Phi(s) whose discounted difference
+        # supplies all dense guidance. Ng/Harada/Russell (1999): F = gamma*Phi(s') - Phi(s)
+        # is the only shaping form that provably preserves the optimal policy for ANY Phi,
+        # so scale/weight choices here cannot introduce a perverse incentive the way the
+        # replaced terms repeatedly did (v48/v50/v52/v53).
+        # (full rationale: docs/decision_history.md#--environments-genetic_env-reward-pre-pbrs-archive)
+        # MUST match the trainer's discount (legacy/TD3.py GAMMA) or the invariance guarantee
+        # is only approximate.
+        self.PBRS_GAMMA = 0.9995
+        self.PHI_OD_W = 1.0                 # weight on the OD-health component of Phi
+        self.PHI_POP_W = 0.5                # weight on the population-health component of Phi
+        self.PHI_POP_REF = 400.0            # cells at which pop health saturates toward 1
+        self.PHI_SCALE = 3.0                # overall Phi gain; sets dense-signal magnitude
+                                            # relative to the task reward (harvest ~0.5/event)
         # OD_DELTA_SIGN_WIDTH removed 2026-09-14: the directional delta term it configured
         # was reverted after causing full-collapse in v52/v53. See the revert note above.
         # Back-half window, shared by time_avg_od and the back-half harvest metric.
@@ -136,7 +148,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         self._harvest_action_count = 0
         self.od_sum_back_half = 0.0
         self.od_count_back_half = 0
-        self.reward_term_sums = {"od": 0.0, "biomass": 0.0, "od_delta": 0.0, "harvest": 0.0, "decline": 0.0}
+        self.reward_term_sums = {"harvest": 0.0, "shaping": 0.0, "potential": 0.0}
         self.I_surface = 0.0        # last delivered PAR (µmol/m²/s) — BH1750 source signal
         self._ph_bias = 0.0         # per-episode additive pH calibration offset
         self.prev_action = np.zeros(3, dtype=np.float32)
@@ -252,7 +264,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         self._harvest_action_count = 0      # first event of a new episode averages stale steps
         self.od_sum_back_half = 0.0         # for time-averaged OD (curriculum metric)
         self.od_count_back_half = 0
-        self.reward_term_sums = {"od": 0.0, "biomass": 0.0, "od_delta": 0.0, "harvest": 0.0, "decline": 0.0}
+        self.reward_term_sums = {"harvest": 0.0, "shaping": 0.0, "potential": 0.0}
         self.I_surface = 0.0        # reset BH1750 source signal
         # --- Sim-to-Real Sensor Drift & Lag (D1+) ---
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-303)
@@ -300,8 +312,9 @@ class GeneticPhotobioreactorEnv(gym.Env):
         self.debug_clump = 1.0
         self.membrane_integrity = 1.0  # 1.0 = pristine membranes, 0.0 = fully fatigued
         self.max_historical_od = float(self.od)
-        self._prev_od_for_rate = float(self.od)  # For OD growth rate reward
-        self._phi_prev = None
+        # Seed the PBRS potential from the true initial state, so the first scored step
+        # measures a real transition rather than differencing against itself.
+        self._phi_prev = self._potential()
 
         return self._get_obs(), {}
 
@@ -452,6 +465,32 @@ class GeneticPhotobioreactorEnv(gym.Env):
     # (full rationale: docs/decision_history.md#--environments-genetic_env-py-544)
     OBS_EXTENDED = False
 
+    def _potential(self):
+        """Phi(s) for PBRS. A pure, bounded function of the CURRENT state only.
+
+        Two components, each in [0, 1] before weighting:
+          - OD health: peaks at 1.0 exactly at OD_TARGET, falls off both ways. Below target
+            the culture is under-productive; above it, overgrown (light limitation, crash
+            risk). Uses a log-ratio distance so the falloff is symmetric in relative terms
+            and never flattens to zero gradient -- the dead zone that cost this project four
+            runs was a bounded penalty reaching exactly zero slope, which cannot happen here.
+          - Population health: saturating in num_active, so extinction is a deep hole and
+            large populations plateau rather than paying unbounded reward for hoarding
+            biomass the agent never harvests.
+
+        Must stay a function of state alone: no deltas, no action, no episode phase. Adding
+        any transition-dependent quantity here silently voids the policy-invariance guarantee.
+        """
+        OD_TARGET = 0.012
+        od_x = max(float(self.od) / OD_TARGET, 1e-6)
+        # log-ratio distance from target, squashed; 1.0 at target, ->0 far either side
+        phi_od = float(np.exp(-(np.log(od_x) ** 2) / 2.0))
+
+        phi_pop = float(np.tanh(self.num_active / self.PHI_POP_REF))
+
+        phi = self.PHI_OD_W * phi_od + self.PHI_POP_W * phi_pop
+        return self.PHI_SCALE * phi / (self.PHI_OD_W + self.PHI_POP_W)
+
     def _compute_reward(self, delta_mass_mg, shock_factor, harvested_this_step_mg=0.0, is_harvest_event=False):
         """Semi-continuous reward: sustained growth + periodic dilution/harvest.
         (full rationale: docs/decision_history.md#--environments-genetic_env-py-418)"""
@@ -461,45 +500,11 @@ class GeneticPhotobioreactorEnv(gym.Env):
             self.od_sum_back_half += self.od
             self.od_count_back_half += 1
 
-        # 1. Standing OD — dense, rewards building/maintaining a productive culture.
-        # (full rationale: docs/decision_history.md#--environments-genetic_env-py-571)
+        # 1-3 and 5 (od level, per-cell growth rate, od delta, decline warning) REPLACED
+        # 2026-09-23 by the single PBRS shaping term computed below. The replaced formulas are
+        # recorded in docs/decision_history.md#--environments-genetic_env-reward-pre-pbrs-archive
+        # since every run up to v56 was trained under them.
         OD_TARGET = 0.012
-        od_x = self.od / OD_TARGET
-        if od_x <= 1.0:
-            reward_od = 0.15 * float(od_x * np.exp(1.0 - od_x))
-        else:
-            # Linear above target, then LOGARITHMIC past the knee. A hard floor here left
-            # (full rationale: docs/decision_history.md#--environments-genetic_env-od-tail-deadzone)
-            linear = 0.15 - self.OD_ABOVE_SLOPE * (od_x - 1.0)
-            if linear >= self.OD_ABOVE_FLOOR:
-                reward_od = linear
-            else:
-                knee = 1.0 + (0.15 - self.OD_ABOVE_FLOOR) / self.OD_ABOVE_SLOPE
-                reward_od = self.OD_ABOVE_FLOOR - self.OD_TAIL_COEF * float(np.log(od_x / knee))
-
-        # (Fix #28 attempt, reverted): a rolling-window OD-average reward term was tried here
-        # (full rationale: docs/decision_history.md#--environments-genetic_env-py-626)
-
-        # 2. Per-cell biological growth — incentivises steady healthy growth, and (folded
-        # (full rationale: docs/decision_history.md#--environments-genetic_env-py-642)
-        per_cell_growth = (delta_mass_mg / (self.num_active + 1e-6)) * 1000
-        reward_biomass = 0.20 * float(np.tanh(per_cell_growth / 5.0))
-        if per_cell_growth < 0.01:
-            reward_biomass -= 0.010
-
-        # 3. OD movement — dense guidance on the *direction* of change, not the absolute
-        # (full rationale: docs/decision_history.md#--environments-genetic_env-py-660)
-        OD_RATE_FLOOR = 1e-4
-        delta_od = self.od - self._prev_od_for_rate
-        rel_delta_od = delta_od / max(self._prev_od_for_rate, OD_RATE_FLOOR)
-        # REVERTED 2026-09-14: the directional sign-gate (od_delta_sign) caused v52 (LRU)
-        # and v53 (LSTM) to BOTH collapse -- first population-conditional (harvest frozen
-        # at high population only), then generalizing to a full, all-population freeze in
-        # v53. This is the pre-directional, unconditional-sign version that v49 validated
-        # (135.8mg / 4-4 held-out gate, the project's only D2 held-out pass on either core).
-        # (full rationale: docs/decision_history.md#--environments-genetic_env-od-delta-revert)
-        reward_od_delta = 0.0 if is_harvest_event else 0.01 * float(np.tanh(rel_delta_od / 2e-4))
-        self._prev_od_for_rate = self.od
 
         # 4. Periodic harvest yield — fires only on harvest-event steps (0.0 otherwise),
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-706)
@@ -513,24 +518,26 @@ class GeneticPhotobioreactorEnv(gym.Env):
             if post_harvest_ratio < OD_SAFE_FLOOR:
                 reward_harvest -= 0.3 * float(OD_SAFE_FLOOR - post_harvest_ratio)
 
-        # 5. Decline warning — ramps in only when the culture is BOTH inside the danger
-        # (full rationale: docs/decision_history.md#--environments-genetic_env-decline-warning)
-        reward_decline = 0.0
-        prev_pop = getattr(self, "_prev_pop_for_warn", self.num_active)
-        if self.num_active < self.DECLINE_WARN_POP and self.num_active <= prev_pop:
-            depth = 1.0 - (self.num_active / float(self.DECLINE_WARN_POP))
-            reward_decline = -self.DECLINE_WARN_MAX * _fclip(depth, 0.0, 1.0)
-        self._prev_pop_for_warn = self.num_active
+        # 5. PBRS shaping — the ONLY dense guidance term. F = gamma*Phi(s') - Phi(s), where
+        # s' is the state this call is scoring (self.* is already post-transition here) and
+        # Phi(s) was cached at the end of the previous call. On the first scored step of an
+        # episode _phi_prev is seeded from reset(), so no spurious first-step shaping fires.
+        # Growth incentive falls out of the telescoping automatically: no separate rate term
+        # is needed, and none may be added -- an additive rate term would break the
+        # policy-invariance guarantee that motivates this design.
+        phi_now = self._potential()
+        phi_prev = self._phi_prev if self._phi_prev is not None else phi_now
+        reward_shaping = self.PBRS_GAMMA * phi_now - phi_prev
+        self._phi_prev = phi_now
 
-        reward = reward_od + reward_biomass + reward_od_delta + reward_harvest + reward_decline
+        reward = reward_harvest + reward_shaping
 
         # Episode-accumulated per-term breakdown, exposed via info dict for diagnostics
-        # (not used in reward itself).
-        self.reward_term_sums["od"] += reward_od
-        self.reward_term_sums["biomass"] += reward_biomass
-        self.reward_term_sums["od_delta"] += reward_od_delta
+        # (not used in reward itself). "potential" logs the running Phi so a collapse can be
+        # read directly off the state value rather than inferred from summed shaping.
         self.reward_term_sums["harvest"] += reward_harvest
-        self.reward_term_sums["decline"] += reward_decline
+        self.reward_term_sums["shaping"] += reward_shaping
+        self.reward_term_sums["potential"] = phi_now
 
         # Tracking for debug log (not used in reward)
         mean_shock = np.mean(shock_factor) if self.num_active > 0 else 1.0

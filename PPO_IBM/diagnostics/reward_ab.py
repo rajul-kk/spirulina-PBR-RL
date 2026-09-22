@@ -30,7 +30,7 @@ EXPERT_FRAC_CAP = 0.30
 EXPERT_STIR = 70.0
 EXPERT_LIGHT = 950.0
 
-TERMS = ("od", "biomass", "od_delta", "harvest")
+TERMS = ("harvest", "shaping")
 
 
 def make_vec(norm_path, difficulty, init_cells):

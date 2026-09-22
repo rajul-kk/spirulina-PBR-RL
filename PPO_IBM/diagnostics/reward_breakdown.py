@@ -78,7 +78,7 @@ def main():
         parts = "  ".join(f"{k}={v:+7.1f}" for k, v in terms.items())
         print(f"  [{i+1}/{args.n}] seed={seed} init={init_cells:5d}  {parts}  total={total:+7.1f}")
 
-    keys = ["od", "biomass", "od_delta", "harvest"]
+    keys = ["harvest", "shaping"]
     print(f"\n{'='*70}")
     print(f"  REWARD TERM BREAKDOWN  (mean across {args.n} episodes, D{args.difficulty})")
     print(f"{'='*70}")

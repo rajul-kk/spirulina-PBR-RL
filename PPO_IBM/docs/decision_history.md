@@ -6909,3 +6909,34 @@ Plus a terminal `CRASH_PENALTY = 10.0`, also kept.
 Why it was replaced: terms 1-3 and 5 were hand-tuned shaping with no policy-invariance
 guarantee, and terms 2-3 rewarded transition quantities directly. Their interactions cost four
 runs (v48, v50, v52, v53) to debug.
+
+## --environments-genetic_env-pbrs-stitched-and-truncation-fixes
+
+**Two PBRS correctness fixes (2026-09-23), found by audit before v57 got past 20k steps.**
+The aborted v57 prefix was set aside in `model_data/stale_aborted_v57_prefix/` and v57 relaunched
+from scratch on the fixed code.
+
+1. **Stale potential on stitched starts.** `reset()` caches `_phi_prev = Phi(fresh culture)`;
+   `apply_saved_population()` then swaps in a different population, but nothing refreshed the
+   cache, so the first step of every stitched episode paid `gamma*Phi(s1) - Phi(fresh s0)` instead
+   of `gamma*Phi(s1) - Phi(stitched s0)`. Stitched starts are 5%/20%/45% of D0/D1/D2 episodes.
+   Measured on one example: -0.49 spurious reward on step 1 (bound: the full Phi range, 3.0; a
+   harvest pays at most 0.5). Action-independent, so it does not bias the optimal policy, but it
+   is unexplainable reward noise for the critic. Fix: `curriculum_starts.resync_shaping_potential()`
+   called after `apply_saved_population()` + `_get_obs()` (the latter refreshes `env.od`) in TD3,
+   TD_MPC2, Var_MPC and `curriculum_schedule.py`. Verified: step-1 shaping error 0.4864 -> 0.0000.
+
+2. **Time limit reported as termination.** `step()` returned `terminated=True` at `max_steps`,
+   and TD3 stored that as its bootstrap mask, so the critic treated the 7200-step cutoff as the
+   end of the world. Pre-existing, but under PBRS it also breaks the invariance guarantee: Ng et
+   al. assume Phi(terminal)=0, and a terminal at the time limit leaves a policy-dependent
+   `gamma*Phi(s_T)` in the return -- in the last few hundred steps it discourages the final harvest
+   (a 50% harvest at target costs ~0.43 Phi that is never recovered). Fix: `step()` now returns
+   `terminated` only on crash and `truncated` at the time limit; TD3 stores `terminated` (not
+   `terminated or truncated`) in `ep_done`, so truncation bootstraps. SB3/PPO already handles
+   `truncated` correctly. Two old fixed-length scripts that discarded `truncated`
+   (`legacy/visualize_growth.py`, `diagnostics/_verify_envs.py`) updated to read both.
+
+Both change training dynamics, so v57+ is not directly comparable with v56 and earlier on reward
+alone -- compare on harvest/held-out metrics, which are unchanged. `pbrs_invariance_check.py`
+still passes all four checks.

@@ -21,24 +21,19 @@ from stable_baselines3.common.callbacks import CheckpointCallback
 # Re-exported here (not just used internally) so that:
 # (full rationale: docs/decision_history.md#--training-recurrent_ppo-py-25)
 from env_utils import unwrap_raw_env as _unwrap_raw_env
-from wrappers import ActionSmoothnessWrapper, ACTION_SMOOTH_WRAPPER_PENALTY
 from entropy_schedule import (
-    ENTROPY_INIT, ENTROPY_DECAY, ENTROPY_MIN, ENTROPY_MAX,
-    STD_BAND_LOW, STD_BAND_HIGH, STD_HARD_CAP, STD_CONTROL_EVERY_EPISODES,
-    ENTROPY_ADJUST_UP, ENTROPY_ADJUST_DOWN, ENTROPY_RELAX_STEP,
-    ENTROPY_MULT_MIN, ENTROPY_MULT_MAX, ENTROPY_PLATEAU_CAP, STD_LOW_PUSH_MIN_ENT_COEF,
-    annealed_std_cap,
-    entropy_decay_value, entropy_hybrid_value, clamp_policy_std,
+    ENTROPY_INIT, STD_BAND_LOW, STD_BAND_HIGH, STD_HARD_CAP,
+    STD_CONTROL_EVERY_EPISODES, ENTROPY_ADJUST_UP, ENTROPY_ADJUST_DOWN, ENTROPY_RELAX_STEP,
+    ENTROPY_MULT_MIN, ENTROPY_MULT_MAX, ENTROPY_PLATEAU_CAP,
+    STD_LOW_PUSH_MIN_ENT_COEF, annealed_std_cap, entropy_hybrid_value, clamp_policy_std,
 )
 from curriculum_schedule import (
     TOTAL_TRAINING_STEPS, CHUNK_STEPS, MASTERY_WINDOW, MASTERY_MIN_EPISODES,
     MASTERY_REQUIRED_STREAK, DEMOTION_CRASH_RATE, DEMOTION_STREAK_REQUIRED,
     PLATEAU_CHUNKS, MAX_PLATEAU_KICKS_PER_DIFFICULTY, CAPABILITY_DEMOTION_CHUNKS,
-    ADVANCE_TARGETS, MIXING_PROBS,
-    DET_EVAL_EPISODES_PER_CHUNK, DET_EVAL_WINDOW, DET_MASTERY_MIN_EPISODES,
-    _sample_init_cells, _sample_training_difficulty, _compute_curriculum_stats,
-    compute_bucket_regret, update_bucket_regret_ema,
-    CurriculumStartController, CurriculumStartWrapper,
+    ADVANCE_TARGETS, DET_EVAL_EPISODES_PER_CHUNK,
+    DET_EVAL_WINDOW, DET_MASTERY_MIN_EPISODES, _compute_curriculum_stats,
+    compute_bucket_regret, update_bucket_regret_ema, CurriculumStartController,
 )
 from deterministic_eval import run_deterministic_eval_episode
 from callbacks import (
@@ -202,12 +197,12 @@ def train_recurrent_agent(resume=False):
         start_controller.train_diff = 0
         start_controller.mastery_diff = 0
         print("  Calibrating VecNormalize with 2000 random steps...")
-        cal_obs = vec_env.reset()
+        vec_env.reset()
         for _ in range(2000):
             random_act = [vec_env.action_space.sample()]
-            cal_obs, _, cal_done, _ = vec_env.step(random_act)
+            _, _, cal_done, _ = vec_env.step(random_act)
             if cal_done[0]:
-                cal_obs = vec_env.reset()
+                vec_env.reset()
         vec_env.reset()
         print(f"  Calibration complete. Obs mean: {vec_env.obs_rms.mean.round(2)}")
 

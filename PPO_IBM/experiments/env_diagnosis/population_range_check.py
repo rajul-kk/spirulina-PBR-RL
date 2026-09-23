@@ -14,7 +14,7 @@ import numpy as np
 import torch
 
 from genetic_env import GeneticPhotobioreactorEnv
-from TD3 import RecurrentActor, OBS_DIM, ACTION_DIM, MAX_CELLS, DEVICE, HIDDEN_RESET_INTERVAL
+from TD3 import OBS_DIM, ACTION_DIM, MAX_CELLS, DEVICE, HIDDEN_RESET_INTERVAL
 from actor_io import load_actor
 
 EXPERT_OD_SETPOINT = 0.015

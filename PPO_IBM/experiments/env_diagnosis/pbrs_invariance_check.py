@@ -122,7 +122,7 @@ def main():
     env_err = abs(undisc - env_shaping)
     ok = env_err <= 1e-9 * max(1.0, abs(env_shaping))
     failures += 0 if ok else 1
-    print(f"\n1b. ENV ACTUALLY PAYS THE SHAPING IT SHOULD")
+    print("\n1b. ENV ACTUALLY PAYS THE SHAPING IT SHOULD")
     print(f"   reconstructed sum_t F_t : {undisc: .10f}")
     print(f"   env reward_term_sums    : {env_shaping: .10f}")
     print(f"   abs error               : {env_err:.3e}    "
@@ -131,7 +131,7 @@ def main():
     spread = check_state_purity(env, rng)
     ok = spread == 0.0
     failures += 0 if ok else 1
-    print(f"\n2. STATE PURITY")
+    print("\n2. STATE PURITY")
     print(f"   spread over 5 repeat calls, no stepping: {spread:.3e}   "
           f"{'PASS' if ok else 'FAIL (Phi is not a pure function of state)'}")
 
@@ -139,7 +139,7 @@ def main():
     expected_hi = env.PHI_SCALE * 1.0001
     ok = lo >= -1e-9 and hi <= expected_hi
     failures += 0 if ok else 1
-    print(f"\n3. BOUNDEDNESS across extreme OD x population")
+    print("\n3. BOUNDEDNESS across extreme OD x population")
     print(f"   Phi range: [{lo:.6f}, {hi:.6f}]   design bound: [0, {env.PHI_SCALE}]   "
           f"{'PASS' if ok else 'FAIL'}")
 

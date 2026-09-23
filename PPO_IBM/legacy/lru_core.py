@@ -44,8 +44,7 @@ class LRUCore(nn.Module):
         K = torch.exp(-a[:, None, None] * pw.clamp(min=0)) * (pw >= 0)
         u = self.in_proj(x) * gamma
         hs = torch.einsum('bih,hti->bth', u, K)
-        if hidden is not None:
-            hs = hs + torch.exp(-a[None, None, :] * (idx[None, :, None] + 1.0)) * hidden[:, None, :]
+        hs = hs + torch.exp(-a[None, None, :] * (idx[None, :, None] + 1.0)) * hidden[:, None, :]
 
         out = self.norm(self.out_proj(hs) + x)           # residual keeps the block near-identity at init
         return out, hs[:, -1]

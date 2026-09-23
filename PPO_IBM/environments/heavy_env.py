@@ -694,7 +694,6 @@ class HeavyPhotobioreactorEnv(gym.Env):
             # Population-aware OD anchor: boost reward multiplier at low pop (harder to achieve growth)
             # At 1k: 2.0×, At 3k: 1.33×, At 6k: 1.0×, At 9k: 1.0×
             pop_boost = min(2.0, max(1.0, 4000.0 / (self.num_active + 1e-6)))
-            od_gain_scale = (8000.0 if self.od < 0.05 else 5000.0) * pop_boost
             reward_od = np.tanh(delta_od * 1000.0) * 0.5 * pop_boost
             self.max_historical_od = self.od
             self.steps_since_od_high = 0

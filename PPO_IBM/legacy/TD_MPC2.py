@@ -7,18 +7,16 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-import scipy.linalg
 from collections import deque, defaultdict
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "training"))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "environments"))
 
-from curriculum_starts import apply_saved_population, choose_episode_start, resync_shaping_potential, mastery_metrics_view
+from curriculum_starts import apply_saved_population, choose_episode_start, resync_shaping_potential
 from training_state import find_latest_checkpoint, load_state, replay_buffer_state, restore_replay_buffer, save_state
 # Project curriculum gate — this file used to keep its own local ADVANCE_TARGETS keyed on
 # (full rationale: docs/decision_history.md#--legacy-TD_MPC2-py-21)
 from curriculum_schedule import ADVANCE_TARGETS, MASTERY_MIN_EPISODES as PPO_MASTERY_MIN_EPISODES, _compute_curriculum_stats
-from deterministic_eval import run_deterministic_eval_episode
 
 # ─── CONSTANTS ────────────────────────────────────────────────────────────────
 ORDER = 16         # LMU memory depth
@@ -1228,7 +1226,6 @@ def finetune_td_mpc2(extra_steps: int = 500_000, use_privileged_distill: bool = 
         return
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    RAW_OBS_DIM   = OBS_DIM
     ACTION_DIM    = 4
     BATCH_SIZE    = 512
     ACTION_REPEAT = 12
@@ -1238,7 +1235,7 @@ def finetune_td_mpc2(extra_steps: int = 500_000, use_privileged_distill: bool = 
     print("─── TD-MPC2 Fine-Tune (Difficulty 2, Full Physics) ───")
     print(f"  Loading weights  : {model_path}")
     print(f"  Extra steps      : {extra_steps:,}")
-    print(f"  Exploration noise: 0.05 (reduced from 0.15 — trust the prior)")
+    print("  Exploration noise: 0.05 (reduced from 0.15 — trust the prior)")
 
     agent = TDMPC2Agent(OBS_DIM, ACTION_DIM, device=device,
                         use_privileged_distill=use_privileged_distill)

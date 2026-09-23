@@ -12,7 +12,8 @@ for _p in (_ROOT, _os.path.join(_ROOT, "training"), _os.path.join(_ROOT, "enviro
 import numpy as np
 import gymnasium as gym
 
-from curriculum_starts import apply_saved_population, choose_episode_start, resync_shaping_potential, mastery_metrics_view
+from curriculum_starts import (apply_saved_population, choose_episode_start, mastery_metrics_view,
+                               resync_shaping_potential, sample_initial_cells)
 
 TOTAL_TRAINING_STEPS = 8_000_000
 CHUNK_STEPS = 100_000
@@ -60,11 +61,10 @@ MIXING_PROBS = {
 
 
 def _sample_init_cells(init_cells_cfg, difficulty):
-    """Sample initial cells per-episode. Adversarial cold starts at D2."""
+    """Initial cells for one episode: a fixed count, or "random" for a low-bucket cold start
+    (with D2's 10% adversarial starts)."""
     if init_cells_cfg == "random":
-        if difficulty == 2 and np.random.rand() < 0.1:
-            return int(np.random.uniform(30, 80))   # adversarial cold start
-        return int(np.exp(np.random.uniform(np.log(100), np.log(400))))
+        return sample_initial_cells(difficulty, "low")
     return init_cells_cfg
 
 
@@ -106,14 +106,12 @@ def _compute_curriculum_stats(history, mastery_diff: int = None):
             "crash_rate": 0.0,
             "reward_std": 0.0,
         }
-    # Exclude stitched (warm-start) episodes from advancement stats — stitched starts
-    # inherit an already-productive culture, making harvested_mg not comparable to cold starts.
-    cold_only = [h for h in filtered_history if h.get("start_mode", "low") != "stitched"]
-    adv_set = cold_only if len(cold_only) >= 1 else filtered_history
-
-    harvested_values = np.array([h.get("harvested_mg", 0.0) for h in adv_set], dtype=np.float32)
-    time_avg_od_values = np.array([h.get("time_avg_od", 0.0) for h in adv_set], dtype=np.float32)
-    crash_values   = np.array([1.0 if h["crashed"] else 0.0 for h in adv_set], dtype=np.float32)
+    # mastery_metrics_view already excluded stitched (warm-start) episodes whenever any cold
+    # starts exist: stitched starts inherit a productive culture, so their harvested_mg isn't
+    # comparable.
+    harvested_values = np.array([h.get("harvested_mg", 0.0) for h in filtered_history], dtype=np.float32)
+    time_avg_od_values = np.array([h.get("time_avg_od", 0.0) for h in filtered_history], dtype=np.float32)
+    crash_values   = np.array([1.0 if h["crashed"] else 0.0 for h in filtered_history], dtype=np.float32)
     rewards        = np.array([h["reward"] for h in filtered_history], dtype=np.float32)
 
     p25 = float(np.percentile(harvested_values, 25))
@@ -121,7 +119,7 @@ def _compute_curriculum_stats(history, mastery_diff: int = None):
     tail = harvested_values[harvested_values <= cvar_cutoff]
     cvar10 = float(np.mean(tail)) if len(tail) > 0 else float(np.min(harvested_values))
     return {
-        "episodes": int(len(adv_set)),
+        "episodes": int(len(filtered_history)),
         "median_harvested_mg": float(np.median(harvested_values)),
         "p25_harvested_mg": p25,
         "cvar10_harvested_mg": cvar10,

@@ -98,3 +98,28 @@ o2_sat = 8.0 * (o2_frac / self.ambient_o2_frac) * np.exp(-0.02 * (self.temp - 25
 ## O14 — Population Cap Creates Density Ceiling Without Dilution *(STALE — dilution exists)*
 
 **Also describes the pre-harvest environment.** With harvest active (see O13), the population is periodically diluted rather than growing to an unbounded ceiling; `max_cells=7500` is a computational cap on the agent-array size (matched across PPO, TD-MPC2, and the diagnostics — see this session's `MAX_CELLS` cost-probe finding, which measured actual active population staying around 2,990-3,000 cells at multiple cap sizes, far below 7500, so the cap is not typically a binding constraint in practice). The "density ceiling without dilution" scenario this entry describes does not apply to the current environment.
+
+---
+
+## O15 — Open items from the 2026-09-24 core audit (found, deliberately not changed)
+
+The audit fixed 13 bugs (see `docs/decision_history.md#--core-audit-2026-09-24`). These it
+found but left alone, because each is a modelling decision rather than a clear defect:
+
+- **Clumps drift up, not down.** `_move_cells` subtracts `v_sink` from `dz`, and `z` is depth
+  from the surface, so heavier clumps move toward the light. That may be intended (Spirulina is
+  buoyant via gas vesicles), but the variable and comments say "sinking".
+- **The low-mixing sedimentation branch never runs.** It needs `stir_rpm / 200 <= 0.01`, but
+  stirring is bounded to 50-200 RPM. It also multiplies a speed in m/s by `dt` in hours.
+- **Bicarbonate is clipped to 5 mM** although fresh medium is 200 mM. Load-bearing: the carbonate
+  constants were never calibrated to 200 mM, and raising the clip pushes pH to ~10.5 and halves
+  yield. Needs the carbonate system re-derived, not a wider clip.
+- **11 harvest events per episode, not 12.** Events fire at step 600k for k=1..11; the step-7200
+  event would land after the episode ends. Comments that say 12 are wrong; the physics is fine.
+- **PPO's det gate only samples 100-400-cell starts**, the blind spot TD3 removed with its fixed
+  stratified det-eval set (#--curriculum_schedule-fixed-det-eval-set).
+- **Mastery windows can hold stale episodes.** After a demotion and re-advance, the 40-episode
+  window for a tier still holds episodes from the earlier visit's policy.
+- **`experiments/harvest_ablation/recurrent_ppo_harvest_fixed.py`** is a frozen copy of the PPO
+  trainer for the v37 ablation and keeps the pre-audit resume and callback bugs by design.
+

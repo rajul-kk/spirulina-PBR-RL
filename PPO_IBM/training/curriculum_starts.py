@@ -28,6 +28,15 @@ STITCH_MIN_EPISODES = {
 REGRET_BLEND = 0.25
 REGRET_MIN_SHARE_OF_BASE = 0.5
 
+# A finished episode's culture is kept for stitched starts when it ends with at least this many
+# active cells. Shared by TD3 and PPO; must stay below both trainers' max_cells (7,500).
+STITCH_POP_THRESHOLD = 1_100
+
+_POPULATION_ARRAYS = ("cells_mass", "cells_quota", "cells_x", "cells_z", "cells_acclimation",
+                      "clump_mass", "active_mask")
+_MEDIUM_STATE = ("ext_nutrients", "n_pool", "p_pool", "bicarbonate", "salt", "ph",
+                 "do2", "do2_s", "do2_b", "co2_s", "co2_b", "dissolved_co2")
+
 
 def _log_uniform_int(low: int, high: int, rng) -> int:
     return int(np.exp(rng.uniform(np.log(low), np.log(high))))
@@ -90,37 +99,50 @@ def choose_episode_start(
     return {"mode": mode, "initial_cells": sample_initial_cells(difficulty, mode, rng=rng)}
 
 
+def snapshot_population(raw_env) -> Dict[str, object]:
+    """Copy of a culture's cells and dissolved medium, for a later stitched start."""
+    snap = {k: copy.deepcopy(getattr(raw_env, k)) for k in _POPULATION_ARRAYS if hasattr(raw_env, k)}
+    snap.update({k: float(getattr(raw_env, k)) for k in _MEDIUM_STATE if hasattr(raw_env, k)})
+    snap["num_active"] = int(raw_env.num_active)
+    snap["pigment"] = float(raw_env.pigment)
+    return snap
+
+
 def apply_saved_population(raw_env, saved_state: Dict[str, object], start_mode: str = "stitched") -> None:
+    """Swap a saved culture into a freshly reset env.
+
+    Whatever the snapshot carries is restored; anything it lacks (snapshots written before
+    2026-09-24 had no acclimation, n_pool or bicarbonate, and some no p_pool or CO2) keeps the
+    fresh-medium value reset() just set, rather than an invented default.
+    """
     # Guard: discard states saved under a different max_cells (e.g. after super-agent rescaling).
     # Mismatched array sizes would silently corrupt mass/mask operations.
     saved_size = len(saved_state.get("cells_mass", []))
     if saved_size != raw_env.max_cells:
         return
-    raw_env.cells_mass = copy.deepcopy(saved_state["cells_mass"])
-    raw_env.cells_quota = copy.deepcopy(saved_state["cells_quota"])
-    raw_env.cells_z = copy.deepcopy(saved_state["cells_z"])
-    raw_env.clump_mass = copy.deepcopy(saved_state["clump_mass"])
-    raw_env.pigment = saved_state["pigment"]
+    for k in _POPULATION_ARRAYS:
+        if k in saved_state and saved_state[k] is not None and hasattr(raw_env, k):
+            setattr(raw_env, k, copy.deepcopy(saved_state[k]))
     raw_env.num_active = saved_state["num_active"]
-    raw_env.active_mask = copy.deepcopy(saved_state["active_mask"])
+    raw_env.pigment = saved_state["pigment"]
     raw_env._aidx_cache = None   # stitched mask differs in position, not only in count
-    raw_env.ext_nutrients = saved_state["ext_nutrients"]
-    raw_env.p_pool        = float(saved_state.get("p_pool", 80.0))
-    raw_env.do2_s         = float(saved_state.get("do2_s", saved_state.get("do2", 7.0)))
-    raw_env.do2_b         = float(saved_state.get("do2_b", saved_state.get("do2", 7.0)))
-    raw_env.co2_s         = float(saved_state.get("co2_s", 2.0))
-    raw_env.co2_b         = float(saved_state.get("co2_b", 2.0))
+    if "cells_acclimation" not in saved_state:
+        # Mid-range of reset()'s initial acclimation draw; leaving these slots at whatever
+        # reset() or a dead cell left behind (often 0) put transplanted cells in photo-shock.
+        raw_env.cells_acclimation[raw_env.active_mask] = 200.0
+
+    for k in _MEDIUM_STATE:
+        if k in saved_state:
+            setattr(raw_env, k, float(saved_state[k]))
+    for layer in ("do2_s", "do2_b"):   # older snapshots carried only the mixed DO2
+        if layer not in saved_state and "do2" in saved_state:
+            setattr(raw_env, layer, float(saved_state["do2"]))
     # Keep stitched starts from inheriting legacy low-pH snapshots.
     # For alkaline media envs, enforce at least the configured equilibrium pH.
-    saved_ph = float(saved_state["ph"])
-    ph_floor = float(getattr(raw_env, "buffer_equilibrium_ph", saved_ph))
-    raw_env.ph = max(saved_ph, ph_floor)
+    raw_env.ph = max(float(raw_env.ph), float(getattr(raw_env, "buffer_equilibrium_ph", raw_env.ph)))
     if hasattr(raw_env, "_ph_obs_ema"):
         raw_env._ph_obs_ema = raw_env.ph
-    raw_env.do2 = saved_state["do2"]
-    raw_env.salt = saved_state["salt"]
-    if "cells_x" in saved_state and hasattr(raw_env, "cells_x"):
-        raw_env.cells_x = copy.deepcopy(saved_state["cells_x"])
+
     raw_env.dosing_integral = 0.0    # PID dosing history unknown for stitched starts
     raw_env.harvest_integral = 0.0   # harvest pump counter unknown for stitched starts
     raw_env.cumulative_harvested_mg = 0.0  # curriculum metric — episode-scoped, must reset

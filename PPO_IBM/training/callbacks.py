@@ -8,13 +8,12 @@ for _p in (_ROOT, _os.path.join(_ROOT, "training"), _os.path.join(_ROOT, "enviro
     if _p not in _sys.path:
         _sys.path.insert(0, _p)
 # ---------------------------------------------------------------------------------------
-import copy
 from collections import defaultdict, deque
 
 import numpy as np
 from stable_baselines3.common.callbacks import BaseCallback
 
-from env_utils import unwrap_raw_env
+from curriculum_starts import STITCH_POP_THRESHOLD
 
 
 class TQDMActionCallback(BaseCallback):
@@ -36,20 +35,22 @@ class TQDMActionCallback(BaseCallback):
                 self._last_od = 0.0
         mean_od = np.mean(self._ep_ods[-10:]) if self._ep_ods else 0.0
 
-        if hasattr(self.locals, "callback") and hasattr(self.locals["callback"], "pbar"):
-            pbar = self.locals["callback"].pbar
-            if pbar is not None:
-                actions = self.locals.get("actions")
-                if actions is not None and len(actions) > 0:
-                    act = actions[0]
-                    postfix = {"OD": f"{mean_od:.4f}"}
-                    if self.train_diff is not None:
-                        postfix["Diff"] = f"D{self.train_diff}"
-                    if self.mastery_diff is not None:
-                        postfix["Mastery"] = f"D{self.mastery_diff}"
-                    if len(act) >= 2:
-                        postfix.update({"Stir": f"{act[0]:.2f}", "Lt": f"{act[1]:.2f}"})
-                    pbar.set_postfix(postfix, refresh=False)
+        # self.locals is a dict and "callback" is SB3's CallbackList; the progress bar lives on
+        # the ProgressBarCallback inside it. (This used hasattr() on the dict, so the postfix
+        # never showed.)
+        cb = self.locals.get("callback")
+        pbar = next((c.pbar for c in getattr(cb, "callbacks", [cb]) if getattr(c, "pbar", None) is not None), None)
+        actions = self.locals.get("actions")
+        if pbar is not None and actions is not None and len(actions) > 0:
+            act = actions[0]
+            postfix = {"OD": f"{mean_od:.4f}"}
+            if self.train_diff is not None:
+                postfix["Diff"] = f"D{self.train_diff}"
+            if self.mastery_diff is not None:
+                postfix["Mastery"] = f"D{self.mastery_diff}"
+            if len(act) >= 2:
+                postfix.update({"Stir": f"{act[0]:.2f}", "Lt": f"{act[1]:.2f}"})
+            pbar.set_postfix(postfix, refresh=False)
         return True
 
 
@@ -66,7 +67,7 @@ class PopulationStitchCallback(BaseCallback):
     """Implements Population-Seeded Batch Stitching for Stable-Baselines3.
     (full rationale: docs/decision_history.md#--training-callbacks-py-68)"""
     def __init__(self, controller,
-                 pop_threshold: int = 15_000, difficulty_min: int = 1, verbose: int = 0):
+                 pop_threshold: int = STITCH_POP_THRESHOLD, difficulty_min: int = 1, verbose: int = 0):
         super().__init__(verbose)
         self.controller = controller
         self.pop_threshold  = pop_threshold
@@ -77,38 +78,21 @@ class PopulationStitchCallback(BaseCallback):
         infos = self.locals.get('infos', [{}])
 
         for done, info in zip(dones, infos):
-            raw_env = unwrap_raw_env(self.training_env)
-
-            # --- On episode END: save state if population was high ---
-            if done:
-                self.controller.completed_episodes += 1
-                num_active = getattr(raw_env, 'num_active', 0)
-                if num_active >= self.pop_threshold:
-                    self.controller.saved_state = {
-                        'cells_mass':   copy.deepcopy(raw_env.cells_mass),
-                        'cells_quota':  copy.deepcopy(raw_env.cells_quota),
-                        'cells_z':      copy.deepcopy(raw_env.cells_z),
-                        'clump_mass':   copy.deepcopy(raw_env.clump_mass),
-                        'pigment':      raw_env.pigment,
-                        'num_active':   raw_env.num_active,
-                        'active_mask':  copy.deepcopy(raw_env.active_mask),
-                        'ext_nutrients':raw_env.ext_nutrients,
-                        'p_pool':       raw_env.p_pool,
-                        'ph':           raw_env.ph,
-                        'do2':          raw_env.do2,
-                        'do2_s':        getattr(raw_env, 'do2_s', raw_env.do2),
-                        'do2_b':        getattr(raw_env, 'do2_b', raw_env.do2),
-                        'co2_s':        getattr(raw_env, 'co2_s', 2.0),
-                        'co2_b':        getattr(raw_env, 'co2_b', 2.0),
-                        'salt':         raw_env.salt,
-                    }
-                    # Also save cells_x if the env is 2D (genetic/total)
-                    if hasattr(raw_env, 'cells_x'):
-                        self.controller.saved_state['cells_x'] = copy.deepcopy(raw_env.cells_x)
-                    if self.verbose:
-                        print(f"[Stitch] Saved state with {num_active:,} cells "
-                              f"(OD={getattr(raw_env, 'od', 0):.4f})")
+            if not done:
+                continue
+            self.controller.completed_episodes += 1
+            # The vec env has already auto-reset the raw env, so its state is the NEXT
+            # episode's; the finished culture arrives as info["terminal_population"],
+            # attached by CurriculumStartWrapper.step() before the reset.
+            snap = info.get("terminal_population")
+            num_active = int(info.get("pop", 0))
+            if (snap is not None and num_active >= self.pop_threshold
+                    and int(info.get("episode_train_diff", 0)) >= self.difficulty_min):
+                self.controller.saved_state = snap
+                if self.verbose:
+                    print(f"[Stitch] Saved state with {num_active:,} cells (OD={info.get('od', 0.0):.4f})")
         return True
+
 
 
 class EpisodeMetricsCallback(BaseCallback):
@@ -129,8 +113,6 @@ class EpisodeMetricsCallback(BaseCallback):
     def _on_step(self) -> bool:
         infos = self.locals.get("infos", [])
         dones = self.locals.get("dones", [])
-        raw_env = unwrap_raw_env(self.training_env)
-
         for idx, done in enumerate(dones):
             if not done:
                 continue
@@ -139,11 +121,13 @@ class EpisodeMetricsCallback(BaseCallback):
             reward = float(ep_info.get("r", 0.0))
             ep_len = int(ep_info.get("l", 0))
             reward_per_step = reward / max(ep_len, 1)
-            final_pop = int(getattr(raw_env, "num_active", 0))
             harvested_mg = float(info.get("cumulative_harvested_mg", 0.0))
             time_avg_od = float(info.get("time_avg_od", 0.0))
 
-            crashed = final_pop < 10
+            # Read the env's own verdict, not raw_env.num_active: the vec env auto-resets
+            # before callbacks run, so that was the NEXT episode's starting population
+            # (never < 10), which made every stochastic crash rate 0%.
+            crashed = not info.get("TimeLimit.truncated", False)
             # episode_train_diff is injected by CurriculumStartWrapper.step() on done,
             # (full rationale: docs/decision_history.md#--training-callbacks-py-169)
             ep_train_diff = int(info.get("episode_train_diff", -1))
@@ -153,7 +137,7 @@ class EpisodeMetricsCallback(BaseCallback):
                 "time_avg_od": time_avg_od,
                 "episode_duration_h": ep_len * 0.02,
                 "crashed": crashed,
-                "start_mode": info.get("start_mode", getattr(raw_env, "episode_start_mode", "low")),
+                "start_mode": info.get("start_mode", "low"),
                 "train_diff": ep_train_diff,
             }
             self.episode_metrics.append(record)

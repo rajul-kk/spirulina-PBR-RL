@@ -2,7 +2,7 @@
 import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
-from typing import Optional, Tuple, Dict
+from typing import Optional, Dict
 
 class LightPhotobioreactorEnv(gym.Env):
     """Individual-Based Model (IBM) Photobioreactor Environment (Light Efficient).

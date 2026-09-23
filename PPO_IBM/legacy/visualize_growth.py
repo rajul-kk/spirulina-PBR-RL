@@ -166,7 +166,6 @@ def plot_results(runs):
     ax_ph   = fig.add_subplot(gs[2, 0])   # pH
     ax_rew  = fig.add_subplot(gs[2, 1])   # cumulative reward
 
-    style = dict(facecolor="#0d1a2e", edgecolor="#1e3050")
     for ax in (ax_od, ax_mu, ax_n, ax_ph, ax_rew):
         ax.set_facecolor("#0d1a2e")
         for spine in ax.spines.values():
@@ -257,7 +256,7 @@ def plot_results(runs):
 
     # ── Legend & annotation ────────────────────────────────────────────
     for ax in (ax_od, ax_mu, ax_n, ax_ph, ax_rew):
-        leg = ax.legend(fontsize=9, facecolor="#0d1a2e", edgecolor="#1e3050",
+        ax.legend(fontsize=9, facecolor="#0d1a2e", edgecolor="#1e3050",
                         labelcolor="#c0d4f0")
 
     if fit_table_lines:

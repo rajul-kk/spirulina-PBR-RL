@@ -25,7 +25,6 @@ STITCH_MIN_EPISODES = {
     2: 0,
 }
 
-MAX_STITCHED_SHARE_FOR_MASTERY = 0.30
 REGRET_BLEND = 0.25
 REGRET_MIN_SHARE_OF_BASE = 0.5
 
@@ -124,7 +123,6 @@ def apply_saved_population(raw_env, saved_state: Dict[str, object], start_mode: 
         raw_env.cells_x = copy.deepcopy(saved_state["cells_x"])
     raw_env.dosing_integral = 0.0    # PID dosing history unknown for stitched starts
     raw_env.harvest_integral = 0.0   # harvest pump counter unknown for stitched starts
-    raw_env.current_harvest_rate = 0.0
     raw_env.cumulative_harvested_mg = 0.0  # curriculum metric — episode-scoped, must reset
     raw_env.cumulative_harvested_mg_back_half = 0.0
     raw_env.od_sum_back_half = 0.0
@@ -143,39 +141,10 @@ def resync_shaping_potential(raw_env) -> None:
         raw_env._phi_prev = raw_env._potential()
 
 
-def cap_stitched_metrics(
-    episode_metrics: Iterable[Dict[str, object]],
-    max_stitched_share: float = MAX_STITCHED_SHARE_FOR_MASTERY,
-) -> List[Dict[str, object]]:
-    metrics = list(episode_metrics)
-    if not metrics:
-        return []
-
-    base = [metric for metric in metrics if metric.get("start_mode") != "stitched"]
-    stitched = [metric for metric in metrics if metric.get("start_mode") == "stitched"]
-
-    if not base or not stitched:
-        return metrics
-
-    max_stitched = int(np.floor((max_stitched_share * len(base)) / max(1e-8, 1.0 - max_stitched_share)))
-    if max_stitched <= 0:
-        return base
-
-    return base + stitched[-max_stitched:]
-
-
-def mastery_metrics_view(
-    episode_metrics: Iterable[Dict[str, object]],
-    max_stitched_share: float = MAX_STITCHED_SHARE_FOR_MASTERY,
-) -> List[Dict[str, object]]:
-    """Return metrics used for curriculum pass/fail.
+def mastery_metrics_view(episode_metrics: Iterable[Dict[str, object]]) -> List[Dict[str, object]]:
+    """Metrics used for curriculum pass/fail: non-stitched episodes only, unless every
+    episode was stitched, in which case all of them.
     (full rationale: docs/decision_history.md#--training-curriculum_starts-py-159)"""
     metrics = list(episode_metrics)
-    if not metrics:
-        return []
-
     non_stitched = [m for m in metrics if m.get("start_mode") != "stitched"]
-    if non_stitched:
-        return non_stitched
-
-    return cap_stitched_metrics(metrics, max_stitched_share=max_stitched_share)
+    return non_stitched or metrics

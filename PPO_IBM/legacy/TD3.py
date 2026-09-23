@@ -3,7 +3,6 @@
 
 import os
 import sys
-import copy
 import argparse
 from collections import deque, defaultdict
 
@@ -16,7 +15,8 @@ import torch.optim as optim
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "training"))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "environments"))
 
-from curriculum_starts import apply_saved_population, choose_episode_start, resync_shaping_potential
+from curriculum_starts import (STITCH_POP_THRESHOLD, apply_saved_population, choose_episode_start,
+                               resync_shaping_potential, snapshot_population)
 from training_state import load_state, save_state
 from curriculum_schedule import (
     ADVANCE_TARGETS, MASTERY_MIN_EPISODES, MASTERY_WINDOW, MASTERY_REQUIRED_STREAK,
@@ -190,7 +190,9 @@ class SequenceReplayBuffer:
 
     def _sample_start(self, ep_len):
         if np.random.rand() < self.HARVEST_BIAS_PROB:
-            candidates = list(range(self.HARVEST_INTERVAL_STEPS - 1, ep_len, self.HARVEST_INTERVAL_STEPS))
+            # The harvest reward lands on the transition taken at step_count = k*600 (index
+            # k*600), not k*600 - 1; targeting 599 left ~11% of biased windows without it.
+            candidates = list(range(self.HARVEST_INTERVAL_STEPS, ep_len, self.HARVEST_INTERVAL_STEPS))
             if candidates:
                 target = candidates[np.random.randint(len(candidates))]
                 lo = max(0, target - self.seq_len + 1)
@@ -334,7 +336,19 @@ def build_demo_buffer(n_episodes, seed=0):
 
 def run_td3_eval_episode(actor, difficulty, seed, init_cells=None):
     """Noise-free rollout for the project's dual gate (see deterministic_eval.py /
-    TD-MPC2's run_tdmpc2_eval_episode for the same rationale)."""
+    TD-MPC2's run_tdmpc2_eval_episode for the same rationale).
+
+    Seeds the env for reproducibility, then restores the caller's global RNG state: the env
+    draws from np.random, and leaving it reseeded restarted training's exploration noise,
+    env randomness and replay sampling from the same few states after every chunk."""
+    rng_state = np.random.get_state()
+    try:
+        return _run_td3_eval_episode(actor, difficulty, seed, init_cells)
+    finally:
+        np.random.set_state(rng_state)
+
+
+def _run_td3_eval_episode(actor, difficulty, seed, init_cells):
     np.random.seed(seed)
     if init_cells is None:
         init_cells = _sample_init_cells("random", difficulty)
@@ -665,15 +679,10 @@ def train(resume=False):
                 })
                 completed_episodes += 1
 
-                # Never true while MAX_CELLS (7,500) < 15,000, so TD3 runs never take stitched starts.
-                if getattr(env, "num_active", 0) > 15000:
-                    saved_env_state = {
-                        "cells_mass": copy.deepcopy(env.cells_mass), "cells_quota": copy.deepcopy(env.cells_quota),
-                        "cells_x": copy.deepcopy(getattr(env, "cells_x", None)), "cells_z": copy.deepcopy(env.cells_z),
-                        "clump_mass": copy.deepcopy(env.clump_mass), "pigment": env.pigment,
-                        "num_active": env.num_active, "active_mask": copy.deepcopy(env.active_mask),
-                        "ext_nutrients": env.ext_nutrients, "ph": env.ph, "do2": env.do2, "salt": env.salt,
-                    }
+                # Was hard-coded to 15,000, above MAX_CELLS (7,500), so TD3 never took a
+                # stitched start before 2026-09-24.
+                if env.num_active >= STITCH_POP_THRESHOLD:
+                    saved_env_state = snapshot_population(env)
 
                 obs, init_cells = begin_episode(env, train_diff, saved_env_state, completed_episodes)
                 actor_hidden = actor.initial_hidden(batch=1)

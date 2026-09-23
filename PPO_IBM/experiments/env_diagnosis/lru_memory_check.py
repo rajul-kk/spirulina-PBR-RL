@@ -15,7 +15,7 @@ import torch
 
 from genetic_env import GeneticPhotobioreactorEnv
 from TD3 import OBS_DIM, ACTION_DIM, MAX_CELLS, DEVICE, SEQ_LEN
-from actor_io import load_actor, detect_core
+from actor_io import load_actor
 
 HARVEST_INTERVAL = 600
 

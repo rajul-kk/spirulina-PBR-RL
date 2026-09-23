@@ -9,7 +9,6 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 
 # Thread count must be set before the first heavy op. Torch defaults to one thread per
@@ -55,7 +54,8 @@ class LRUCritic(base.RecurrentCritic):
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-# CPU-efficiency patches. Both are exactly equivalent to TD3.py's versions.
+# CPU-efficiency patches. soft_update is exactly equivalent to TD3.py's; td3_update differs
+# only in fusing the policy and BC actor passes (float-level differences, ~1e-7).
 
 @torch.no_grad()
 def soft_update(net, target_net, tau=base.TAU):
@@ -69,30 +69,16 @@ def soft_update(net, target_net, tau=base.TAU):
 def td3_update(actor, actor_target, critic, critic_target, actor_opt, critic_opt,
                demo_buffer, online_buffer, update_idx):
     """TD3.td3_update with the policy-batch and BC-batch actor passes fused into one
-    forward. Rows are independent given a zero initial state, so this is exact."""
+    forward. Rows are independent given a zero initial state."""
     batch = base.sample_mixed_batch(demo_buffer, online_buffer, base.BATCH_SIZE, base.DEMO_FRACTION)
     if batch is None:
         return None, None
 
-    obs, actions, rewards = batch["obs"], batch["action"], batch["reward"]
-    next_obs, dones = batch["next_obs"], batch["done"]
-
-    with torch.no_grad():
-        next_action, _ = actor_target(next_obs)
-        noise = (torch.randn_like(next_action) * base.POLICY_NOISE).clamp(-base.NOISE_CLIP, base.NOISE_CLIP)
-        next_action = (next_action + noise).clamp(-1.0, 1.0)
-        q1_next, q2_next, _, _ = critic_target(next_obs, next_action)
-        q_target = rewards + base.GAMMA * (1.0 - dones) * torch.min(q1_next, q2_next)
-
-    q1, q2, _, _ = critic(obs, actions)
-    critic_loss = F.huber_loss(q1, q_target, delta=1.0) + F.huber_loss(q2, q_target, delta=1.0)
-    critic_opt.zero_grad(set_to_none=True)
-    critic_loss.backward()
-    nn.utils.clip_grad_norm_(critic.parameters(), base.GRAD_CLIP)
-    critic_opt.step()
+    critic_loss = base.critic_update(actor_target, critic, critic_target, critic_opt, batch)
 
     actor_loss = None
     if update_idx % base.POLICY_DELAY == 0:
+        obs = batch["obs"]
         bc_obs, bc_act, _, _, _ = demo_buffer._sample_raw(base.BATCH_SIZE)
         if bc_obs:
             bc_obs_t = torch.tensor(np.array(bc_obs), dtype=torch.float32, device=DEVICE)
@@ -105,19 +91,10 @@ def td3_update(actor, actor_target, critic, critic_target, actor_opt, critic_opt
             bc_term = torch.tensor(0.0, device=DEVICE)
 
         q_pred = critic.q1_only(obs, pred_action)
-        lam = torch.clamp(base.TD3BC_ALPHA / (q_pred.abs().mean().detach() + 1e-3), max=100.0)
-        actor_loss = -lam * q_pred.mean() + bc_term
+        actor_loss = base.actor_step(actor, actor_target, critic, critic_target, actor_opt,
+                                     -base.actor_q_weight(q_pred) * q_pred.mean() + bc_term)
 
-        actor_opt.zero_grad(set_to_none=True)
-        actor_loss.backward()
-        nn.utils.clip_grad_norm_(actor.parameters(), base.GRAD_CLIP)
-        actor_opt.step()
-
-        soft_update(actor, actor_target)
-        soft_update(critic, critic_target)
-        actor_loss = float(actor_loss.item())
-
-    return float(critic_loss.item()), actor_loss
+    return critic_loss, actor_loss
 
 
 # ═════════════════════════════════════════════════════════════════════════════

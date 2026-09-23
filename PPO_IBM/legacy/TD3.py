@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "training"))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "environments"))
 
 from curriculum_starts import apply_saved_population, choose_episode_start, resync_shaping_potential
-from training_state import find_latest_checkpoint, load_state, save_state
+from training_state import load_state, save_state
 from curriculum_schedule import (
     ADVANCE_TARGETS, MASTERY_MIN_EPISODES, MASTERY_WINDOW, MASTERY_REQUIRED_STREAK,
     DEMOTION_CRASH_RATE, DEMOTION_STREAK_REQUIRED, CAPABILITY_DEMOTION_CHUNKS,

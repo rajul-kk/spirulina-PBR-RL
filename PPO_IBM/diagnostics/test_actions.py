@@ -150,7 +150,7 @@ def print_action_block(raw_buf: np.ndarray):
 
 
 def print_env_state(raw_env, cumrew):
-    print(f"\n  Env state:")
+    print("\n  Env state:")
     print(f"    OD={raw_env.od:.4f}  pH={raw_env.ph:.2f}  "
           f"N={raw_env.n_pool:.1f} mg/L  P={raw_env.p_pool:.1f} mg/L  T={raw_env.temp:.1f}°C")
     print(f"    Cond={raw_env.conductivity:.0f} µS/cm  "
@@ -196,7 +196,7 @@ def run_single(model, vec_env, interval, plot, dt, label=""):
             print_action_block(np.array(buf))
             if done and terminal_snap:
                 # Print pre-reset terminal state, not the auto-reset initial state
-                print(f"\n  Env state (terminal):")
+                print("\n  Env state (terminal):")
                 print(f"    OD={terminal_snap['od']:.4f}  pH={terminal_snap['ph']:.2f}  "
                       f"N={terminal_snap['n_pool']:.1f} mg/L  P={terminal_snap['p_pool']:.1f} mg/L  "
                       f"T={terminal_snap['temp']:.1f}C")
@@ -226,16 +226,9 @@ def run_comparison(model_a, vec_a, model_b, vec_b, seed, interval, dt, plot, lab
     n = min(len(raw_a), len(raw_b))
     W = 30  # column width
 
-    def hdr(title):
-        print(f"\n{'-'*80}")
-        print(f"  {title}")
-        print(f"{'-'*80}")
-
     # Per-interval action comparison
     for i_start in range(0, n, interval):
         i_end = min(i_start + interval, n)
-        sl_a = raw_a[i_start:i_end]
-        sl_b = raw_b[i_start:i_end]
         dec_sl_a = dec_a[i_start:i_end]
         dec_sl_b = dec_b[i_start:i_end]
         t_lo, t_hi = i_start * dt, i_end * dt
@@ -427,7 +420,7 @@ def main():
     vec_a = load_env(args.difficulty, args.initial_cells, args.norm, args.seed)
     _obs_override = {"observation_space": vec_a.observation_space}
     model_a = RecurrentPPO.load(model_a_path, env=vec_a, device="cpu", custom_objects=_obs_override)
-    print(f"  Model A loaded.")
+    print("  Model A loaded.")
 
     dt = float(getattr(get_raw_env(vec_a), "dt", 0.02))
 
@@ -435,14 +428,14 @@ def main():
         model_b_path = strip_zip(args.compare)
         vec_b = load_env(args.difficulty, args.initial_cells, norm_b_path, args.seed)
         model_b = RecurrentPPO.load(model_b_path, env=vec_b, device="cpu", custom_objects={"observation_space": vec_b.observation_space})
-        print(f"  Model B loaded.\n")
+        print("  Model B loaded.\n")
         run_comparison(
             model_a, vec_a, model_b, vec_b,
             seed=args.seed, interval=args.interval, dt=dt,
             plot=args.plot, label_a=label_a, label_b=label_b,
         )
     else:
-        print(f"  Model loaded.\n")
+        print("  Model loaded.\n")
         run_single(model_a, vec_a, interval=args.interval, plot=args.plot, dt=dt)
 
 

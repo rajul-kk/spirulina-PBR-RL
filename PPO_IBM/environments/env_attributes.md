@@ -1,6 +1,7 @@
 # `light_env.py` — Physics Attributes Reference
 
-> **Note:** this describes `environments/light_env.py`, a secondary environment file not
+> **Note:** `environments/light_env.py` was removed on 2026-09-23 (nothing ran it); the code
+> is in git history at `04fa8a4`. This describes that file, a secondary environment not
 > referenced by any current training script, diagnostic, or the active curriculum pipeline
 > (all of which use `environments/genetic_env.py`). Values here (e.g. `dt=0.01h`,
 > `max_steps=14400`, `max_cells` convention) do not describe the actively-trained-on

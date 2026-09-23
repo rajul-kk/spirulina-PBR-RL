@@ -1,4 +1,3 @@
-import re
 
 def get_body_word_count(filepath):
     with open(filepath, 'r', encoding='utf-8') as f:

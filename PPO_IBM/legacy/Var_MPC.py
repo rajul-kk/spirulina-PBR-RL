@@ -5,7 +5,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-import scipy.linalg
 from collections import deque
 from curriculum_starts import apply_saved_population, choose_episode_start, resync_shaping_potential, mastery_metrics_view
 from training_state import find_latest_checkpoint, load_state, replay_buffer_state, restore_replay_buffer, save_state
@@ -684,37 +683,6 @@ def train_var_mpc(resume: bool = False):
             "mean_pop": float(np.mean(recent_pops)),
         }
 
-    def _advance_or_demote(current_difficulty: int, mastery_streak: int, stats: dict, train_diff: int):
-        new_difficulty = current_difficulty
-        new_streak = mastery_streak
-
-        if stats["episodes"] < MASTERY_MIN_EPISODES:
-            return new_difficulty, new_streak
-
-        if current_difficulty in ADVANCE_TARGETS:
-            target = ADVANCE_TARGETS[current_difficulty]
-            passed = (
-                stats["median_od"] >= target["median_od"]
-                and stats["p25_od"] >= target["min_p25_od"]
-                and stats["crash_rate"] <= target["max_crash_rate"]
-            )
-            if passed and train_diff == current_difficulty:
-                new_streak += 1
-                if new_streak >= MASTERY_REQUIRED_STREAK:
-                    new_difficulty = min(2, current_difficulty + 1)
-                    new_streak = 0
-            elif not passed:
-                new_streak = 0
-
-        if current_difficulty > 0:
-            baseline = ADVANCE_TARGETS.get(current_difficulty - 1, ADVANCE_TARGETS[0])["median_od"]
-            severe_regression = (stats["crash_rate"] >= 0.20) or (stats["median_od"] < 0.5 * baseline)
-            if severe_regression:
-                new_difficulty = max(0, current_difficulty - 1)
-                new_streak = 0
-
-        return new_difficulty, new_streak
-
     print("--- Starting Var_MPC Adaptive Curriculum Training ---")
     print(f"LMU Order: {ORDER} state tracking | {OBS_DIM}D | MPPI Samples: {MPPI_SAMPLES}")
 
@@ -1059,7 +1027,6 @@ def finetune_var_mpc(extra_steps: int = 500_000):
         return
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    RAW_OBS_DIM   = OBS_DIM
     ACTION_DIM    = 4
     BATCH_SIZE    = 512
     ACTION_REPEAT = 12
@@ -1069,7 +1036,7 @@ def finetune_var_mpc(extra_steps: int = 500_000):
     print("─── Var-MPC Fine-Tune (Difficulty 2, Full Physics) ───")
     print(f"  Loading weights  : {model_path}")
     print(f"  Extra steps      : {extra_steps:,}")
-    print(f"  Exploration noise: 0.05 (reduced from 0.15 — trust the prior)")
+    print("  Exploration noise: 0.05 (reduced from 0.15 — trust the prior)")
 
     agent = TDMPC2Agent(OBS_DIM, ACTION_DIM, device=device)
     agent.load(model_path)

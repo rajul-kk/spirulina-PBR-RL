@@ -352,11 +352,11 @@ def main():
     controller.train_diff = 0
     controller.mastery_diff = 0
     print("  Calibrating VecNormalize with 2000 random steps...")
-    cal_obs = vec_env.reset()
+    vec_env.reset()
     for _ in range(2000):
-        cal_obs, _, cal_done, _ = vec_env.step([vec_env.action_space.sample()])
+        _, _, cal_done, _ = vec_env.step([vec_env.action_space.sample()])
         if cal_done[0]:
-            cal_obs = vec_env.reset()
+            vec_env.reset()
     vec_env.reset()
     print(f"  Calibration complete. Obs mean: {vec_env.obs_rms.mean.round(2)}\n")
 
@@ -421,11 +421,11 @@ def main():
         "saved_population_state": None,
     })
 
-    print(f"\n  Saved warm start:")
+    print("\n  Saved warm start:")
     print(f"    model : {MODEL_PATH}.zip")
     print(f"    norm  : {NORM_PATH}")
     print(f"    state : {STATE_PATH}")
-    print(f"\n  Hand off with:")
+    print("\n  Hand off with:")
     print(f"    python recurrent_ppo.py --resume {MODEL_PATH}.zip")
 
 

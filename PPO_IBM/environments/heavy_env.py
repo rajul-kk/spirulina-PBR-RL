@@ -368,7 +368,7 @@ class HeavyPhotobioreactorEnv(gym.Env):
             # Photo-Inhibition / Shock
             # (full rationale: docs/decision_history.md#--environments-heavy_env-py-378)
             diff = (cells_I_active - current_acclim)
-            shock_factor = np.exp(-0.000003 * (diff**2))  # 3e-6: matches genetic_env/total_env
+            shock_factor = np.exp(-0.000003 * (diff**2))  # 3e-6: matches genetic_env
             # Asymmetrical: Moving to dark is just low energy (handled by f_I), 
             # but moving to high light when acclimated to dark is DAMAGE.
             
@@ -439,7 +439,7 @@ class HeavyPhotobioreactorEnv(gym.Env):
             current_mu = np.clip(current_mu, 0.0, 5.0) 
             
             # --- Maintenance Respiration ---
-            # 1.0% of mu_max — matches genetic_env/total_env
+            # 1.0% of mu_max — matches genetic_env
             m_respiration = 0.010 * params['mu_max']
             
             # Net Growth Rate = Photosynthesis - Respiration

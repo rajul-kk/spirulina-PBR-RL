@@ -15,7 +15,7 @@ import torch
 
 from genetic_env import GeneticPhotobioreactorEnv
 from TD3 import (OBS_DIM, ACTION_DIM, MAX_CELLS, DEVICE, HIDDEN_RESET_INTERVAL,
-                 expert_harvest_frac, EXPERT_STIR_RANGE, EXPERT_LIGHT_RANGE, EXPERT_FRAC_CAP)
+                 expert_harvest_frac, EXPERT_STIR_RANGE, EXPERT_LIGHT_RANGE)
 from actor_io import load_actor
 
 OD_TARGET = 0.012

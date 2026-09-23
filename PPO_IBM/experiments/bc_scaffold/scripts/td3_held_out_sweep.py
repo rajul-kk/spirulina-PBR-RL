@@ -14,7 +14,7 @@ for _p in (ROOT, os.path.join(ROOT, "training"), os.path.join(ROOT, "environment
         sys.path.insert(0, _p)
 
 from genetic_env import GeneticPhotobioreactorEnv
-from TD3 import RecurrentActor, OBS_DIM, ACTION_DIM, MAX_CELLS, DEVICE, HIDDEN_RESET_INTERVAL
+from TD3 import OBS_DIM, ACTION_DIM, MAX_CELLS, DEVICE, HIDDEN_RESET_INTERVAL
 from actor_io import load_actor
 
 GATE = {"harvest": 90.0, "p25": 50.0, "crash": 0.08, "time_od": 0.011}

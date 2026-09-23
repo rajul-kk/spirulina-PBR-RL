@@ -95,11 +95,11 @@ def main():
                  f"c{'+' if (r['crash']/100.0) <= g[3] else '-'}")
         print(f"  D{diff:<5} {r['harvest']:9.1f} {r['p25']:8.1f} {r['od']:9.4f} "
               f"{r['crash']:6.1f}%   {'PASS' if ok else 'FAIL'}  [{marks}]")
-    print(f"\n  gates: D1 harvest>=60 p25>=30 od>=0.008 crash<=10% | "
-          f"D2 harvest>=90 p25>=50 od>=0.011 crash<=8%")
+    print("\n  gates: D1 harvest>=60 p25>=30 od>=0.008 crash<=10% | "
+          "D2 harvest>=90 p25>=50 od>=0.011 crash<=8%")
 
     if not args.skip_trace:
-        print(f"\n  action traces at D2 (harvest fraction per 600-step block) ...")
+        print("\n  action traces at D2 (harvest fraction per 600-step block) ...")
         for seed in args.seeds:
             text = run([PY, "-u", os.path.join("diagnostics", "test_actions.py"),
                         "--model", model, "--norm", norm,

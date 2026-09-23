@@ -549,9 +549,9 @@ def finetune(extra_steps: int = 500_000):
         return
 
     print(f"\n{'─'*55}")
-    print(f"  Recurrent SAC Fine-Tune  |  D2 (Full Physics)")
+    print("  Recurrent SAC Fine-Tune  |  D2 (Full Physics)")
     print(f"  Current step : {current_step:,}   Extra: {extra_steps:,}")
-    print(f"  LR 3e-4 → 3e-5  (10× lower to prevent catastrophic forgetting)")
+    print("  LR 3e-4 → 3e-5  (10× lower to prevent catastrophic forgetting)")
     print(f"{'─'*55}")
 
     ft_lr  = 3e-5

@@ -63,6 +63,18 @@ if GATE_MODE not in ("dual", "stochastic"):
 RUN_SEED = int(os.environ.get("RUN_SEED", "0"))
 
 
+def _saved_best_det_score(best_det_dir: str) -> float:
+    """Score recorded beside the saved best-det policy, or -1 if there is none."""
+    try:
+        with open(os.path.join(best_det_dir, "best_det_info.txt"), encoding="utf-8") as fh:
+            for line in fh:
+                if line.startswith("score="):
+                    return float(line.split("=", 1)[1])
+    except (OSError, ValueError):
+        pass
+    return -1.0
+
+
 def _lr_schedule_fn(_progress_remaining_ignored: float) -> float:
     """Passed to RecurrentPPO as `learning_rate`. Ignores SB3's own progress_remaining ...
     (full rationale: docs/decision_history.md#--training-recurrent_ppo-py-72)"""
@@ -119,6 +131,7 @@ def train_recurrent_agent(resume=False):
 
     latest_checkpoint, latest_step = (None, None)
     vec_env = None
+    resumed_det_seed_counter = 0
 
     if resume:
         if isinstance(resume, str):
@@ -129,7 +142,9 @@ def train_recurrent_agent(resume=False):
             latest_checkpoint, latest_step = find_latest_checkpoint(
                 checkpoint_dir, "recurrent_ppo_ibm_", "_steps.zip"
             )
-        saved_state = load_state(state_path)
+        # A checkpoint can exist without its state file (crash between the two saves);
+        # the .get() calls below then fall back to defaults instead of raising on None.
+        saved_state = load_state(state_path) or {}
 
         if latest_checkpoint is not None:
             if os.path.exists(norm_path):
@@ -153,7 +168,7 @@ def train_recurrent_agent(resume=False):
                 # Override stale obs-space stored in checkpoint (conductivity bound 10000→25000)
                 "observation_space": vec_env.observation_space,
             }
-            if saved_state is not None:
+            if saved_state:
                 print(f"  [CONTINUE] Loading checkpoint: {latest_checkpoint}")
             model = RecurrentPPO.load(latest_checkpoint, env=vec_env, device="auto", custom_objects=custom_objects)
             # Belt-and-suspenders: custom_objects above should already install this, but
@@ -174,6 +189,10 @@ def train_recurrent_agent(resume=False):
             entropy_multiplier = float(saved_state.get("entropy_multiplier", 1.0))
             # Clamp loaded multiplier to new plateau cap — prevents resuming into a stuck high-mult state
             entropy_multiplier = float(np.clip(entropy_multiplier, ENTROPY_MULT_MIN, ENTROPY_PLATEAU_CAP))
+            # Without these, a resume re-ran the same det-eval seeds and let its first det pass
+            # overwrite the saved best-det policy even when worse.
+            best_det_score = float(saved_state.get("best_det_score", _saved_best_det_score(best_det_dir)))
+            resumed_det_seed_counter = int(saved_state.get("det_eval_seed_counter", 0))
             print(
                 f"  [CONTINUE] steps={steps_done:,} | D{current_difficulty} | "
                 f"streak={mastery_streak} | completed_eps={start_controller.completed_episodes}"
@@ -243,9 +262,7 @@ def train_recurrent_agent(resume=False):
 
     action_log_cb = TQDMActionCallback()
     entropy_log_cb = EntropyLoggingCallback()
-    stitch_cb = PopulationStitchCallback(
-        controller=start_controller, pop_threshold=1_100, difficulty_min=1, verbose=1
-    )
+    stitch_cb = PopulationStitchCallback(controller=start_controller, difficulty_min=1, verbose=1)
     raw_env = _unwrap_raw_env(vec_env)
     episodes_since_std_control = 0
     did_first_std_control = False
@@ -257,7 +274,7 @@ def train_recurrent_agent(resume=False):
     # Persistent, per-difficulty rolling history of DETERMINISTIC evaluation episodes —
     # (full rationale: docs/decision_history.md#--training-recurrent_ppo-py-352)
     det_eval_history = defaultdict(lambda: deque(maxlen=DET_EVAL_WINDOW))
-    det_eval_seed_counter = 0
+    det_eval_seed_counter = resumed_det_seed_counter
 
     while steps_done < TOTAL_TRAINING_STEPS and not d2_mastery_achieved and not d0_capability_abort:
         chunk_idx += 1
@@ -624,6 +641,8 @@ def train_recurrent_agent(resume=False):
                 "entropy_multiplier": entropy_multiplier,
                 "completed_episodes": start_controller.completed_episodes,
                 "saved_population_state": start_controller.saved_state,
+                "best_det_score": best_det_score,
+                "det_eval_seed_counter": det_eval_seed_counter,
             },
         )
 
@@ -685,9 +704,7 @@ def finetune_recurrent_agent(extra_steps: int = 500_000):
     )
 
     action_log_cb = TQDMActionCallback()
-    stitch_cb = PopulationStitchCallback(
-        controller=start_controller, pop_threshold=1_100, difficulty_min=1, verbose=1
-    )
+    stitch_cb = PopulationStitchCallback(controller=start_controller, difficulty_min=1, verbose=1)
 
     print(f"\n  Starting fine-tune for {extra_steps:,} steps...")
     model.learn(

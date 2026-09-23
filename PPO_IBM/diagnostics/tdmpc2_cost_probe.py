@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "environments")
 import numpy as np
 import torch
 
-from TD_MPC2 import TDMPC2Agent, TwoHotEncoder, OBS_DIM, ACTION_DIM, MACRO_STEPS, GAMMA, MAX_CELLS
+from TD_MPC2 import TDMPC2Agent, TwoHotEncoder, OBS_DIM, ACTION_DIM, MACRO_STEPS, MAX_CELLS
 
 
 def check_two_hot_roundtrip():
@@ -143,7 +143,7 @@ def measure_cost(total_steps):
 
     total_hours = plan_hours + upd_hours + env_hours + comp_hours
     print(f"\n  TOTAL projected for {total_steps:,} steps: {total_hours:.2f} h ({total_hours/24:.2f} d)")
-    print(f"  (for comparison: a PPO run in this project takes ~17h)")
+    print("  (for comparison: a PPO run in this project takes ~17h)")
     return total_hours
 
 

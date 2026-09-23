@@ -6940,3 +6940,45 @@ from scratch on the fixed code.
 Both change training dynamics, so v57+ is not directly comparable with v56 and earlier on reward
 alone -- compare on harvest/held-out metrics, which are unchanged. `pbrs_invariance_check.py`
 still passes all four checks.
+
+## --core-audit-2026-09-24
+
+Full audit of the environment, TD3, PPO, curriculum and gate code. 13 bugs fixed; 12 have a
+regression check in `experiments/env_diagnosis/core_audit_check.py` that failed before its fix.
+Open items the audit left alone are in `docs/known_limitations.md` (O15).
+
+**Comparability break.** The environment and TD3 fixes change the simulation and TD3's training
+distribution, so runs trained before 2026-09-24 (v33-v57) are not directly comparable with runs
+after. The scripted expert's yield rises 10-14% at every difficulty and start size (D2 from 250
+cells: 210 -> 238 mg; from 1500: 458 -> 490 mg; 0 crashes either way), so the gates and expert
+calibration stay in range.
+
+Environment (`genetic_env.py`):
+- Cells piled into the x=0, z=0 corner within ~50 steps: one step moves a cell up to ~9 m in a
+  1 m tank, and the walls reflected once then clipped. Now a triangle-wave fold. This had left
+  the depth-dependent light model and the two gas layers inert (every cell in the surface
+  layer, all O2 output into 10 L).
+- Turbulent-branch Brownian displacement lacked its sqrt(dt) factor.
+- Harvest dilution refilled salt toward 1000 mg/L (reset: 2500) and never refilled
+  ext_nutrients. One `FRESH_MEDIUM` table now serves both.
+- reset() conductivity omitted the bicarbonate term (~12,000 vs ~22,600 uS/cm on step 1).
+  One `_conductivity()` now serves both.
+- Inter-layer gas mixing divided by layer volume twice (10-20x too weak). Now a first-order,
+  mass-conserving `_layer_exchange()`.
+
+Stitched starts (`curriculum_starts.py`): light acclimation was not carried (transplanted cells
+sat in photo-shock); missing pools were invented (p_pool 80, CO2 2.0) instead of kept fresh;
+n_pool and bicarbonate never carried. Now one `snapshot_population()` for both trainers and a
+shared `STITCH_POP_THRESHOLD`.
+
+TD3 (`TD3.py`): det-eval reseeded the global RNG every chunk (training restarted from a
+near-identical RNG state); harvest-biased replay targeted index k*600-1 while the reward lands at
+k*600 (11% of biased windows missed the event); the stitch threshold was 15,000 under
+MAX_CELLS=7,500, so TD3 never took a stitched start. Stitched starts now happen from D1 up.
+
+PPO: `deterministic_eval.py` had the same RNG reseeding. `callbacks.py` read the raw env after
+SB3's auto-reset, so every stochastic crash rate was 0% (crash demotion could never fire) and
+stitching saved the next episode's fresh population; `difficulty_min` was ignored and the
+progress postfix never displayed. `recurrent_ppo.py` crashed on resume without a state file and
+let the first post-resume det pass overwrite a better best-det checkpoint.
+

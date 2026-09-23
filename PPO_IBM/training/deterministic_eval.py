@@ -21,7 +21,18 @@ from curriculum_schedule import _sample_init_cells
 
 def run_deterministic_eval_episode(model, obs_rms, difficulty, seed=None):
     """Run one full deterministic episode against a fresh env, isolated from the live ...
-    (full rationale: docs/decision_history.md#--training-deterministic_eval-py-42)"""
+    (full rationale: docs/decision_history.md#--training-deterministic_eval-py-42)
+
+    Restores the caller's global RNG afterwards: the env draws from np.random, and leaving it
+    reseeded restarted the training env's randomness from the same state after every chunk."""
+    rng_state = np.random.get_state()
+    try:
+        return _run_episode(model, obs_rms, difficulty, seed)
+    finally:
+        np.random.set_state(rng_state)
+
+
+def _run_episode(model, obs_rms, difficulty, seed):
     if seed is not None:
         np.random.seed(seed)
     init_cells = _sample_init_cells("random", difficulty)

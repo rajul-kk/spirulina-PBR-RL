@@ -30,7 +30,6 @@ class GeneticPhotobioreactorEnv(gym.Env):
         # --- CONFIGURATION ---
         self.max_cells = max_cells
         self.initial_cells = initial_cells
-        self.num_active = initial_cells
         self.dt = 0.02  # Time step (0.02h); 7200 steps = 144h episode
         self.reactor_depth = 0.30  # 30cm depth
         self.reactor_width = 1.0
@@ -58,7 +57,8 @@ class GeneticPhotobioreactorEnv(gym.Env):
         self.F_MAX = 0.5                    # max fraction removed in one harvest event
         self.HARVEST_INTERVAL_STEPS = 600   # 600*0.02h = 12h between harvest decisions (12/episode)
 
-        # Terminal crash penalty. Was -100 (678x mean per-step reward, an outlier that
+        # Terminal crash penalty, cut -100 -> -10 (2026-09-08): at -100 it was a ~680x
+        # reward outlier that destabilized the TD3 critic.
         # (full rationale: docs/decision_history.md#--environments-genetic_env-crash-penalty)
         self.CRASH_PENALTY = 10.0
         # DECLINE_WARN_*, OD_ABOVE_SLOPE/FLOOR, OD_TAIL_COEF removed 2026-09-23: they
@@ -88,7 +88,8 @@ class GeneticPhotobioreactorEnv(gym.Env):
         # (full rationale: docs/decision_history.md#--environments-genetic_env-back-half-harvest)
         self.BACK_HALF_STEP = 3600          # half of max_steps (7200)
 
-        # Action: [Stirring, Light, Harvest fraction] — CO2 and Nutrient dosing remain
+        # Action: [stir, light, harvest fraction]; CO2 and nutrient dosing stay automated.
+        # The harvest fraction only takes effect on periodic harvest-event steps.
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-78)
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(3,), dtype=np.float32)
 
@@ -114,58 +115,17 @@ class GeneticPhotobioreactorEnv(gym.Env):
         
         # Boolean mask: True = Active Living Cell
         self.active_mask = np.zeros(self.max_cells, dtype=bool)
-        # Integer-index cache over active_mask; see _aidx(). None means "recompute".
-        self._aidx_cache = None
-        
-        self.ext_nutrients = 300.0  # mg/L — Zarrouk mineral salts (MgSO4, CaCl2, trace metals)
-        self.n_pool = 410.0         # mg N/L — Zarrouk NaNO3 2.5 g/L
-        self.p_pool = 89.0          # mg P/L — Zarrouk K2HPO4 0.5 g/L
-        self.bicarbonate = 200.0    # mM — Zarrouk: NaHCO3 16.8 g/L -> ~200 mM HCO3-
-        self.ph = self.buffer_equilibrium_ph
-        self.do2 = 7.0
-        # 2-layer gas model: surface (z<10cm, 10L) and bulk (z>=10cm, 20L)
-        self.do2_s = 7.0
-        self.do2_b = 7.0
-        self.co2_s = 6.2
-        self.co2_b = 6.2
-        self._f_surface_cells = 1.0 / 3.0  # geometric layer fraction fallback
-        self.temp = 36.0 # Ambient temperature
-        self.time_t = 0.0 # Continuous time for turbulence
-        
-        # Hardware Smoothing State (EMA)
-        self.current_stir_rpm = 50.0
-        self.current_nut_flow = 0.0
+        # Flocculation state (clumping): 1.0 = single cell, >1.0 = aggregate.
+        self.clump_mass = np.ones(self.max_cells, dtype=np.float32)
+
         # Sensor-lag model: best case is 2 steps at high RPM; low RPM is slower.
         self._sensor_delay_min_steps = 2
         self._sensor_delay_max_steps = 8
-        self._ph_obs_ema = self.ph
-        self._temp_obs_ema = self.temp
-        self.dosing_integral = 0.0  # cumulative mg N added (internal PID tracking only)
-        self.harvest_integral = 0.0  # cumulative volume harvested (L) — pump counter, obs[2] source
-        self.cumulative_harvested_mg = 0.0  # running total mg harvested across the episode (per-step dilution)
-        self.cumulative_harvested_mg_back_half = 0.0
-        self._harvest_action_sum = 0.0      # Fix #16 (v19): interval-averaged harvest action
-        self._harvest_action_count = 0
-        self.od_sum_back_half = 0.0
-        self.od_count_back_half = 0
-        self.reward_term_sums = {"harvest": 0.0, "shaping": 0.0, "potential": 0.0}
-        self.I_surface = 0.0        # last delivered PAR (µmol/m²/s) — BH1750 source signal
-        self._ph_bias = 0.0         # per-episode additive pH calibration offset
-        self.prev_action = np.zeros(3, dtype=np.float32)
         self.action_smooth_coef = 0.003
-        
-        # Advanced Physics State
-        self.salt = 1000.0 # mg/L
-        self.pigment = 1.0 # Health 0-1
-        
-        # Flocculation State (Clumping)
-        # 1.0 = Single Cell. >1.0 = Aggregate.
-        self.clump_mass = np.ones(self.max_cells, dtype=np.float32)
-        
-        # --- GENETIC PARAMS (Placeholder, set in reset) ---
+
+        # All per-episode state (pools, gas layers, temperature, counters, sensor EMAs) is
+        # initialized in reset(); the env must be reset before use, as gym requires.
         self.strain_params = {}
-        
-        self.step_count = 0
         self.max_steps = 7200  # 7200 steps × 0.02h = 144h episode; 1 rollout = 1 episode
 
         # --- DAY/NIGHT CYCLE ---
@@ -184,7 +144,8 @@ class GeneticPhotobioreactorEnv(gym.Env):
     def _randomize_strain(self):
         """Generates a unique 'Strain' of algae for this episode."""
         self.strain_params = {
-            # Was N(0.080, 0.015) — ~8.7h doubling. This is faster than the project's OWN
+            # Was N(0.080, 0.015) (~8.7h doubling), above the project's own cited Spirulina range
+            # (0.04-0.07 h^-1).
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-218)
             'mu_max':    np.random.normal(0.055, 0.008),   # Arthrospira (Spirulina) platensis: ~12-13h doubling
             'Ks':        np.random.normal(1.0, 0.2),       # NO3-N Ks retained (cross-species similarity)
@@ -232,7 +193,6 @@ class GeneticPhotobioreactorEnv(gym.Env):
         self.n_pool = 410.0         # mg N/L — Zarrouk NaNO3 2.5 g/L
         self.p_pool = 89.0          # mg P/L — Zarrouk K2HPO4 0.5 g/L
         self.bicarbonate = 200.0    # mM — Zarrouk: NaHCO3 16.8 g/L -> ~200 mM HCO3-
-        self._phi_prev = None
         self.ph = self.buffer_equilibrium_ph
         self.do2 = 7.0
         self.do2_s = 7.0
@@ -271,7 +231,8 @@ class GeneticPhotobioreactorEnv(gym.Env):
         if self.difficulty >= 1:
             self._sensor_drift_mult = np.random.uniform(0.95, 1.05, size=8)
             self._sensor_drift_mult[1] = 1.0   # pH: additive bias only, no multiplicative drift
-            # Fix #18: the EMA is DERIVED from channel 0, so it must inherit that channel's
+            # Fix #18: the EMA is derived from channel 0, so it inherits that channel's drift; an
+            # independent draw would let the policy average out a drift real hardware can't.
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-309)
             self._sensor_drift_mult[6] = self._sensor_drift_mult[0]
             # episode_phase is the controller's own clock, not a sensor: no drift, no jitter.
@@ -336,7 +297,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             # conductivity, rgb_absorbance, last_hourly_od are guaranteed by reset()
 
             # Turbidity sensor: realistic nephelometric model
-            avg_clump = np.mean(self.clump_mass[self.active_mask]) if self.num_active > 0 else 1.0
+            avg_clump = np.mean(self.clump_mass[self.active_mask])
 
             # Mie scattering: fixed mass total cross-section
             clump_scatter = avg_clump ** (-1.0/3.0)  # clumps reduce total surface area
@@ -351,13 +312,14 @@ class GeneticPhotobioreactorEnv(gym.Env):
 
             # Base turbidity calculation
             turbidity_base = self.od * pigment_contrast * clump_scatter * saturation_factor
-            # Fix #19 (v22): window biofilm scatters extra light into the detector — the
+            # Fix #19 (v22): window biofilm scatters extra light into the detector, so the reading
+            # drifts high while true biomass is unchanged.
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-380)
-            turbidity_base *= (1.0 + float(getattr(self, "turb_fouling_factor", 0.0)))
+            turbidity_base *= (1.0 + float(self.turb_fouling_factor))
 
             # Bubble/flow-induced noise (RPM-dependent)
             # Real sensors show high-frequency noise from bubbles and turbulent eddies
-            rpm = float(getattr(self, 'current_stir_rpm', 50.0))
+            rpm = float(self.current_stir_rpm)
             flow_noise = 1.0 + 0.03 * (rpm / 200.0) * np.random.normal(0, 1)
 
             # Convert to raw NTU units (0-5000 range for sim-to-real transfer)
@@ -372,14 +334,14 @@ class GeneticPhotobioreactorEnv(gym.Env):
             self.rgb_absorbance = 0.0
             turbidity_obs = 0.0
             self.turbidity_obs = turbidity_obs
-            if not hasattr(self, 'max_historical_od'): self.max_historical_od = 0.0
 
         bh1750_lux = _fclip(self.I_surface * 80.0 + np.random.normal(0.0, 500.0), 0.0, 65535.0)
 
-        # Fix #18 (v21): long-window EMA of turbidity. The raw channel carries multiplicative
+        # Fix #18 (v21): long-window (~600-step) EMA of turbidity, since the raw channel carries
+        # stir-dependent multiplicative noise.
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-406)
         _EMA_ALPHA = 2.0 / (600.0 + 1.0)
-        if not hasattr(self, "_turb_ema") or self._turb_ema is None:
+        if self._turb_ema is None:
             self._turb_ema = float(turbidity_obs)
         else:
             self._turb_ema += _EMA_ALPHA * (float(turbidity_obs) - self._turb_ema)
@@ -401,6 +363,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         ], dtype=np.float32)
 
         # Truncate to the configured width (6 by default, 8 with OBS_EXTENDED). Channels 6-7
+        # are still computed so the EMA stays warm.
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-447)
         base_obs = base_obs[:self._obs_dim]
 
@@ -410,7 +373,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
 
         # RPM-coupled EMA lag on pH and temperature (D1+)
         if self.difficulty >= 1:
-            rpm = _fclip(getattr(self, 'current_stir_rpm', 50.0), 50.0, 200.0)
+            rpm = _fclip(self.current_stir_rpm, 50.0, 200.0)
             mix_quality = (rpm - 50.0) / 150.0
             lag_span = self._sensor_delay_max_steps - self._sensor_delay_min_steps
             lag_steps = int(np.clip(
@@ -447,11 +410,17 @@ class GeneticPhotobioreactorEnv(gym.Env):
             self.strain_params.get('Ks_light', 100.0) / 200.0,  # normalised
         ], dtype=np.float32)
 
-    # Per-event harvest target for reward_harvest below (mg per harvest event, fired every
+    # Per-event harvest target for reward_harvest (mg per event; events fire every
+    # HARVEST_INTERVAL_STEPS, 12 per episode), from a harvest-fraction grid sweep.
     # (full rationale: docs/decision_history.md#--environments-genetic_env-py-496)
     TARGET_MG_PER_EVENT = 12.32
 
-    # Light-path biofouling coefficient. NOTE: 0.0002 is calibrated for conventional OD units
+    # Target standing OD: the peak of the PBRS OD-health term and the reference for the
+    # harvest-collapse penalty.
+    OD_TARGET = 0.012
+
+    # Light-path biofouling coefficient. NOTE: 0.0002 was calibrated for lab OD600 units,
+    # ~250x larger than this sim's od, so the term is nearly inert.
     # (full rationale: docs/decision_history.md#--environments-genetic_env-py-508)
     LIGHT_FOULING_COEF = 0.0002
 
@@ -461,7 +430,8 @@ class GeneticPhotobioreactorEnv(gym.Env):
     HARVEST_PUMP_ERROR = 0.0
     USE_EPISODE_PHASE = True
 
-    # OBS_EXTENDED: False -> 6 channels (real hardware sensors only; the default and the
+    # OBS_EXTENDED: False -> 6 channels (real hardware sensors; the default). True -> 8,
+    # adding the turbidity EMA and phase. Changing it invalidates saved models.
     # (full rationale: docs/decision_history.md#--environments-genetic_env-py-544)
     OBS_EXTENDED = False
 
@@ -481,8 +451,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         Must stay a function of state alone: no deltas, no action, no episode phase. Adding
         any transition-dependent quantity here silently voids the policy-invariance guarantee.
         """
-        OD_TARGET = 0.012
-        od_x = max(float(self.od) / OD_TARGET, 1e-6)
+        od_x = max(float(self.od) / self.OD_TARGET, 1e-6)
         # log-ratio distance from target, squashed; 1.0 at target, ->0 far either side
         phi_od = float(np.exp(-(np.log(od_x) ** 2) / 2.0))
 
@@ -491,73 +460,155 @@ class GeneticPhotobioreactorEnv(gym.Env):
         phi = self.PHI_OD_W * phi_od + self.PHI_POP_W * phi_pop
         return self.PHI_SCALE * phi / (self.PHI_OD_W + self.PHI_POP_W)
 
-    def _compute_reward(self, delta_mass_mg, shock_factor, harvested_this_step_mg=0.0, is_harvest_event=False):
-        """Semi-continuous reward: sustained growth + periodic dilution/harvest.
-        (full rationale: docs/decision_history.md#--environments-genetic_env-py-418)"""
+    def _compute_reward(self, harvested_this_step_mg, is_harvest_event):
+        """Task reward (harvest yield, harvest-collapse penalty) plus PBRS shaping.
+        (full rationale: docs/decision_history.md#--environments-genetic_env-py-418)
+        The additive shaping terms this replaced are recorded in
+        docs/decision_history.md#--environments-genetic_env-reward-pre-pbrs-archive."""
+        # Periodic harvest yield: nonzero only on harvest-event steps.
+        # (full rationale: docs/decision_history.md#--environments-genetic_env-py-706)
+        reward_harvest = 0.5 * float(np.tanh(harvested_this_step_mg / self.TARGET_MG_PER_EVENT))
+
+        # Fix #28: harvest-event OD-collapse penalty. reward_harvest saturates just past the
+        # optimal harvest fraction, so over-harvesting that crashes OD would otherwise be free.
+        # (full rationale: docs/decision_history.md#--environments-genetic_env-py-740)
+        if is_harvest_event:
+            OD_SAFE_FLOOR = 0.4
+            post_harvest_ratio = self.od / self.OD_TARGET
+            if post_harvest_ratio < OD_SAFE_FLOOR:
+                reward_harvest -= 0.3 * float(OD_SAFE_FLOOR - post_harvest_ratio)
+
+        # PBRS shaping, the ONLY dense guidance term: F = gamma*Phi(s') - Phi(s). self.* is
+        # already post-transition here, and _phi_prev holds Phi of the previous state (seeded
+        # by reset(), re-seeded after stitched starts). The growth incentive falls out of the
+        # telescoping; adding any separate rate term would void the policy-invariance guarantee.
+        phi_now = self._potential()
+        reward_shaping = self.PBRS_GAMMA * phi_now - self._phi_prev
+        self._phi_prev = phi_now
+
+        reward = reward_harvest + reward_shaping
+
+        # Episode-accumulated breakdown for the info dict. "potential" logs the running Phi so
+        # a collapse can be read directly off the state value.
+        self.reward_term_sums["harvest"] += reward_harvest
+        self.reward_term_sums["shaping"] += reward_shaping
+        self.reward_term_sums["potential"] = phi_now
+
+        if not np.isfinite(reward):
+            reward = -10.0  # Punishment for breaking physics
+        return float(reward)
+
+    def _update_episode_stats(self, shock_factor):
+        """Curriculum metrics and debug trackers. None of these feed the reward."""
         # Curriculum metric: time-averaged OD over the back half of the episode (steps
+        # 3600-7200), a steady-state proxy that a brief early spike can't game.
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-564)
         if self.step_count >= self.BACK_HALF_STEP:
             self.od_sum_back_half += self.od
             self.od_count_back_half += 1
 
-        # 1-3 and 5 (od level, per-cell growth rate, od delta, decline warning) REPLACED
-        # 2026-09-23 by the single PBRS shaping term computed below. The replaced formulas are
-        # recorded in docs/decision_history.md#--environments-genetic_env-reward-pre-pbrs-archive
-        # since every run up to v56 was trained under them.
-        OD_TARGET = 0.012
-
-        # 4. Periodic harvest yield — fires only on harvest-event steps (0.0 otherwise),
-        # (full rationale: docs/decision_history.md#--environments-genetic_env-py-706)
-        reward_harvest = 0.5 * float(np.tanh(harvested_this_step_mg / self.TARGET_MG_PER_EVENT))
-
-        # Fix #28: harvest-event OD-collapse penalty. reward_harvest above saturates almost
-        # (full rationale: docs/decision_history.md#--environments-genetic_env-py-740)
-        if is_harvest_event:
-            OD_SAFE_FLOOR = 0.4
-            post_harvest_ratio = self.od / OD_TARGET
-            if post_harvest_ratio < OD_SAFE_FLOOR:
-                reward_harvest -= 0.3 * float(OD_SAFE_FLOOR - post_harvest_ratio)
-
-        # 5. PBRS shaping — the ONLY dense guidance term. F = gamma*Phi(s') - Phi(s), where
-        # s' is the state this call is scoring (self.* is already post-transition here) and
-        # Phi(s) was cached at the end of the previous call. On the first scored step of an
-        # episode _phi_prev is seeded from reset(), so no spurious first-step shaping fires.
-        # Growth incentive falls out of the telescoping automatically: no separate rate term
-        # is needed, and none may be added -- an additive rate term would break the
-        # policy-invariance guarantee that motivates this design.
-        phi_now = self._potential()
-        phi_prev = self._phi_prev if self._phi_prev is not None else phi_now
-        reward_shaping = self.PBRS_GAMMA * phi_now - phi_prev
-        self._phi_prev = phi_now
-
-        reward = reward_harvest + reward_shaping
-
-        # Episode-accumulated per-term breakdown, exposed via info dict for diagnostics
-        # (not used in reward itself). "potential" logs the running Phi so a collapse can be
-        # read directly off the state value rather than inferred from summed shaping.
-        self.reward_term_sums["harvest"] += reward_harvest
-        self.reward_term_sums["shaping"] += reward_shaping
-        self.reward_term_sums["potential"] = phi_now
-
-        # Tracking for debug log (not used in reward)
-        mean_shock = np.mean(shock_factor) if self.num_active > 0 else 1.0
-        mean_clump = np.mean(self.clump_mass[self.active_mask]) if self.num_active > 0 else 1.0
-        self.debug_shock = float(mean_shock)
-        self.debug_clump = float(mean_clump)
-        if self.od > getattr(self, 'max_historical_od', 0.0):
+        self.debug_shock = float(np.mean(shock_factor) if self.num_active > 0 else 1.0)
+        self.debug_clump = float(np.mean(self.clump_mass[self.active_mask]) if self.num_active > 0 else 1.0)
+        if self.od > self.max_historical_od:
             self.max_historical_od = self.od
-
-        # Keep tracking internal true mass for logging, but not for reward
-        total_mass = np.sum(self.cells_mass[self.active_mask]) if self.num_active > 0 else 0
-        self.last_mass = total_mass
-
-        # Final safeguard on reward
-        if not np.isfinite(reward):
-            reward = -10.0  # Punishment for breaking physics
-
-        return float(reward)
+        # Next step's delta_mass_mg is measured against this.
+        self.last_mass = np.sum(self.cells_mass[self.active_mask]) if self.num_active > 0 else 0
 
     def step(self, action):
+        stir_rpm, I_surface, nut_flow = self._apply_actions(action)
+        I_surface, nut_flow = self._apply_light_schedule(I_surface, nut_flow)
+        self._update_temperature(I_surface, stir_rpm)
+        self._update_fouling(stir_rpm)
+
+        # (full rationale: docs/decision_history.md#--environments-genetic_env-py-953)
+        dt_sec = self.dt * 3600
+        self.time_t += self.dt
+        mix_intensity = stir_rpm / 200.0  # 0 to 1
+
+        self._update_flocculation(stir_rpm)
+        self._move_cells(mix_intensity, dt_sec)
+        total_uptake_mg, shock_factor = self._update_biology(I_surface, stir_rpm, mix_intensity, nut_flow)
+
+        # Transfer coefficients and the biomass change are taken on the PRE-harvest culture;
+        # the gas-layer balances below then run on the post-harvest tank.
+        k_La, o2_frac, co2_frac = self._gas_transfer(stir_rpm)
+        delta_mass_mg = self._biomass_change()
+        harvested_this_step_mg, is_harvest_event = self._apply_harvest()
+
+        # Recompute standing mass/OD post-dilution — this is what the tank actually holds
+        total_mass_mg = np.sum(self.cells_mass[self._aidx()]) * 1e-9
+        self.od = (total_mass_mg / self.volume_L) / 300.0
+
+        self._update_gas_and_carbonate(k_La, o2_frac, co2_frac, mix_intensity, delta_mass_mg)
+        self._update_pigment_and_salt(I_surface, delta_mass_mg, total_uptake_mg)
+        self._update_sensors()
+
+        self._update_episode_stats(shock_factor)
+        reward = self._compute_reward(harvested_this_step_mg, is_harvest_event)
+
+        # Always increment step_count so Monitor reports correct episode length on crash
+        self.step_count += 1
+        # Extinction check: population OR total biomass, since a few 'zombie' cells can hover
+        # above the starvation threshold with near-zero total mass.
+        # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1723)
+        if self.num_active < 10 or total_mass_mg < 1.0:
+            # CRASH_PENALTY history: -1000 -> -100 -> -10, each cut because the outlier
+            # destabilized learning.
+            # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1729)
+            reward -= self.CRASH_PENALTY
+            terminated, truncated = True, False
+        else:
+            # Time limit is truncation, not termination: the culture is still alive, so value
+            # learners must bootstrap through it. Reporting it as terminal also leaks a
+            # policy-dependent gamma*Phi(s_T) bonus under PBRS (Ng et al. assume Phi(terminal)=0).
+            # No terminal bonus in semi-continuous mode — harvest yield (cumulative_harvested_mg)
+            # accumulates continuously via reward_harvest each step (see _compute_reward).
+            terminated, truncated = False, self.step_count >= self.max_steps
+        done = terminated or truncated
+
+        # Per-step debug trace, gated behind ENV_DEBUG (default off) because it once made up
+        # ~43% of every training log.
+        # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1741)
+        if ENV_DEBUG and ((self.step_count % 500 == 0) or done):
+            mean_x = np.mean(self.cells_x[self.active_mask]) if self.num_active > 0 else 0.0
+            msg = (f"[EnvDebug] Step: {self.step_count}, Active: {self.num_active}, Mass: {total_mass_mg:.2f}, "
+                   f"OD: {self.od:.4f}, Turb: {self.turbidity_obs:.4f}, pH: {self.ph:.2f}, "
+                   f"Shock: {self.debug_shock:.2f}, Clump: {self.debug_clump:.2f}, MeanX: {mean_x:.2f}, "
+                   f"RGB: {getattr(self, 'rgb_ratio', 0.0):.2f}, Rew: {reward:.3f}, Done: {done}")
+            if 'tqdm' in sys.modules:
+                from tqdm import tqdm
+                tqdm.write(msg)
+            else:
+                print(msg)
+
+        return self._get_obs(), float(reward), terminated, truncated, {
+            "pop": self.num_active,
+            "fouling": self.fouling_factor,
+            "peak_od": float(self.max_historical_od),
+            "od": float(self.od),
+            "kLa_h-1": float(self.kLa),
+            "dissolved_co2_mgL": float(self.dissolved_co2),
+            "cumulative_harvested_mg": float(self.cumulative_harvested_mg),
+            "harvested_mg_back_half": float(self.cumulative_harvested_mg_back_half),
+            "time_avg_od": float(self.od_sum_back_half / max(self.od_count_back_half, 1)),
+            "start_mode": getattr(self, 'episode_start_mode', 'low'),
+            "reward_term_sums": dict(self.reward_term_sums),
+        }
+
+
+
+    def _remove_cells(self, idx):
+        """Deactivate cells (lysis, starvation, harvest) and reset their slots."""
+        self.active_mask[idx] = False
+        self._aidx_cache = None
+        self.num_active -= len(idx)
+        self.cells_mass[idx] = 0.0
+        self.cells_quota[idx] = 0.0
+        self.cells_acclimation[idx] = 0.0
+        self.clump_mass[idx] = 1.0
+
+    def _apply_actions(self, action):
+        """Decode the action, run the nutrient PID and actuator smoothing. Returns the delivered (stir_rpm, I_surface, nut_flow)."""
         # --- Safety Checks ---
         # 0. Check for invalid actions
         if np.any(np.isnan(action)):
@@ -599,7 +650,6 @@ class GeneticPhotobioreactorEnv(gym.Env):
         stir_rpm    = self.current_stir_rpm
         I_surface   = target_I_surface  # Light changes instantly
         nut_flow    = self.current_nut_flow
-        co2_flow    = 0.0  # no CO2 injection — ambient air sparge only (see gas-phase config)
 
         # Actuator delivery noise (D1+): ±5% simulates pump calibration drift and motor imprecision
         if self.difficulty >= 1:
@@ -608,7 +658,10 @@ class GeneticPhotobioreactorEnv(gym.Env):
 
         # Accumulate internal PID dosing tracker (not exposed to obs)
         self.dosing_integral += self.current_nut_flow * 0.79 * self.dt  # 79% N fraction (Zarrouk ratio)
+        return stir_rpm, I_surface, nut_flow
 
+    def _apply_light_schedule(self, I_surface, nut_flow):
+        """Day/night cycle and early-episode grace limits on light and nutrient flow."""
         # --- Day/Night Cycle (enforced before grace period) ---
         if self.lights_off_hour is not None:
             current_hour = (self.step_count * self.dt) % 24.0
@@ -633,11 +686,13 @@ class GeneticPhotobioreactorEnv(gym.Env):
 
         # Store effective PAR after day/night and grace period — BH1750 reads actual LED delivery
         self.I_surface = float(I_surface)
+        return I_surface, nut_flow
 
+    def _update_temperature(self, I_surface, stir_rpm):
         # --- Temperature Inertia ---
         ambient_temp = 25.0
         # Physics scale: D0=50%, D1=75%, D2=100%
-        diff_level = getattr(self, 'difficulty', 0)
+        diff_level = self.difficulty
         phys_scale = 0.50 if diff_level == 0 else (0.75 if diff_level == 1 else 1.0)
         
         # Light adds heat: max 2000 umol/m2/s ~ 2.0 degrees C / hour
@@ -651,10 +706,12 @@ class GeneticPhotobioreactorEnv(gym.Env):
         
         self.temp = np.clip(self.temp, 15.0, 45.0)
 
+    def _update_fouling(self, stir_rpm):
         # --- Biofouling Accumulation ---
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-913)
         if self.enable_fouling:
-            # LIGHT_FOULING_COEF is a class attribute so it can be overridden for feasibility
+            # LIGHT_FOULING_COEF is a class attribute so feasibility probes can override it
+            # without editing physics.
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-917)
             fouling_rate = max(0.0, 1.0 - stir_rpm / 200.0) * self.od * self.LIGHT_FOULING_COEF
             self.fouling_factor += fouling_rate * self.dt
@@ -667,15 +724,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
                 self.turb_fouling_factor += turb_foul_rate * self.dt
                 self.turb_fouling_factor = _fclip(self.turb_fouling_factor, 0.0, 0.25)
 
-        # --- Physics (Chaotic Turbulence) ---
-        # (full rationale: docs/decision_history.md#--environments-genetic_env-py-953)
-        
-        dt_sec = self.dt * 3600
-        self.time_t += self.dt
-        
-        # Base Mixing Intensity
-        mix_intensity = stir_rpm / 200.0 # 0 to 1
-        
+    def _update_flocculation(self, stir_rpm):
         # --- FLOCCULATION PHYSICS (Mean-Field) ---
         if self.num_active > 0:
             # 1. Aggregation (Sticking) - Orthokinetic + Perikinetic
@@ -709,8 +758,9 @@ class GeneticPhotobioreactorEnv(gym.Env):
 
             # Physical Lower Bound: 1.0 (Single Cell)
             self.clump_mass[self._aidx()] = np.maximum(self.clump_mass[self._aidx()], 1.0)
-            
-        
+
+    def _move_cells(self, mix_intensity, dt_sec):
+        """Advect/diffuse cells (turbulent mixing, or sedimentation at low RPM), then reflect at the walls."""
         if self.num_active > 0 and mix_intensity > 0.01:
             # --- 2D Kinematic Turbulence (Airlift / Convection Loop) ---
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1007)
@@ -722,7 +772,6 @@ class GeneticPhotobioreactorEnv(gym.Env):
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1015)
             v_max_z = 0.05 * mix_intensity   # 0.05 m/s at max RPM — realistic for 30L flat-panel airlift
             # Damping at top/bottom walls (z close to 0 or D)
-            # damp_z = 1.0 - (2.0 * (z_pos / self.reactor_depth) - 1.0)**4
             v_macro_z = v_max_z * -np.cos(2 * np.pi * (x_pos - 0.5)) 
             
             # 2. Horizontal Velocity (Vx)
@@ -782,7 +831,9 @@ class GeneticPhotobioreactorEnv(gym.Env):
         over_width = self.cells_x > self.reactor_width
         self.cells_x[over_width] = 2*self.reactor_width - self.cells_x[over_width]
         self.cells_x = np.clip(self.cells_x, 0, self.reactor_width)
-        
+
+    def _update_biology(self, I_surface, stir_rpm, mix_intensity, nut_flow):
+        """Light field, growth, lysis, nutrient uptake and division. Returns (total_uptake_mg, shock_factor)."""
         # --- BIOLOGY ---
         
         # 1. Shear Stress (RPM > 400)
@@ -790,7 +841,6 @@ class GeneticPhotobioreactorEnv(gym.Env):
 
         total_uptake_mg = 0.0
         if self.num_active > 0:
-            n_spawns = 0
             params = self.strain_params
             
             # 1. Spectral Light Field (RGB Physics)
@@ -888,7 +938,8 @@ class GeneticPhotobioreactorEnv(gym.Env):
 
             # DEBUG: Save RGB Ratio for observation
             avg_red = np.mean(I_red)
-            avg_blue = np.mean(I_blue) if np.mean(I_blue) > 0.001 else 1.0
+            mean_blue = np.mean(I_blue)
+            avg_blue = mean_blue if mean_blue > 0.001 else 1.0
             self.rgb_ratio = avg_red / avg_blue
             
             # Droop Quota
@@ -912,24 +963,15 @@ class GeneticPhotobioreactorEnv(gym.Env):
             else:
                 f_Osmosis = 1.0
                 
-            # --- DEBUG STATS CAPTURE ---
-            if self.step_count % 100 == 0 and self.num_active > 0:
-                  self.debug_f_I = np.mean(f_I)
-                  
-                  
-                  self.debug_f_Q = np.mean(f_Q)
-                  self.debug_f_pH = f_pH
-                  self.debug_f_O2 = float(np.mean(f_O2))
-                  self.debug_shock = np.mean(shock_factor) # shock_factor calculated on active_mask in line 260
-                  self.debug_clump = np.mean(self.clump_mass[self._aidx()])
-            # ---------------------------
-            # ---------------------------
-            
-            # Logistic Hard Limit REMOVED
-            # Natural Limits (Gas Transfer Failure) handle carrying capacity now.
-            limit_factor = 1.0 
-            
-            # Calculate Rate
+            # Debug stats (debug_shock/debug_clump are set every step in _update_episode_stats)
+            if self.step_count % 100 == 0:
+                self.debug_f_I = np.mean(f_I)
+                self.debug_f_Q = np.mean(f_Q)
+                self.debug_f_pH = f_pH
+                self.debug_f_O2 = float(np.mean(f_O2))
+
+            # Shear repair tax: sigmoid centred at 100 RPM; filamentous Spirulina fragments under
+            # shear (max 35% penalty).
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1245)
             repair_factor = 1.0 / (1.0 + np.exp(-0.12 * (stir_rpm - 100.0)))
             repair_tax = 1.0 - (0.35 * repair_factor)
@@ -947,7 +989,8 @@ class GeneticPhotobioreactorEnv(gym.Env):
             f_P = self.p_pool / (Ks_P + self.p_pool)
             f_P = _fclip(f_P, 0.0, 1.0)
 
-            # Carbon-Limited Growth — Arthrospira/Spirulina has an efficient bicarbonate CCM
+            # Carbon-limited growth: Spirulina's bicarbonate CCM makes HCO3- the main carbon
+            # source at Zarrouk levels; dissolved CO2 contributes little.
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1267)
             Kc_CO2  = 0.5    # mg/L half-saturation for dissolved CO2 (unchanged, minor pathway)
             Kc_HCO3 = 0.05   # mM half-saturation for bicarbonate (high-affinity CCM)
@@ -960,7 +1003,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             f_CO2_tox = np.clip(f_CO2_tox, 0.0, 1.0)
             self.debug_f_CO2 = float(np.mean(f_CO2_tox))
 
-            current_mu = params['mu_max'] * f_I * f_Q * f_P * f_carbon * f_CO2_tox * temp_factor * shock_factor * f_O2 * f_pH * f_Osmosis * limit_factor * repair_tax * fatigue_tax
+            current_mu = params['mu_max'] * f_I * f_Q * f_P * f_carbon * f_CO2_tox * temp_factor * shock_factor * f_O2 * f_pH * f_Osmosis * repair_tax * fatigue_tax
             current_mu = np.clip(current_mu, 0.0, 5.0) 
             
             # --- Maintenance Respiration ---
@@ -1001,29 +1044,16 @@ class GeneticPhotobioreactorEnv(gym.Env):
             dying_indices = curr_active_indices[~survival_mask]
 
             if len(dying_indices) > 0:
-                self.active_mask[dying_indices] = False
-                self._aidx_cache = None
-                self.num_active -= len(dying_indices)
-                self.cells_mass[dying_indices]        = 0.0
-                self.cells_quota[dying_indices]       = 0.0
-                self.cells_acclimation[dying_indices] = 0.0
-                self.clump_mass[dying_indices]        = 1.0  # reset dead-cell slots
+                self._remove_cells(dying_indices)
 
             # Cap mass at upper bound; no lower floor — let starving cells lose mass naturally
             self.cells_mass[self._aidx()] = np.minimum(self.cells_mass[self._aidx()], 5e8)
 
-            # O4: cells below the death threshold face certain lysis on this cycle
+            # O4: cells below the death threshold face certain lysis on this cycle.
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1336)
             starving_mask = self.active_mask & (self.cells_mass < 1e7)
             if np.any(starving_mask):
-                starving_idx = np.where(starving_mask)[0]
-                self.active_mask[starving_idx] = False
-                self._aidx_cache = None
-                self.num_active -= len(starving_idx)
-                self.cells_mass[starving_idx]        = 0.0
-                self.cells_quota[starving_idx]       = 0.0
-                self.cells_acclimation[starving_idx] = 0.0
-                self.clump_mass[starving_idx]        = 1.0
+                self._remove_cells(np.where(starving_mask)[0])
                 
             # Nutrient Uptake (O3: Monod saturation on nitrogen pool)
             uptake_rate = 0.5 * (self.n_pool / (params['Ks'] + self.n_pool))
@@ -1040,10 +1070,11 @@ class GeneticPhotobioreactorEnv(gym.Env):
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1360)
             p_uptake_rate = self.p_pool / (Ks_P + self.p_pool)
             total_p_uptake_mg = p_uptake_rate * self.dt * self.num_active * 0.0014
-            # nut_flow dosing composition: 79% N, 16% P, 5% inorganic salts — matches Zarrouk
+            # nut_flow dosing composition: 79% N, 16% P, 5% inorganic salts (Zarrouk stock ratio).
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1365)
             n_input_step = nut_flow * 0.79 * self.dt
-            # N waste penalty removed: it caused mode collapse where agent overdosed early,
+            # N waste penalty removed: it caused mode collapse (early overdose, then zero dosing
+            # for the rest of the episode).
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1369)
             self.n_pool        = max(0.0, self.n_pool        - total_uptake_mg    + n_input_step)
             self.p_pool        = max(0.0, self.p_pool        - total_p_uptake_mg  + (nut_flow * 0.16 * self.dt))
@@ -1085,27 +1116,21 @@ class GeneticPhotobioreactorEnv(gym.Env):
                     self.cells_acclimation[child_indices] = self.cells_acclimation[parent_indices]
                     
                     self.clump_mass[child_indices] = 1.0 # Children start as single cells
-                    # self.clump_mass[parent_indices] = 1.0 # Optional: Parents also disperse? No, let them stay stuck.
                     
                     self.num_active += n_spawns
 
-                # B9 removed: when slots are full, let cells continue growing up to the
+                # B9 removed: when slots are full, cells keep growing to the 5e8 mass cap instead of
+                # stalling at the division threshold.
                 # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1416)
 
         else:
-            n_spawns = 0
-            current_mu = np.zeros(1) # fallback
-            f_Q = np.zeros(1)
             # shock_factor is otherwise only assigned in the num_active>0 branch above;
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1424)
             shock_factor = np.array([1.0], dtype=np.float32)
+        return total_uptake_mg, shock_factor
 
-        # --- Environmental Dynamics (Macro) ---
-
-        # 1. Shear Stress (RPM > 300) -> MOVED to Biology loop (Repair Tax only)
-        # Note: True lethal shear max RPM bounded to 200, so immediate death removed.
-
-        # 2. Gas Exchange (O2 & CO2)
+    def _gas_transfer(self, stir_rpm):
+        """Gas fractions and the kLa transfer coefficient. Returns (k_La, o2_frac, co2_frac)."""
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1435)
         od = self.od
         avg_clump = np.mean(self.clump_mass[self._aidx()]) if self.num_active > 0 else 1.0
@@ -1114,43 +1139,37 @@ class GeneticPhotobioreactorEnv(gym.Env):
         # od/0.5: broth viscosity doubles at OD=0.5 — consistent with real PBR measurements.
         flow_resistance = 1.0 + ((od / 0.5)**2) * (avg_clump ** 0.5)
         
-        co2_flow_lpm = co2_flow / 1000.0
+        co2_flow_lpm = 0.0  # no CO2 injection — ambient air sparge only (see gas-phase config)
         total_gas_lpm = max(1e-6, self.base_air_flow_lpm + co2_flow_lpm)
         co2_frac = ((self.ambient_co2_frac * self.base_air_flow_lpm) + co2_flow_lpm) / total_gas_lpm
         co2_frac = _fclip(co2_frac, self.ambient_co2_frac, 0.12)
         o2_frac = _fclip((self.ambient_o2_frac * self.base_air_flow_lpm) / total_gas_lpm, 0.05, self.ambient_o2_frac)
 
-        # kLa correlation is stir/gas-flow driven, not volume-parametrized (no volume_L
+        # kLa correlation is stir/gas-flow driven with no volume term, so it carries over
+        # unchanged from the 30L->20L resize (units: 1/h).
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1453)
         mix_term = np.clip(stir_rpm / 200.0, 0.25, 1.0)
         gas_term = np.clip(total_gas_lpm / self.base_air_flow_lpm, 0.5, 6.0)
         base_kLa = (0.6 + 5.0 * (mix_term ** 1.3)) * (gas_term ** 0.35)
         k_La = _fclip(base_kLa / flow_resistance, 0.05, 12.0)
         self.kLa = k_La
-        
-        # Dissolved Oxygen Dynamics
+        return k_La, o2_frac, co2_frac
+
+    def _biomass_change(self):
+        """Net biomass change this step (mg), measured against last step's mass."""
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1464)
-        total_mass_mg = np.sum(self.cells_mass[self._aidx()]) * 1e-9 # pg * 1e-9 = mg? 
-        # 1 pg = 10^-12 g. 1 mg = 10^-3 g. So 1 pg = 10^-9 mg. Correct.
-
-        # Bootstrap last_mass if this is step 0 (belt-and-suspenders over reset() init)
+        total_mass_mg = np.sum(self.cells_mass[self._aidx()]) * 1e-9  # pg -> mg
         if self.step_count == 0:
-            self.last_mass = np.sum(self.cells_mass[self._aidx()])
-        
-        # Simplify: Delta Mass roughly tracks O2.
-        if self.step_count > 0:
-            delta_mass_mg = total_mass_mg - (self.last_mass * 1e-9)
-        else:
-            delta_mass_mg = 0.0
-        
-        # Guard: clamp delta_mass_mg to prevent NaN from stale last_mass on first step
-        delta_mass_mg = _fclip(delta_mass_mg, -1e6, 1e6)
+            return 0.0
+        return float(total_mass_mg - self.last_mass * 1e-9)
 
-        # --- Periodic Harvest / Dilution (Semi-Continuous Operation) ---
+    def _apply_harvest(self):
+        """Periodic semi-continuous harvest/dilution. Returns (harvested_mg, is_harvest_event)."""
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1484)
         harvested_this_step_mg = 0.0
         is_harvest_event = (self.step_count > 0) and (self.step_count % self.HARVEST_INTERVAL_STEPS == 0)
-        # Fix #16 (v19): apply the INTERVAL MEAN, not the instantaneous sample. See the comment
+        # Fix #16 (v19): apply the INTERVAL MEAN of the harvest action, not the instantaneous
+        # sample; the accumulator resets after each event.
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1496)
         if is_harvest_event:
             harvest_frac_applied = (self._harvest_action_sum
@@ -1167,19 +1186,14 @@ class GeneticPhotobioreactorEnv(gym.Env):
         frac_diluted = _fclip(harvest_frac_applied, 0.0, 0.95) if is_harvest_event else 0.0
         if frac_diluted > 0.0 and self.num_active > 0:
             active_idx = self._aidx()
-            # Per-cell Bernoulli removal (not round(frac*n)) — at realistic D and small
+            # Per-cell Bernoulli removal, not round(frac*n): with small populations frac*n often
+            # rounds to 0, which would silently disable dilution.
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1522)
             remove_local = np.random.uniform(0.0, 1.0, len(active_idx)) < frac_diluted
             remove_idx = active_idx[remove_local]
             if len(remove_idx) > 0:
                 harvested_this_step_mg = float(np.sum(self.cells_mass[remove_idx])) * 1e-9
-                self.active_mask[remove_idx]       = False
-                self._aidx_cache = None
-                self.num_active                   -= len(remove_idx)
-                self.cells_mass[remove_idx]        = 0.0
-                self.cells_quota[remove_idx]       = 0.0
-                self.cells_acclimation[remove_idx] = 0.0
-                self.clump_mass[remove_idx]        = 1.0
+                self._remove_cells(remove_idx)
 
             # Dilute dissolved-phase state toward fresh Zarrouk medium concentration
             # (matches reset()'s initial values — feed reservoir is full-strength medium)
@@ -1198,14 +1212,11 @@ class GeneticPhotobioreactorEnv(gym.Env):
         if self.step_count >= self.BACK_HALF_STEP:
             self.cumulative_harvested_mg_back_half += harvested_this_step_mg
         self.harvest_integral        += frac_diluted * self.volume_L  # cumulative volume harvested (L)
+        return harvested_this_step_mg, is_harvest_event
 
-        # Recompute standing mass/OD post-dilution — this is what the tank actually holds
-        total_mass_mg = np.sum(self.cells_mass[self._aidx()]) * 1e-9
-        # Update OD — normalised by volume (concentration, not total mass)
-        self.od = (total_mass_mg / self.volume_L) / 300.0
-        # print(f"DEBUG: Mass={total_mass_mg}, OD={self.od}")
-
-        # 3. 2-Layer Gas Exchange (surface z<10cm = 10L, bulk z>=10cm = 20L)
+    def _update_gas_and_carbonate(self, k_La, o2_frac, co2_frac, mix_intensity, delta_mass_mg):
+        """2-layer O2/CO2 balances, bicarbonate, and pH."""
+        # 2-layer model: surface z<10cm (10 L), bulk z>=10cm (20 L).
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1560)
         LAYER_DEPTH = 0.10
         vol_s = self.volume_L * (LAYER_DEPTH / self.reactor_depth)   # 10 L
@@ -1258,14 +1269,17 @@ class GeneticPhotobioreactorEnv(gym.Env):
         self.do2         = (self.do2_s * vol_s + self.do2_b * vol_b) / self.volume_L
         self.dissolved_co2 = (self.co2_s * vol_s + self.co2_b * vol_b) / self.volume_L
 
-        # Bicarbonate balance: depleted by photosynthesis (85% of DIC uptake via HCO3-),
+        # Bicarbonate balance: depleted by photosynthesis (85% of DIC uptake via HCO3-,
+        # matching f_carbon), replenished by CO2 sparging at a pH-dependent fraction.
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1615)
         bicarb_consumed_mM = (max(0.0, delta_mass_mg) * 0.85 / 12.0) / self.volume_L  # C fixed via HCO3-
         co2_to_hco3_mg = max(0.0, co2_xfer_s * vol_s + co2_xfer_b * vol_b)  # CO2 absorbed from sparging
         # At current pH, fraction of newly dissolved CO2 that converts to HCO3- (Henderson-Hasselbalch equilibrium)
         f_to_hco3 = float(10.0 ** (self.ph - 6.35) / (1.0 + 10.0 ** (self.ph - 6.35)))
         bicarb_added_mM = (co2_to_hco3_mg / 44.0 / self.volume_L) * f_to_hco3
-        # NOTE: this ceiling (5.0) is 40x below the Zarrouk medium baseline bicarbonate is
+        # NOTE: this 5.0 ceiling is 40x below the 200 mM Zarrouk baseline set in reset(), and
+        # it is load-bearing: raising it pushes pH to ~10.5 and halves yield, because the
+        # carbonate constants were never calibrated to 200 mM. Known physics debt.
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1623)
         self.bicarbonate = _fclip(self.bicarbonate - bicarb_consumed_mM + bicarb_added_mM, 0.0, 5.0)
 
@@ -1277,10 +1291,9 @@ class GeneticPhotobioreactorEnv(gym.Env):
         ph_eq = _fclip(pKa1 + np.log10(max(self.bicarbonate, 0.001) / co2_aq_mM), 5.0, 11.0)
         # pH tracks CO2 dissolution rate (kLa ~1.5-5/h); 2.0/h gives ~30-min response — physically correct
         self.ph = _fclip(self.ph + 2.0 * self.dt * (ph_eq - self.ph), 5.0, 11.0)
-        
-        # --- Advanced Physics: Pigment & Salt ---
-        
-        # 4. Pigment Dynamics (Photo-inhibition & Chlorosis)
+
+    def _update_pigment_and_salt(self, I_surface, delta_mass_mg, total_uptake_mg):
+        # Pigment dynamics (photo-inhibition & chlorosis)
         # Bleaching: High Light (>1000) or Low Nitrogen (<100) damages pigment
         avg_light = I_surface * np.exp(-0.2 * self.reactor_depth/2) # Approx mid-depth light
         is_bleached = (avg_light > 1000.0) or (self.n_pool < 75.0)  # rescaled to Zarrouk's richer N baseline
@@ -1291,22 +1304,16 @@ class GeneticPhotobioreactorEnv(gym.Env):
             self.pigment += 0.01 * self.dt # Slow recovery
         self.pigment = np.clip(self.pigment, 0.2, 1.0) # Min 20% pigment
         
-        # 5. Salinity Accumulation
+        # Salinity accumulation
         lysis_mg      = max(0.0, -delta_mass_mg)
         salt_inflow_mg = total_uptake_mg * 0.1  # impurity carryover from nutrient feed
         salt_decay_mg  = lysis_mg * 0.5          # ion release from lysed cells
         self.salt += (salt_inflow_mg + salt_decay_mg) / max(self.volume_L, 1e-9)
-        
-        # --- Sensors ---
-        
-        # OD ~ Mass^0.8 (Self-Shading effect)
-        # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1667)
-        
-        turbidity = self.od # Use the Linear Phsyics OD
-        
-        # 2. RGB Absorbance (Proxy for Chlorophyll)
-        # Absorbance = Turbidity * Pigment_Health
-        rgb_absorbance = turbidity * self.pigment
+
+    def _update_sensors(self):
+        """Sensor-facing state: RGB absorbance, strain micro-drift, conductivity."""
+        # RGB absorbance (chlorophyll proxy) = linear OD x pigment health
+        rgb_absorbance = self.od * self.pigment
         
         # --- Sim-to-Real: Intra-Episode Genetic Micro-Drift ---
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1678)
@@ -1315,7 +1322,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             self.strain_params['Ks'] *= np.random.uniform(0.99, 1.01)
             self.strain_params['Ks_light'] *= np.random.uniform(0.99, 1.01)
 
-        # 3. Conductivity — Kohlrausch molar conductance formula (µS/cm)
+        # Conductivity — Kohlrausch molar conductance formula (µS/cm)
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1687)
 
         # n_pool as NaNO₃-N: [NO₃⁻]=[Na⁺] = n_pool/14000 mol/L (MW_N=14)
@@ -1339,59 +1346,5 @@ class GeneticPhotobioreactorEnv(gym.Env):
         cond_temp    = 1.0 + 0.020 * (self.temp - 25.0)
         conductivity = (sigma_n + sigma_p + sigma_ext + sigma_salt + sigma_ph + sigma_hco3) * cond_temp * 1000.0
         
-        # Store for Observation (Overwrite OD with Turbidity, add others)
-        # self.od = turbidity # Don't overwrite, maintain linear physics
         self.rgb_absorbance = rgb_absorbance
         self.conductivity = conductivity
-        
-        # --- Reward --- (see _compute_reward for the semi-continuous reward design)
-        reward = self._compute_reward(delta_mass_mg, shock_factor, harvested_this_step_mg, is_harvest_event)
-
-        # Always increment step_count so Monitor reports correct episode length on crash
-        self.step_count += 1
-        # Extinction check: population OR total biomass. Cells can hover just above the
-        # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1723)
-        if self.num_active < 10 or total_mass_mg < 1.0:
-            # Reduced from -1000: that scale was 300-1000x larger than typical achievable
-            # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1729)
-            reward -= self.CRASH_PENALTY
-            terminated, truncated = True, False
-        else:
-            # Time limit is truncation, not termination: the culture is still alive, so value
-            # learners must bootstrap through it. Reporting it as terminal also leaks a
-            # policy-dependent gamma*Phi(s_T) bonus under PBRS (Ng et al. assume Phi(terminal)=0).
-            # No terminal bonus in semi-continuous mode — harvest yield (cumulative_harvested_mg)
-            # accumulates continuously via reward_harvest each step (see _compute_reward).
-            terminated, truncated = False, self.step_count >= self.max_steps
-        done = terminated or truncated
-
-        # Per-step debug trace. Gated behind ENV_DEBUG (default OFF) because it dominated every
-        # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1741)
-        if ENV_DEBUG and ((self.step_count % 500 == 0) or done):
-             # Use collected stats if available, else 0
-             d_shock = getattr(self, 'debug_shock', 0.0)
-             d_clump = getattr(self, 'debug_clump', 1.0)
-             mean_x = np.mean(self.cells_x[self.active_mask]) if self.num_active > 0 else 0.0
-             ratio = getattr(self, 'rgb_ratio', 0.0)
-             turb = getattr(self, 'turbidity_obs', 0.0)
-
-             if 'tqdm' in sys.modules:
-                 from tqdm import tqdm
-                 tqdm.write(f"[EnvDebug] Step: {self.step_count}, Active: {self.num_active}, Mass: {total_mass_mg:.2f}, OD: {self.od:.4f}, Turb: {turb:.4f}, pH: {self.ph:.2f}, Shock: {d_shock:.2f}, Clump: {d_clump:.2f}, MeanX: {mean_x:.2f}, RGB: {ratio:.2f}, Rew: {reward:.3f}, Done: {done}")
-             else:
-                 print(f"[EnvDebug] Step: {self.step_count}, Active: {self.num_active}, Mass: {total_mass_mg:.2f}, OD: {self.od:.4f}, Turb: {turb:.4f}, pH: {self.ph:.2f}, Shock: {d_shock:.2f}, Clump: {d_clump:.2f}, MeanX: {mean_x:.2f}, RGB: {ratio:.2f}, Rew: {reward:.3f}, Done: {done}")
-             
-        return self._get_obs(), float(reward), terminated, truncated, {
-            "pop": self.num_active,
-            "fouling": self.fouling_factor,
-            "peak_od": float(getattr(self, 'max_historical_od', getattr(self, 'od', 0.0))),
-            "od": float(getattr(self, 'od', 0.0)),
-            "kLa_h-1": float(getattr(self, 'kLa', 0.0)),
-            "dissolved_co2_mgL": float(getattr(self, 'dissolved_co2', 0.0)),
-            "cumulative_harvested_mg": float(getattr(self, 'cumulative_harvested_mg', 0.0)),
-            "harvested_mg_back_half": float(getattr(self, 'cumulative_harvested_mg_back_half', 0.0)),
-            "time_avg_od": float(self.od_sum_back_half / max(self.od_count_back_half, 1)),
-            "start_mode": getattr(self, 'episode_start_mode', 'low'),
-            "reward_term_sums": dict(getattr(self, 'reward_term_sums', {})),
-        }
-

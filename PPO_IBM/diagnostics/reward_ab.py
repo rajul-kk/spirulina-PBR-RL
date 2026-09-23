@@ -120,8 +120,6 @@ def main():
         seed = args.base_seed + i
         for name, fn in (("v17", model_policy), ("expert", expert_policy)):
             vec = make_vec(args.norm, args.difficulty, init)
-            if name == "v17":
-                state_reset = True  # fresh lstm per episode via model_policy's state dict
             rows[name].append(run(vec, fn, seed))
             vec.close()
         a, b = rows["v17"][-1], rows["expert"][-1]

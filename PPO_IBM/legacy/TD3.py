@@ -21,8 +21,8 @@ from training_state import find_latest_checkpoint, load_state, save_state
 from curriculum_schedule import (
     ADVANCE_TARGETS, MASTERY_MIN_EPISODES, MASTERY_WINDOW, MASTERY_REQUIRED_STREAK,
     DEMOTION_CRASH_RATE, DEMOTION_STREAK_REQUIRED, CAPABILITY_DEMOTION_CHUNKS,
-    _compute_curriculum_stats, _sample_training_difficulty, compute_bucket_regret,
-    update_bucket_regret_ema, det_eval_set, DET_EVAL_ADVERSARIAL_MAX,
+    _compute_curriculum_stats, _sample_init_cells, _sample_training_difficulty,
+    det_eval_set, DET_EVAL_ADVERSARIAL_MAX,
 )
 from genetic_env import GeneticPhotobioreactorEnv
 
@@ -67,7 +67,6 @@ BC_COEF = float(os.environ.get("TD3_BC_COEF", "1.0"))
 EXPLORATION_NOISE_START = 0.25
 EXPLORATION_NOISE_END = 0.03
 EXPLORATION_NOISE_ANNEAL_FRAC = 0.3  # fraction of TOTAL_TRAINING_STEPS to anneal over
-TD3_REGRET_BLEND = 0.08
 
 N_DEMO_EPISODES = 24                 # matches bc/bc_pretrain.py's default episode count
 DEMO_FRACTION = float(os.environ.get("TD3_DEMO_FRACTION", "0.25"))  # share of each batch from demos
@@ -264,6 +263,15 @@ def sample_mixed_batch(demo_buffer, online_buffer, batch_size, demo_fraction):
 # ═════════════════════════════════════════════════════════════════════════════
 # (full rationale: docs/decision_history.md#--legacy-TD3-py-272)
 
+def episode_arrays(obs, act, rew, next_obs, done):
+    """One episode's transitions as the float32 arrays the replay buffers store."""
+    return {
+        "obs": np.array(obs, dtype=np.float32), "action": np.array(act, dtype=np.float32),
+        "reward": np.array(rew, dtype=np.float32), "next_obs": np.array(next_obs, dtype=np.float32),
+        "done": np.array(done, dtype=np.float32),
+    }
+
+
 def expert_harvest_frac(od):
     surplus = (float(od) / EXPERT_OD_SETPOINT) - 1.0
     return float(np.clip(EXPERT_GAIN * surplus, 0.0, EXPERT_FRAC_CAP))
@@ -272,7 +280,6 @@ def expert_harvest_frac(od):
 def collect_expert_demo_episode(difficulty, rng, seed):
     """One episode of the scripted proportional-harvest expert (same law validated in
     experiments/bc_scaffold/). Feeds the permanent demo_buffer."""
-    from curriculum_schedule import _sample_init_cells
     init_cells = _sample_init_cells("random", difficulty)
     env = GeneticPhotobioreactorEnv(max_cells=MAX_CELLS, initial_cells=init_cells, difficulty=difficulty)
     obs, _ = env.reset(seed=seed)
@@ -295,11 +302,7 @@ def collect_expert_demo_episode(difficulty, rng, seed):
         ep_nobs.append(next_obs); ep_done.append(float(terminated))  # bootstrap mask: truncation still bootstraps
         obs = next_obs
 
-    return {
-        "obs": np.array(ep_obs, dtype=np.float32), "action": np.array(ep_act, dtype=np.float32),
-        "reward": np.array(ep_rew, dtype=np.float32), "next_obs": np.array(ep_nobs, dtype=np.float32),
-        "done": np.array(ep_done, dtype=np.float32),
-    }, {
+    return episode_arrays(ep_obs, ep_act, ep_rew, ep_nobs, ep_done), {
         "harvested_mg": float(info.get("cumulative_harvested_mg", 0.0)),
         "time_avg_od": float(info.get("time_avg_od", 0.0)),
     }
@@ -332,7 +335,6 @@ def build_demo_buffer(n_episodes, seed=0):
 def run_td3_eval_episode(actor, difficulty, seed, init_cells=None):
     """Noise-free rollout for the project's dual gate (see deterministic_eval.py /
     TD-MPC2's run_tdmpc2_eval_episode for the same rationale)."""
-    from curriculum_schedule import _sample_init_cells
     np.random.seed(seed)
     if init_cells is None:
         init_cells = _sample_init_cells("random", difficulty)
@@ -375,12 +377,8 @@ def soft_update(net, target_net, tau=TAU):
         tp.data.copy_(tau * p.data + (1.0 - tau) * tp.data)
 
 
-def td3_update(actor, actor_target, critic, critic_target, actor_opt, critic_opt,
-               demo_buffer, online_buffer, update_idx):
-    batch = sample_mixed_batch(demo_buffer, online_buffer, BATCH_SIZE, DEMO_FRACTION)
-    if batch is None:
-        return None, None
-
+def critic_update(actor_target, critic, critic_target, critic_opt, batch):
+    """Twin-critic TD step with target policy smoothing. Returns the critic loss."""
     obs, actions, rewards = batch["obs"], batch["action"], batch["reward"]
     next_obs, dones = batch["next_obs"], batch["done"]
 
@@ -392,29 +390,51 @@ def td3_update(actor, actor_target, critic, critic_target, actor_opt, critic_opt
         q_target = rewards + GAMMA * (1.0 - dones) * torch.min(q1_next, q2_next)
 
     q1, q2, _, _ = critic(obs, actions)
-    # Huber, not MSE: genetic_env.py's crash penalty (-100) is a ~700x outlier against
+    # Huber, not MSE: genetic_env.py's crash penalty is an outlier against typical rewards.
     # (full rationale: docs/decision_history.md#--legacy-TD3-py-394)
     critic_loss = F.huber_loss(q1, q_target, delta=1.0) + F.huber_loss(q2, q_target, delta=1.0)
     critic_opt.zero_grad()
     critic_loss.backward()
     nn.utils.clip_grad_norm_(critic.parameters(), GRAD_CLIP)
     critic_opt.step()
+    return float(critic_loss.item())
+
+
+def actor_q_weight(q_pred):
+    """Weight on the actor's -Q term. The alpha/|Q| normalization exists to balance the RL
+    objective against a comparably-sized BC term (Fujimoto & Gu 2021); with BC_COEF==0 there
+    is no BC term to balance, so it would only silently dampen the Q-gradient.
+    (full rationale: docs/decision_history.md#--legacy-TD3-py-bc-ablation-lam-decouple)"""
+    if BC_COEF > 0:
+        return torch.clamp(TD3BC_ALPHA / (q_pred.abs().mean().detach() + 1e-3), max=100.0)
+    return 1.0   # vanilla TD3 actor loss when the BC anchor is off
+
+
+def actor_step(actor, actor_target, critic, critic_target, actor_opt, actor_loss):
+    """Apply the delayed actor update and the Polyak target updates. Returns the actor loss."""
+    actor_opt.zero_grad()
+    actor_loss.backward()
+    nn.utils.clip_grad_norm_(actor.parameters(), GRAD_CLIP)
+    actor_opt.step()
+    soft_update(actor, actor_target)
+    soft_update(critic, critic_target)
+    return float(actor_loss.item())
+
+
+def td3_update(actor, actor_target, critic, critic_target, actor_opt, critic_opt,
+               demo_buffer, online_buffer, update_idx):
+    batch = sample_mixed_batch(demo_buffer, online_buffer, BATCH_SIZE, DEMO_FRACTION)
+    if batch is None:
+        return None, None
+
+    critic_loss = critic_update(actor_target, critic, critic_target, critic_opt, batch)
 
     actor_loss = None
     if update_idx % POLICY_DELAY == 0:
+        obs = batch["obs"]
         pred_action, _ = actor(obs)
         q_pred = critic.q1_only(obs, pred_action)
-        # The alpha/|Q| normalization exists to balance the RL objective against a
-        # comparably-sized BC term (Fujimoto & Gu 2021); with BC_COEF==0 there is no BC
-        # term to balance against, so applying it would silently dampen the Q-gradient
-        # with no counterbalancing pull-back -- the actor extrapolation-exploitation
-        # pathology BC exists to prevent, compounded rather than removed.
-        # (full rationale: docs/decision_history.md#--legacy-TD3-py-bc-ablation-lam-decouple)
-        if BC_COEF > 0:
-            lam = torch.clamp(TD3BC_ALPHA / (q_pred.abs().mean().detach() + 1e-3), max=100.0)
-        else:
-            lam = 1.0   # vanilla TD3 actor loss when the BC anchor is off
-        q_term = -lam * q_pred.mean()
+        q_term = -actor_q_weight(q_pred) * q_pred.mean()
 
         bc_obs, bc_act, _, _, _ = demo_buffer._sample_raw(BATCH_SIZE)
         bc_term = torch.tensor(0.0, device=DEVICE)
@@ -424,17 +444,9 @@ def td3_update(actor, actor_target, critic, critic_target, actor_opt, critic_opt
             bc_pred, _ = actor(bc_obs_t)
             bc_term = BC_COEF * F.mse_loss(bc_pred, bc_act_t)
 
-        actor_loss = q_term + bc_term
-        actor_opt.zero_grad()
-        actor_loss.backward()
-        nn.utils.clip_grad_norm_(actor.parameters(), GRAD_CLIP)
-        actor_opt.step()
+        actor_loss = actor_step(actor, actor_target, critic, critic_target, actor_opt, q_term + bc_term)
 
-        soft_update(actor, actor_target)
-        soft_update(critic, critic_target)
-        actor_loss = float(actor_loss.item())
-
-    return float(critic_loss.item()), actor_loss
+    return critic_loss, actor_loss
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -503,6 +515,29 @@ def load_checkpoint(actor, actor_target, critic, critic_target, actor_opt, criti
 # ═════════════════════════════════════════════════════════════════════════════
 # (full rationale: docs/decision_history.md#--legacy-TD3-py-487)
 
+def begin_episode(env, train_diff, saved_env_state, completed_episodes):
+    """Pick this episode's start (cold-start bucket or stitched), reset env for it, and
+    return (obs, init_cells)."""
+    start_cfg = choose_episode_start(train_diff, saved_state_available=saved_env_state is not None,
+                                     completed_episodes=completed_episodes)
+    init_cells = int(start_cfg["initial_cells"]) if start_cfg["initial_cells"] is not None else 3000
+    env.initial_cells = init_cells
+    env.episode_start_mode = start_cfg["mode"]
+    obs, _ = env.reset()
+    if start_cfg["mode"] == "stitched" and saved_env_state is not None:
+        apply_saved_population(env, saved_env_state)
+        obs = env._get_obs()
+        resync_shaping_potential(env)
+    return obs, init_cells
+
+
+def passes_gate(stats, target):
+    return (stats["median_harvested_mg"] >= target["min_median_harvested_mg"]
+            and stats["p25_harvested_mg"] >= target["min_p25_harvested_mg"]
+            and stats["crash_rate"] <= target["max_crash_rate"]
+            and stats["median_time_avg_od"] >= target["min_median_time_avg_od"])
+
+
 def train(resume=False):
     from tqdm import tqdm
 
@@ -556,22 +591,24 @@ def train(resume=False):
     for d, eps in saved_state.get("history_by_diff", {}).items():
         history_by_diff[d] = deque(eps, maxlen=MASTERY_WINDOW)
     det_eval_history = deque(saved_state.get("det_eval_history", []), maxlen=30)
-    bucket_regret_by_diff = {}
+
+    def training_state():
+        return {
+            "global_step": global_step, "current_difficulty": current_difficulty,
+            "mastery_streak": mastery_streak, "demotion_streak": demotion_streak,
+            "capability_fail_streak": capability_fail_streak,
+            "completed_episodes": completed_episodes, "saved_env_state": saved_env_state,
+            "update_idx": update_idx,
+            "history_by_diff": {d: list(v) for d, v in history_by_diff.items()},
+            "det_eval_history": list(det_eval_history),
+        }
 
     while global_step < TOTAL_TRAINING_STEPS and not d0_capability_abort:
         train_diff = _sample_training_difficulty(current_difficulty)
-        start_cfg = choose_episode_start(train_diff, saved_state_available=saved_env_state is not None,
-                                         completed_episodes=completed_episodes)
-        init_cells = int(start_cfg["initial_cells"]) if start_cfg["initial_cells"] is not None else 3000
         chunk_steps = min(CHUNK_STEPS, TOTAL_TRAINING_STEPS - global_step)
 
-        env = GeneticPhotobioreactorEnv(max_cells=MAX_CELLS, initial_cells=init_cells, difficulty=train_diff)
-        env.episode_start_mode = start_cfg["mode"]
-        obs, _ = env.reset()
-        if start_cfg["mode"] == "stitched" and saved_env_state is not None:
-            apply_saved_population(env, saved_env_state)
-            obs = env._get_obs()
-            resync_shaping_potential(env)
+        env = GeneticPhotobioreactorEnv(max_cells=MAX_CELLS, difficulty=train_diff)
+        obs, init_cells = begin_episode(env, train_diff, saved_env_state, completed_episodes)
         actor_hidden = actor.initial_hidden(batch=1)
         steps_since_hidden_reset = 0
 
@@ -616,11 +653,7 @@ def train(resume=False):
             if done:
                 episodes_this_chunk += 1
                 if len(ep_obs) >= SEQ_LEN:
-                    online_buffer.add({
-                        "obs": np.array(ep_obs, dtype=np.float32), "action": np.array(ep_act, dtype=np.float32),
-                        "reward": np.array(ep_rew, dtype=np.float32), "next_obs": np.array(ep_nobs, dtype=np.float32),
-                        "done": np.array(ep_done, dtype=np.float32),
-                    })
+                    online_buffer.add(episode_arrays(ep_obs, ep_act, ep_rew, ep_nobs, ep_done))
                 crashed = env.step_count < env.max_steps
                 history_by_diff[train_diff].append({
                     "harvested_mg": float(info.get("cumulative_harvested_mg", 0.0)),
@@ -632,6 +665,7 @@ def train(resume=False):
                 })
                 completed_episodes += 1
 
+                # Never true while MAX_CELLS (7,500) < 15,000, so TD3 runs never take stitched starts.
                 if getattr(env, "num_active", 0) > 15000:
                     saved_env_state = {
                         "cells_mass": copy.deepcopy(env.cells_mass), "cells_quota": copy.deepcopy(env.cells_quota),
@@ -641,46 +675,21 @@ def train(resume=False):
                         "ext_nutrients": env.ext_nutrients, "ph": env.ph, "do2": env.do2, "salt": env.salt,
                     }
 
-                start_cfg = choose_episode_start(train_diff, saved_state_available=saved_env_state is not None,
-                                                 completed_episodes=completed_episodes)
-                init_cells = int(start_cfg["initial_cells"]) if start_cfg["initial_cells"] is not None else 3000
-                env.initial_cells = init_cells
-                env.episode_start_mode = start_cfg["mode"]
-                obs, _ = env.reset()
-                if start_cfg["mode"] == "stitched" and saved_env_state is not None:
-                    apply_saved_population(env, saved_env_state)
-                    obs = env._get_obs()
-                    resync_shaping_potential(env)
+                obs, init_cells = begin_episode(env, train_diff, saved_env_state, completed_episodes)
                 actor_hidden = actor.initial_hidden(batch=1)
                 steps_since_hidden_reset = 0
                 ep_obs, ep_act, ep_rew, ep_nobs, ep_done = [], [], [], [], []
 
             if global_step % 50_000 == 0:
                 save_checkpoint(actor, actor_target, critic, critic_target, actor_opt, critic_opt,
-                                online_buffer, {
-                                    "global_step": global_step, "current_difficulty": current_difficulty,
-                                    "mastery_streak": mastery_streak, "demotion_streak": demotion_streak,
-                                    "capability_fail_streak": capability_fail_streak,
-                                    "completed_episodes": completed_episodes, "saved_env_state": saved_env_state,
-                                    "update_idx": update_idx,
-                                    "history_by_diff": {d: list(v) for d, v in history_by_diff.items()},
-                                    "det_eval_history": list(det_eval_history),
-                                })
+                                online_buffer, training_state())
 
         pbar.close()
         env.close()
 
         # Dual gate, same apparatus as legacy/TD_MPC2.py's Fix #15/#29 port.
         stats = _compute_curriculum_stats(list(history_by_diff[current_difficulty]), mastery_diff=current_difficulty)
-        raw_regret = compute_bucket_regret(list(history_by_diff[current_difficulty]), current_difficulty)
-        bucket_regret_by_diff[current_difficulty] = update_bucket_regret_ema(
-            bucket_regret_by_diff.get(current_difficulty), raw_regret
-        )
-        print(
-            f"  [Regret] D{current_difficulty}: "
-            + " ".join(f"{k}={v:.2f}" for k, v in bucket_regret_by_diff[current_difficulty].items())
-            + f"  | cvar10_harvest={stats['cvar10_harvested_mg']:.1f}"
-        )
+        print(f"  [Stoch] D{current_difficulty} cvar10_harvest={stats['cvar10_harvested_mg']:.1f}")
         # Fixed stratified set, re-evaluated in full each chunk: identical tasks every
         # (full rationale: docs/decision_history.md#--curriculum_schedule-fixed-det-eval-set)
         det_recs = [run_td3_eval_episode(actor, current_difficulty, seed=s, init_cells=ic)
@@ -712,15 +721,9 @@ def train(resume=False):
         target = ADVANCE_TARGETS.get(current_difficulty)
         criteria_passed = det_criteria_passed = False
         if target is not None and stats["episodes"] >= MASTERY_MIN_EPISODES:
-            criteria_passed = (stats["median_harvested_mg"] >= target["min_median_harvested_mg"]
-                              and stats["p25_harvested_mg"] >= target["min_p25_harvested_mg"]
-                              and stats["crash_rate"] <= target["max_crash_rate"]
-                              and stats["median_time_avg_od"] >= target["min_median_time_avg_od"])
+            criteria_passed = passes_gate(stats, target)
         if target is not None and det_stats["episodes"] >= DET_MASTERY_MIN_EPISODES:
-            det_criteria_passed = (det_stats["median_harvested_mg"] >= target["min_median_harvested_mg"]
-                                  and det_stats["p25_harvested_mg"] >= target["min_p25_harvested_mg"]
-                                  and det_stats["crash_rate"] <= target["max_crash_rate"]
-                                  and det_stats["median_time_avg_od"] >= target["min_median_time_avg_od"])
+            det_criteria_passed = passes_gate(det_stats, target)
         criteria_passed = criteria_passed and det_criteria_passed
 
         next_difficulty = current_difficulty
@@ -774,14 +777,8 @@ def train(resume=False):
     if d0_capability_abort:
         print("\n  [EARLY STOP] D0 capability-abort triggered — see log above.")
     print("\n--- Training Complete. Final model saved. ---")
-    save_checkpoint(actor, actor_target, critic, critic_target, actor_opt, critic_opt, online_buffer, {
-        "global_step": global_step, "current_difficulty": current_difficulty,
-        "mastery_streak": mastery_streak, "demotion_streak": demotion_streak,
-        "capability_fail_streak": capability_fail_streak, "completed_episodes": completed_episodes,
-        "saved_env_state": saved_env_state, "update_idx": update_idx,
-        "history_by_diff": {d: list(v) for d, v in history_by_diff.items()},
-        "det_eval_history": list(det_eval_history),
-    })
+    save_checkpoint(actor, actor_target, critic, critic_target, actor_opt, critic_opt, online_buffer,
+                    training_state())
 
 
 if __name__ == "__main__":

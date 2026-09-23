@@ -82,7 +82,7 @@ def main():
 
     agent = TDMPC2Agent(obs_dim=OBS_DIM, action_dim=ACTION_DIM, device="cpu")
     agent.load(args.model)
-    print(f"  Loaded.\n")
+    print("  Loaded.\n")
 
     records = []
     for i in range(args.seeds):

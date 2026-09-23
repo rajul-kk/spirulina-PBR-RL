@@ -104,7 +104,7 @@ def main():
         return encode(EXPERT_STIR, EXPERT_LIGHT, frac, f_max).reshape(1, -1)
 
     print(f"  Action-noise sensitivity, D{args.difficulty}, {args.n} episodes per sigma")
-    print(f"  (v15/v16b/v17 all trained with train/std ~0.50)\n")
+    print("  (v15/v16b/v17 all trained with train/std ~0.50)\n")
     print(f"  {'sigma':>6} | {'EXPERT reward':>14} {'harv':>7} {'od':>8} "
           f"| {'v17 reward':>11} {'harv':>7} {'od':>8}")
     print(f"  {'-'*6} | {'-'*14} {'-'*7} {'-'*8} | {'-'*11} {'-'*7} {'-'*8}")
@@ -139,9 +139,9 @@ def main():
               f"noise-free reward, time_avg_od {e[2]:.4f}")
     if crossover is not None:
         print(f"\n  CROSSOVER: at sigma>={crossover:.2f} the trained policy scores >= the expert.")
-        print(f"  If that sigma is at or below the ~0.50 train/std these runs actually used,")
-        print(f"  PPO was correctly optimising its noisy objective, and the fix is to reduce")
-        print(f"  action noise (entropy), NOT to change the reward.")
+        print("  If that sigma is at or below the ~0.50 train/std these runs actually used,")
+        print("  PPO was correctly optimising its noisy objective, and the fix is to reduce")
+        print("  action noise (entropy), NOT to change the reward.")
     else:
         print("\n  No crossover in the tested range: the expert dominates at every sigma,")
         print("  which would mean noise alone does NOT explain the drift.")

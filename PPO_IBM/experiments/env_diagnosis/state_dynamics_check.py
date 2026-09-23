@@ -103,14 +103,6 @@ def rollout(actor, core, difficulty, init_cells, seed, reset_interval):
     return rec
 
 
-def growth_slope(y):
-    """Least-squares slope of y vs step index, per 1000 steps. Unbounded growth => >0."""
-    if len(y) < 10 or not np.all(np.isfinite(y)):
-        return float("nan")
-    x = np.arange(len(y), dtype=float)
-    return float(np.polyfit(x, y, 1)[0] * 1000.0)
-
-
 MIN_AGE_RANGE_FOR_VERDICT = 600  # below this, there isn't enough dynamic range to tell
                                   # a slowly-saturating curve from a linear one -- say so
                                   # explicitly rather than fit noise (this is what produced

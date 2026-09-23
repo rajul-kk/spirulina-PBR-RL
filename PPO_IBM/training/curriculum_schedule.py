@@ -12,8 +12,9 @@ for _p in (_ROOT, _os.path.join(_ROOT, "training"), _os.path.join(_ROOT, "enviro
 import numpy as np
 import gymnasium as gym
 
-from curriculum_starts import (apply_saved_population, choose_episode_start, mastery_metrics_view,
-                               resync_shaping_potential, sample_initial_cells)
+from curriculum_starts import (STITCH_POP_THRESHOLD, apply_saved_population, choose_episode_start,
+                               mastery_metrics_view, resync_shaping_potential, sample_initial_cells,
+                               snapshot_population)
 
 TOTAL_TRAINING_STEPS = 8_000_000
 CHUNK_STEPS = 100_000
@@ -221,7 +222,12 @@ class CurriculumStartWrapper(gym.Wrapper):
         # Inject the episode's training difficulty into the info dict on episode end
         # so EpisodeMetricsCallback can record it before the env auto-resets.
         if terminated or truncated:
+            raw_env = self.unwrapped
             info["episode_train_diff"] = getattr(self, "_episode_train_diff",
-                                                   getattr(self.unwrapped, "difficulty", 0))
-            info["start_mode"] = getattr(self.unwrapped, "episode_start_mode", "low")
+                                                   getattr(raw_env, "difficulty", 0))
+            info["start_mode"] = getattr(raw_env, "episode_start_mode", "low")
+            # The vec env auto-resets before callbacks run, so this is the last point where the
+            # finished culture still exists; PopulationStitchCallback stores it from here.
+            if raw_env.num_active >= STITCH_POP_THRESHOLD:
+                info["terminal_population"] = snapshot_population(raw_env)
         return obs, reward, terminated, truncated, info

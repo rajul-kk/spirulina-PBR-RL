@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
 
 class LinearSSMBlock(nn.Module):
     """A simplified, pure-PyTorch Linear State Space Model (SSM) block.
@@ -45,9 +44,8 @@ class LinearSSMBlock(nn.Module):
         B, C = torch.split(bc, self.d_state, dim=-1) # (B, L, N)
         
         # 2. Continuous -> Discrete transition (Zero-order hold approximation)
-        # ∆A = exp(∆ * A)
+        # log(∆A) = ∆ * A; the scan below works in log space
         dt_A = torch.einsum('bld,dn->bldn', dt, A) # (B, L, D, N)
-        dA = torch.exp(dt_A) # (B, L, D, N)
         
         # ∆B = ∆ * B
         dB = torch.einsum('bld,bln->bldn', dt, B) # (B, L, D, N)

@@ -78,7 +78,6 @@ def main():
             break
         rr, oo, pp, crashed = run(2, 60, 5000 + seed, "random")
         if crashed and len(rr) > 60:
-            tail = rr[-50:]
             pre = rr[-50:-1]
             print(f"    crash@step{len(rr)}: mean reward last-50 (excl. terminal)={pre.mean():+.4f}, "
                   f"terminal step={rr[-1]:+.2f}, pop last-50 {pp[-50]}->{pp[-1]}")

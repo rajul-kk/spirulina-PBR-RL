@@ -90,6 +90,10 @@ DET_EVAL_EPISODES_PER_CHUNK = 3
 DET_MASTERY_MIN_EPISODES = sum(1 for ic, _ in det_eval_set() if ic > DET_EVAL_ADVERSARIAL_MAX)
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# Only when set: TD3_lru.py sets its own default before importing this module. Without
+# this, TD3_THREADS was silently ignored for the LSTM core and it grabbed every CPU core.
+if DEVICE.type == "cpu" and "TD3_THREADS" in os.environ:
+    torch.set_num_threads(int(os.environ["TD3_THREADS"]))
 CHECKPOINT_DIR = "model_data/td3_checkpoints"
 STATE_PATH = "model_data/td3_training_state.pkl"
 BUFFER_PATH = "model_data/td3_checkpoints/online_buffer.pkl"

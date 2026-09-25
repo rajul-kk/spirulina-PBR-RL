@@ -45,13 +45,16 @@ CAPABILITY_DEMOTION_CHUNKS = 12
 
 # Advancement criteria applied to cold-start (non-stitched) episodes only.
 # (full rationale: docs/decision_history.md#--training-curriculum_schedule-py-75)
+# Physics v2 (2026-09-26) rescaled biomass ~60-100x. Each threshold was multiplied by the
+# scripted expert's new/old ratio for that statistic on TD3's cold-start distribution, so the
+# gates sit at the same fraction of expert performance as before.
 ADVANCE_TARGETS = {
-    0: {"min_median_harvested_mg": 30.0, "min_p25_harvested_mg": 15.0, "max_crash_rate": 0.15,
-        "min_median_time_avg_od": 0.004},
-    1: {"min_median_harvested_mg": 60.0, "min_p25_harvested_mg": 30.0, "max_crash_rate": 0.10,
-        "min_median_time_avg_od": 0.008},
-    2: {"min_median_harvested_mg": 90.0, "min_p25_harvested_mg": 50.0, "max_crash_rate": 0.08,
-        "min_median_time_avg_od": 0.011},
+    0: {"min_median_harvested_mg": 2060.0, "min_p25_harvested_mg": 1310.0, "max_crash_rate": 0.15,
+        "min_median_time_avg_od": 0.16},
+    1: {"min_median_harvested_mg": 4030.0, "min_p25_harvested_mg": 2620.0, "max_crash_rate": 0.10,
+        "min_median_time_avg_od": 0.32},
+    2: {"min_median_harvested_mg": 5410.0, "min_p25_harvested_mg": 4780.0, "max_crash_rate": 0.08,
+        "min_median_time_avg_od": 0.45},
 }
 
 MIXING_PROBS = {

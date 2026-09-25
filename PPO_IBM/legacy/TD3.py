@@ -74,9 +74,9 @@ DEMO_DIFFICULTY_WEIGHTS = {0: 0.4, 1: 0.4, 2: 0.2}  # matches bc/bc_pretrain.py
 
 # Scripted-expert control law, numerically identical to bc/bc_pretrain.py (not imported,
 # to avoid pulling in that module's SB3 dependency).
-EXPERT_STIR_RANGE = (60.0, 80.0)
-EXPERT_LIGHT_RANGE = (900.0, 1000.0)
-EXPERT_OD_SETPOINT = 0.015
+EXPERT_STIR_RANGE = (55.0, 75.0)
+EXPERT_LIGHT_RANGE = (1300.0, 1500.0)
+EXPERT_OD_SETPOINT = 0.6
 EXPERT_GAIN = 1.0
 EXPERT_FRAC_CAP = 0.30
 

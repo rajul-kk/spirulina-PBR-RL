@@ -32,14 +32,14 @@ MODEL_PATH = os.path.join(OUT_DIR, "recurrent_ppo_genetic_ibm")
 NORM_PATH = os.path.join(OUT_DIR, "recurrent_vec_normalize.pkl")
 STATE_PATH = os.path.join(OUT_DIR, "recurrent_training_state.pkl")
 
-# Expert stir/light band. These two are genuinely fine as near-constants — the sweep found
-# the outcome insensitive to them across 60-80rpm / 900-1000umol.
-EXPERT_STIR_RANGE = (60.0, 80.0)
-EXPERT_LIGHT_RANGE = (900.0, 1000.0)
+# Expert stir/light band. Physics v2 sweep (2026-09-26): harvest is flat (~23 g/episode at D2)
+# across 50-85 rpm and 1300-1500 umol with the od setpoint in 0.45-0.8.
+EXPERT_STIR_RANGE = (55.0, 75.0)
+EXPERT_LIGHT_RANGE = (1300.0, 1500.0)
 
 # HARVEST IS A FEEDBACK LAW, NOT A CONSTANT.
 # (full rationale: docs/decision_history.md#--bc-bc_pretrain-py-85)
-EXPERT_OD_SETPOINT = 0.015
+EXPERT_OD_SETPOINT = 0.6
 EXPERT_GAIN = 1.0
 EXPERT_FRAC_CAP = 0.30
 

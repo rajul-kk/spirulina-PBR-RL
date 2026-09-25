@@ -11,7 +11,7 @@ PY = sys.executable
 ENV = dict(os.environ, PYTHONIOENCODING="utf-8")
 LOG_DIR = os.path.join(ROOT, "logs", "validation")
 
-GATES = {1: (60.0, 30.0, 0.008, 0.10), 2: (90.0, 50.0, 0.011, 0.08)}
+GATES = {1: (4030.0, 2620.0, 0.32, 0.10), 2: (5410.0, 4780.0, 0.45, 0.08)}
 BC_REF = "BC clone (no RL): harvest 109.4mg  p25 63.8  od 0.0191  crash 0.0%  -> passes D2"
 
 
@@ -95,8 +95,8 @@ def main():
                  f"c{'+' if (r['crash']/100.0) <= g[3] else '-'}")
         print(f"  D{diff:<5} {r['harvest']:9.1f} {r['p25']:8.1f} {r['od']:9.4f} "
               f"{r['crash']:6.1f}%   {'PASS' if ok else 'FAIL'}  [{marks}]")
-    print("\n  gates: D1 harvest>=60 p25>=30 od>=0.008 crash<=10% | "
-          "D2 harvest>=90 p25>=50 od>=0.011 crash<=8%")
+    print("\n  gates: D1 harvest>=4030 p25>=2620 od>=0.32 crash<=10% | "
+          "D2 harvest>=5410 p25>=4780 od>=0.45 crash<=8%")
 
     if not args.skip_trace:
         print("\n  action traces at D2 (harvest fraction per 600-step block) ...")

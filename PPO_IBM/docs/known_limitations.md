@@ -123,3 +123,67 @@ found but left alone, because each is a modelling decision rather than a clear d
 - **`experiments/harvest_ablation/recurrent_ppo_harvest_fixed.py`** is a frozen copy of the PPO
   trainer for the v37 ablation and keeps the pre-audit resume and callback bugs by design.
 
+## O16 — Physics and scale audit, 2026-09-26 (found, not yet changed)
+
+Measured with scripted probes against the current env (numbers below are from those runs).
+None of these is fixed yet except the conductivity item at the end: each changes the task, so
+they belong in one recalibrated "physics v2" with new baselines, not piecemeal under running
+comparisons.
+
+**Scale: the culture is ~100-300x more dilute than any productive Spirulina culture.**
+- OD = (mg/L)/300, so `OD_TARGET = 0.012` is 3.6 mg/L. Real PBRs run at 500-1500 mg/L. With
+  `MAX_CELLS = 7500` division stops at ~52 mg/L (agents then grow to the 5e8 pg cap, ~190 mg/L).
+- A whole episode harvests ~0.2-0.5 g from 20 L. Real productivity (0.2-0.5 g/L/day) would give
+  24-60 g over the same 6 days.
+- Biomass adds only 3.5*OD per metre to light extinction (0.012 m2/g, vs ~0.15-0.2 m2/g for
+  Spirulina). At target density the bottom of the tank gets 80% of surface light; water (0.5/m)
+  and bubbles (0.2-0.8/m) dominate attenuation.
+- Consequence: every density-driven mechanism is inert. Dissolved O2 stays at air saturation
+  (~8 mg/L at 50-200 rpm; dense cultures reach 20-40), clump size stays ~1.0, self-shading never
+  limits growth. The task collapses to "pick light for temperature, pick harvest fraction".
+
+**Temperature: light is the only heater.**
+- T relaxes to 25 + 0.01*I (45C clip at full light). No thermostat, although the env is described
+  as a fully controlled indoor PBR. Episodes start at 32-38C against a 25C ambient.
+- Measured growth (D2, no harvest): peaks at ~1100 umol (mu 0.025/h, T 36C); 500 umol gives 0.011/h
+  (T 30C, too cold), 2000 umol gives 0.007/h (T 45C). The optimum is set by temperature, not
+  photosynthesis. This is the root of the v49/v56/v58/v59 heat trap
+  (decision_history #--thermal-phi-2026-09-25).
+- Impeller heating is ~6x a power-number estimate (0.5C/h at 200 rpm vs ~0.08C/h). Minor.
+
+**Actions with no or hidden effect.**
+- Stirring has no benefit at operating density, only the shear tax: mu 0.0174/h at 50 rpm,
+  0.0124/h at 120-200 rpm. The optimum is always the minimum.
+- A grace period caps light at 500 + 1500*t/1200 umol for the first 1200 steps (24 h). Light
+  actions above the cap do nothing, so the critic sees no gradient there.
+- The BH1750 channel saturates at ~820 umol (65535 lux / 80), so light above that is unobservable.
+
+**Nutrient mass balance.**
+- N and P uptake are driven by agent count, not growth, and continue when quota is at Q_max.
+  They also subtract mg from mg/L pools. Measured over an episode (no harvest): 3,367 mg/L-units
+  of N removed against 5.5 mg/L actually needed for the biomass grown (at 10% N), ~600x.
+- The model drains N:P at ~3.6:1 by mass but the dosing stock supplies 4.9:1, and dosing only
+  stops when N AND P are both high. Above ~5,000 agents P drains faster than the pump adds it:
+  P falls to ~7 mg/L (~26% growth loss), the pump stays on, and N climbs to ~811 mg/L (2x fresh
+  medium), dragging conductivity up with it.
+
+**Carbonate system.** Bicarbonate is clipped to 5 mM (O15), CO3(2-) is absent (no pKa2 = 10.33),
+so pH settles at ~8.9-9.05, below the 9.5-10 Zarrouk cultures run at. Conductivity counts HCO3-
+but not its Na+ counter-ion. Needs an alkalinity/DIC solve with both dissociations.
+
+**Kinetics.** The Haldane light term puts red light (0.4*I) in the numerator but normalises by
+the peak of the full-spectrum curve, so f_I never exceeds ~0.70: the effective mu_max is 30% below
+the configured 0.055/h. Measured best growth is 0.025/h (~28 h doubling). Maintenance respiration
+is 0.01*mu_max (~1.3%/day). Pigment bleaching changes only sensor readings, not growth.
+
+**Cell motion is decorative.** At dt = 72 s, velocity*dt is up to 3.6 m vertically and 18 m
+horizontally per step, so positions are effectively re-randomised every step; the 2-D flow
+field and surface/bulk split carry no structure. Layer comments say 10 L/20 L (from the old
+30 L tank); the actual split is 6.7 L/13.3 L.
+
+**Checked and fine:** photo-shock from mixing noise is <=1.5% even at 2000 umol; harvest removal,
+lysis and gas-transfer step sizes are stable at dt = 0.02 h.
+
+**Fixed now:** reset() started bicarbonate at 200 mM while step 1 clips it to 5 mM, so the first
+observation read ~21,960 uS/cm and every later one ~11,900 (a jump the 2026-09-24 conductivity
+fix introduced). reset() now starts at `BICARB_CEILING_MM`; regression check added.

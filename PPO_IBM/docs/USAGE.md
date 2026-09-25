@@ -29,13 +29,13 @@ Remove-Item -Recurse -Force e:\SEGP\PPO_IBM\__pycache__
 
 ---
 
-## 2. `visualize_growth.py` — Rule-Based Growth Benchmark
+## 2. `tools/visualize_growth.py` — Rule-Based Growth Benchmark
 
 Runs two deterministic rule-based policies (*Fixed* and *Optimised Rule*) for up to 50,000 steps each and plots Biomass (OD) and Nutrient curves side-by-side.  
 No arguments — just run it:
 
 ```powershell
-python visualize_growth.py
+python tools/visualize_growth.py
 ```
 
 Stop early at any time with `Ctrl+C`; it will plot whatever data was collected.

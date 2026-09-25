@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from scipy.optimize import curve_fit
 from scipy.signal import savgol_filter
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # PPO_IBM/
 from environments.genetic_env import GeneticPhotobioreactorEnv
 
 DT_H = 0.02  # hours per step

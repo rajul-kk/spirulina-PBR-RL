@@ -34,8 +34,8 @@ STITCH_POP_THRESHOLD = 1_100
 
 _POPULATION_ARRAYS = ("cells_mass", "cells_quota", "cells_x", "cells_z", "cells_acclimation",
                       "clump_mass", "active_mask")
-_MEDIUM_STATE = ("ext_nutrients", "n_pool", "p_pool", "bicarbonate", "salt", "ph",
-                 "do2", "do2_s", "do2_b", "co2_s", "co2_b", "dissolved_co2")
+_MEDIUM_STATE = ("ext_nutrients", "n_pool", "p_pool", "alkalinity", "dic", "salt",
+                 "do2", "do2_s", "do2_b")
 
 
 def _log_uniform_int(low: int, high: int, rng) -> int:
@@ -111,9 +111,9 @@ def snapshot_population(raw_env) -> Dict[str, object]:
 def apply_saved_population(raw_env, saved_state: Dict[str, object], start_mode: str = "stitched") -> None:
     """Swap a saved culture into a freshly reset env.
 
-    Whatever the snapshot carries is restored; anything it lacks (snapshots written before
-    2026-09-24 had no acclimation, n_pool or bicarbonate, and some no p_pool or CO2) keeps the
-    fresh-medium value reset() just set, rather than an invented default.
+    Whatever the snapshot carries is restored; anything it lacks (older snapshots have no
+    acclimation, alkalinity or DIC) keeps the fresh-medium value reset() just set, rather than
+    an invented default.
     """
     # Guard: discard states saved under a different max_cells (e.g. after super-agent rescaling).
     # Mismatched array sizes would silently corrupt mass/mask operations.
@@ -137,9 +137,9 @@ def apply_saved_population(raw_env, saved_state: Dict[str, object], start_mode: 
     for layer in ("do2_s", "do2_b"):   # older snapshots carried only the mixed DO2
         if layer not in saved_state and "do2" in saved_state:
             setattr(raw_env, layer, float(saved_state["do2"]))
-    # Keep stitched starts from inheriting legacy low-pH snapshots.
-    # For alkaline media envs, enforce at least the configured equilibrium pH.
-    raw_env.ph = max(float(raw_env.ph), float(getattr(raw_env, "buffer_equilibrium_ph", raw_env.ph)))
+    # pH and carbonate species follow from the restored alkalinity and DIC.
+    if hasattr(raw_env, "_update_carbonate_speciation"):
+        raw_env._update_carbonate_speciation()
     if hasattr(raw_env, "_ph_obs_ema"):
         raw_env._ph_obs_ema = raw_env.ph
 

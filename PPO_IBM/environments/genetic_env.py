@@ -16,6 +16,50 @@ def _fclip(x, lo, hi):
     NaN propagates identically because both comparisons are False."""
     return float(lo if x < lo else (hi if x > hi else x))
 
+
+# Apparent carbonate constants for a ~0.2 M NaHCO3 (Zarrouk) medium, where ionic strength
+# lowers both pKs by ~0.3 from their infinite-dilution values (6.35, 10.33).
+def _carbonate_constants(temp):
+    return 10.0 ** -(6.1 - 0.002 * (temp - 25.0)), 10.0 ** -(10.0 - 0.009 * (temp - 25.0))
+
+
+def _solve_ph(alk_mM, dic_mM, temp):
+    """pH from total alkalinity (meq/L) and DIC (mM): carbonate system plus water, by bisection
+    (carbonate alkalinity rises monotonically with pH)."""
+    K1, K2 = _carbonate_constants(temp)
+    alk, dic = alk_mM * 1e-3, dic_mM * 1e-3
+    lo, hi = 4.0, 12.5
+    for _ in range(40):
+        ph = 0.5 * (lo + hi)
+        h = 10.0 ** -ph
+        a = dic * (K1 * h + 2.0 * K1 * K2) / (h * h + K1 * h + K1 * K2) + 1e-14 / h - h
+        if a > alk:
+            hi = ph
+        else:
+            lo = ph
+    return 0.5 * (lo + hi)
+
+
+def _air_equilibrated_dic(alk_mM, co2_aq_mM, temp):
+    """DIC (mM) of a medium with this alkalinity once its CO2(aq) has equilibrated at co2_aq_mM."""
+    K1, K2 = _carbonate_constants(temp)
+    c0 = co2_aq_mM * 1e-3
+    lo, hi = 4.0, 12.5
+    for _ in range(40):
+        ph = 0.5 * (lo + hi)
+        h = 10.0 ** -ph
+        a = c0 * (K1 / h + 2.0 * K1 * K2 / (h * h)) + 1e-14 / h - h
+        if a > alk_mM * 1e-3:
+            hi = ph
+        else:
+            lo = ph
+    h = 10.0 ** -(0.5 * (lo + hi))
+    return c0 * (h * h + K1 * h + K1 * K2) / (h * h) * 1e3
+
+
+# Air sparge at 420 ppm, Henry 1276 mg/(L atm) at ~30C.
+_CO2_AIR_SAT_MGL = 1276.0 * 420e-6
+
 class GeneticPhotobioreactorEnv(gym.Env):
     """Individual-Based Model (IBM) Photobioreactor Environment.
     (full rationale: docs/decision_history.md#--environments-genetic_env-py-14)"""
@@ -34,23 +78,40 @@ class GeneticPhotobioreactorEnv(gym.Env):
         self.reactor_depth = 0.30  # 30cm depth
         self.reactor_width = 1.0
         self.volume_L = 20.0  # 20L reactor volume (fully controlled indoor PBR target)
-        
+        # The flat panel is lit through its 1.0 x 0.30 m face, so light crosses the
+        # 20 L / 0.30 m^2 = 6.7 cm thickness (a typical flat-panel light path).
+        self.light_path_m = self.volume_L * 1e-3 / (self.reactor_width * self.reactor_depth)
+
+        # --- Thermostat: heater/chiller holding T_SETPOINT. Heating capacity comfortably
+        # covers ambient loss; chiller capacity is limited, so sustained full light still
+        # warms the tank (~39C at 2000 umol) instead of being free.
+        self.T_SETPOINT = 35.0
+        self.HEAT_MAX_C_PER_H = 2.0
+        self.COOL_MAX_C_PER_H = 0.6
+
         # --- Gas-Phase / Carbonate Configuration (closed 20L PBR) ---
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-37)
         self.base_air_flow_lpm = 0.30        # Baseline air sparge (L/min)
         self.ambient_co2_frac = 420e-6       # Atmospheric CO2 mol fraction
         self.ambient_o2_frac = 0.209         # Atmospheric O2 mol fraction
-        self.buffer_equilibrium_ph = 9.5     # Zarrouk equilibrium at ~200 mM HCO3- (Spirulina medium)
         self.co2_toxicity_Ki_mgL = 30.0      # Mild dissolved-CO2 toxicity onset
         self.co2_toxicity_hill = 2.0         # Hill exponent for toxicity curve
+        # pH-stat CO2 feed, standard in Spirulina production: air alone cannot supply the
+        # carbon a dense culture fixes, so CO2 is injected whenever pH rises above setpoint.
+        self.PH_SETPOINT = 10.0
+        self.CO2_MAX_LPM = 0.05
 
-        # --- Automated PID setpoint (Nutrient dosing; CO2 control removed) ---
-        # Thresholds rescaled to Zarrouk's much richer baseline (N=410, P=89 mg/L)
+        # --- Automated nutrient dosing (hysteresis on N and P) ---
         self.N_DOSE_LOW = 150.0      # mg N/L — start dosing below this
         self.N_DOSE_HIGH = 350.0     # mg N/L — stop dosing above this
-        self.N_DOSE_RATE = 50.0      # mg/h when active
+        self.N_DOSE_RATE = 240.0     # mg stock/h into the tank when active (~10 mg N/L/h)
         self.P_DOSE_LOW = 25.0       # mg P/L — start dosing below this
         self.P_DOSE_HIGH = 70.0      # mg P/L — stop dosing above this
+        # Stock composition by mass, matched to biomass demand (N_FRAC:P_FRAC ~8:1) so neither
+        # nutrient runs out while the other piles up.
+        self.DOSE_N_FRAC = 0.83
+        self.DOSE_P_FRAC = 0.10
+        self.DOSE_EXT_FRAC = 0.07
 
         # --- Semi-continuous cycle: periodic, agent-controlled harvest events ---
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-57)
@@ -147,7 +208,9 @@ class GeneticPhotobioreactorEnv(gym.Env):
             # Was N(0.080, 0.015) (~8.7h doubling), above the project's own cited Spirulina range
             # (0.04-0.07 h^-1).
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-218)
-            'mu_max':    np.random.normal(0.055, 0.008),   # Arthrospira (Spirulina) platensis: ~12-13h doubling
+            # 0.040/h (~1/day, ~17 h doubling). Was 0.055, but a light-term normalisation bug
+            # capped f_I at 0.70, so the effective max was 0.038; that bug is fixed.
+            'mu_max':    np.random.normal(0.040, 0.006),   # Arthrospira (Spirulina) platensis
             'Ks':        np.random.normal(1.0, 0.2),       # NO3-N Ks retained (cross-species similarity)
             'Ks_light':  np.random.normal(100.0, 10.0),
             'Kii':       np.random.normal(2500.0, 250.0),
@@ -157,7 +220,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             'tau_acclim': np.random.uniform(1.0, 4.0),
             'Ks_P':      float(np.random.uniform(1.0, 4.0)),  # Spirulina P half-saturation (Zarrouk-rich medium)
         }
-        self.strain_params['mu_max']   = max(0.025, self.strain_params['mu_max'])  # floor rescaled with the new mean (was 0.04 @ mean 0.08, same 50% ratio)
+        self.strain_params['mu_max']   = max(0.020, self.strain_params['mu_max'])  # floor at 50% of the mean
         self.strain_params['Ks']       = max(0.3, self.strain_params['Ks'])       # floor at 0.3 mg N/L
         self.strain_params['Ks_light'] = max(50.0, self.strain_params['Ks_light'])
         self.strain_params['Kii']      = max(500.0, self.strain_params['Kii'])
@@ -193,10 +256,8 @@ class GeneticPhotobioreactorEnv(gym.Env):
         self.ext_nutrients = fresh["ext_nutrients"]
         self.n_pool = fresh["n_pool"]
         self.p_pool = fresh["p_pool"]
-        # Start at the ceiling every step clips to (see BICARB_CEILING_MM), so the first
-        # observation's conductivity matches every later one.
-        self.bicarbonate = min(fresh["bicarbonate"], self.BICARB_CEILING_MM)
-        self.ph = self.buffer_equilibrium_ph
+        self.alkalinity = fresh["alkalinity"]
+        self.dic = fresh["dic"]
         self.do2 = self.do2_s = self.do2_b = fresh["do2"]
         self._f_surface_cells = 1.0 / 3.0
         self.temp = float(np.random.uniform(32.0, 38.0))  # per-episode ambient variation (DS18B20)
@@ -213,8 +274,8 @@ class GeneticPhotobioreactorEnv(gym.Env):
         # Reset Advanced Physics
         self.salt = fresh["salt"]
         self.pigment = 1.0
-        self.dissolved_co2 = self.co2_s = self.co2_b = fresh["co2"]
-        
+        self._update_carbonate_speciation()
+
         self.dosing_integral = 0.0  # reset internal PID tracking each episode
         self.harvest_integral = 0.0  # cumulative volume harvested (L), accumulates per-step via dilution
         self.cumulative_harvested_mg = 0.0  # running total mg harvested across the episode (curriculum metric)
@@ -248,7 +309,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         # --- Initialize derived state (prevents stale-value NaN on episode 2+) ---
         init_total_mass = np.sum(self.cells_mass[:self.num_active])
         self.last_mass = init_total_mass
-        self.od = (init_total_mass * 1e-9 / self.volume_L) / 300.0
+        self.od = (init_total_mass * self.MG_PER_MASS_UNIT / self.volume_L) / 300.0
         # B6: initialize sensor state here so _get_obs() never reads stale episode values.
         # Same formula as every step, so the first observation isn't off by the bicarbonate
         # term (it was: ~12,000 vs ~22,600 µS/cm, a jump on step 1).
@@ -284,7 +345,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
     def _get_obs(self):
         # Calculate stats only if cells exist
         if self.num_active > 0:
-            total_mass_mg = np.sum(self.cells_mass[self.active_mask]) * 1e-9
+            total_mass_mg = np.sum(self.cells_mass[self.active_mask]) * self.MG_PER_MASS_UNIT
             self.od = (total_mass_mg / self.volume_L) / 300.0  # Volume-normalised OD
 
             # conductivity, rgb_absorbance, last_hourly_od are guaranteed by reset()
@@ -315,11 +376,10 @@ class GeneticPhotobioreactorEnv(gym.Env):
             rpm = float(self.current_stir_rpm)
             flow_noise = 1.0 + 0.03 * (rpm / 200.0) * np.random.normal(0, 1)
 
-            # Convert to raw NTU units (0-5000 range for sim-to-real transfer)
-            # Add base sensor noise floor (Difficulty scaled)
+            # ~250 NTU per od unit (od 1 = 300 mg/L), so the SEN0189's 1000 NTU ceiling sits
+            # near ~1.5 g/L instead of saturating at ~4 mg/L.
             noise_scale = 0.05
-            # SEN0189 saturates at 1000 NTU — clip matches hardware ceiling
-            turbidity_obs = _fclip((turbidity_base * 1000.0 * flow_noise) + np.random.normal(0, noise_scale), 0.0, 1000.0)
+            turbidity_obs = _fclip((turbidity_base * 250.0 * flow_noise) + np.random.normal(0, noise_scale), 0.0, 1000.0)
             self.turbidity_obs = turbidity_obs  # Store for debug logging
         else:
             self.od = 0.0
@@ -328,7 +388,9 @@ class GeneticPhotobioreactorEnv(gym.Env):
             turbidity_obs = 0.0
             self.turbidity_obs = turbidity_obs
 
-        bh1750_lux = _fclip(self.I_surface * 80.0 + np.random.normal(0.0, 500.0), 0.0, 65535.0)
+        # ~30 lux per umol/m2/s for a red/blue grow LED (80 suited white light and saturated
+        # the 16-bit BH1750 at ~820 umol, hiding the top of the light range).
+        bh1750_lux = _fclip(self.I_surface * 30.0 + np.random.normal(0.0, 200.0), 0.0, 65535.0)
 
         # Fix #18 (v21): long-window (~600-step) EMA of turbidity, since the raw channel carries
         # stir-dependent multiplicative noise.
@@ -397,7 +459,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             0.0, 1.0 - 0.5 / (self.cells_quota[self.active_mask] + 1e-6)
         ))) if self.num_active > 0 else 0.0
         return np.array([
-            getattr(self, 'dissolved_co2', 2.0),            # hidden DIC state
+            self.dic,                                         # hidden DIC state (mM)
             mean_fQ,                                          # mean Droop quota
             self.strain_params.get('mu_max', 0.05),          # strain growth rate
             self.strain_params.get('Ks_light', 100.0) / 200.0,  # normalised
@@ -406,27 +468,39 @@ class GeneticPhotobioreactorEnv(gym.Env):
     # Per-event harvest target for reward_harvest (mg per event; events fire every
     # HARVEST_INTERVAL_STEPS, 12 per episode), from a harvest-fraction grid sweep.
     # (full rationale: docs/decision_history.md#--environments-genetic_env-py-496)
-    TARGET_MG_PER_EVENT = 12.32
+    TARGET_MG_PER_EVENT = 850.0     # scripted expert's cold-start median / 12 events (D0/D1)
 
     # Target standing OD: the peak of the PBRS OD-health term and the reference for the
     # harvest-collapse penalty.
-    OD_TARGET = 0.012
+    OD_TARGET = 0.75                # middle of the expert's flat optimum (0.58-0.97, ~225 mg/L)
+
+    # Biomass represented by one unit of cells_mass, in mg. Each agent (~1e8 units) stands for
+    # ~10 mg of dry biomass, so the 45-7500 agents the curriculum uses span ~25 mg/L to
+    # ~5 g/L in 20 L: real Spirulina densities. At 1e-9 the culture ran at ~4 mg/L, where
+    # self-shading, O2 build-up and flocculation never engaged.
+    MG_PER_MASS_UNIT = 1e-7
+
+    # Specific light extinction by biomass (m^2 per g dry weight, i.e. per m^-1 per mg/L),
+    # per LED channel. PAR-weighted mean ~0.19 m^2/g, the range reported for A. platensis.
+    EXT_RED, EXT_BLUE, EXT_GREEN = 0.20, 0.25, 0.06
+    RED_FRAC, BLUE_FRAC, GREEN_FRAC = 0.4, 0.4, 0.2
+
+    # Biomass composition (mass fraction of dry weight) that sets medium drawdown per mg grown.
+    C_FRAC, N_FRAC, P_FRAC, EXT_FRAC = 0.50, 0.10, 0.012, 0.02
 
     # Fresh Zarrouk medium: what reset() fills the tank with AND what harvest dilution refills
     # it with. One definition, so the two can't drift apart again (salt did: 2500 vs 1000).
+    # 16.8 g/L NaHCO3 gives 200 meq/L alkalinity; once air-equilibrated it holds ~140 mM DIC
+    # at pH ~9.9, the range Zarrouk cultures actually run at.
     FRESH_MEDIUM = {
         "ext_nutrients": 300.0,  # mg/L — mineral salts (MgSO4, CaCl2, trace metals)
         "n_pool": 410.0,         # mg N/L — NaNO3 2.5 g/L
         "p_pool": 89.0,          # mg P/L — K2HPO4 0.5 g/L
-        "bicarbonate": 200.0,    # mM — NaHCO3 16.8 g/L
+        "alkalinity": 200.0,     # meq/L — NaHCO3 16.8 g/L
+        "dic": _air_equilibrated_dic(200.0, _CO2_AIR_SAT_MGL / 44.0, 30.0),  # mM
         "salt": 2500.0,          # mg/L — NaCl + K2SO4 + trace salts ionic background
         "do2": 7.0,              # mg/L — air-equilibrated
-        "co2": 6.2,              # mg/L — CO2(aq) at pH 9.5 with 200 mM HCO3-
     }
-
-    # Working bicarbonate ceiling (mM), far below FRESH_MEDIUM's 200 mM and load-bearing; see
-    # the NOTE in _update_gas_and_carbonate.
-    BICARB_CEILING_MM = 5.0
 
     # Light-path biofouling coefficient. NOTE: 0.0002 was calibrated for lab OD600 units,
     # ~250x larger than this sim's od, so the term is nearly inert.
@@ -535,14 +609,12 @@ class GeneticPhotobioreactorEnv(gym.Env):
         self._update_temperature(I_surface, stir_rpm)
         self._update_fouling(stir_rpm)
 
-        # (full rationale: docs/decision_history.md#--environments-genetic_env-py-953)
-        dt_sec = self.dt * 3600
         self.time_t += self.dt
         mix_intensity = stir_rpm / 200.0  # 0 to 1
 
         self._update_flocculation(stir_rpm)
-        self._move_cells(mix_intensity, dt_sec)
-        total_uptake_mg, shock_factor = self._update_biology(I_surface, stir_rpm, mix_intensity, nut_flow)
+        self._mix_cells()
+        dosed_mg, shock_factor = self._update_biology(I_surface, stir_rpm, mix_intensity, nut_flow)
 
         # Transfer coefficients and the biomass change are taken on the PRE-harvest culture;
         # the gas-layer balances below then run on the post-harvest tank.
@@ -551,11 +623,11 @@ class GeneticPhotobioreactorEnv(gym.Env):
         harvested_this_step_mg, is_harvest_event = self._apply_harvest()
 
         # Recompute standing mass/OD post-dilution — this is what the tank actually holds
-        total_mass_mg = np.sum(self.cells_mass[self._aidx()]) * 1e-9
+        total_mass_mg = np.sum(self.cells_mass[self._aidx()]) * self.MG_PER_MASS_UNIT
         self.od = (total_mass_mg / self.volume_L) / 300.0
 
         self._update_gas_and_carbonate(k_La, o2_frac, co2_frac, mix_intensity, delta_mass_mg)
-        self._update_pigment_and_salt(I_surface, delta_mass_mg, total_uptake_mg)
+        self._update_pigment_and_salt(delta_mass_mg, dosed_mg)
         self._update_sensors()
 
         self._update_episode_stats(shock_factor)
@@ -672,11 +744,12 @@ class GeneticPhotobioreactorEnv(gym.Env):
             nut_flow *= float(np.random.uniform(0.95, 1.05))
 
         # Accumulate internal PID dosing tracker (not exposed to obs)
-        self.dosing_integral += self.current_nut_flow * 0.79 * self.dt  # 79% N fraction (Zarrouk ratio)
+        self.dosing_integral += self.current_nut_flow * self.DOSE_N_FRAC * self.dt
         return stir_rpm, I_surface, nut_flow
 
     def _apply_light_schedule(self, I_surface, nut_flow):
-        """Day/night cycle and early-episode grace limits on light and nutrient flow."""
+        """Day/night cycle. (An early-episode light cap used to live here too: for the first
+        24 h it silently turned light actions above the cap into no-ops.)"""
         # --- Day/Night Cycle (enforced before grace period) ---
         if self.lights_off_hour is not None:
             current_hour = (self.step_count * self.dt) % 24.0
@@ -690,14 +763,6 @@ class GeneticPhotobioreactorEnv(gym.Env):
             self.is_night = is_night
         else:
             self.is_night = False
-
-        # --- Grace Period (Training Wheels) ---
-        if self.step_count < 1200:
-            grace_factor = self.step_count / 1200.0
-            max_light = 500.0 + (1500.0 * grace_factor)
-            I_surface = min(I_surface, max_light)
-            max_nuts = 20.0 + (80.0 * grace_factor) # Ramp 20→100 mg/h: matches real consumption at 3k-12k cells
-            nut_flow = min(nut_flow, max_nuts)
 
         # Store effective PAR after day/night and grace period — BH1750 reads actual LED delivery
         self.I_surface = float(I_surface)
@@ -715,10 +780,13 @@ class GeneticPhotobioreactorEnv(gym.Env):
         # Cooling to ambient: Rate of 0.1 per hour
         cooling = 0.1 * (self.temp - ambient_temp) * self.dt * phys_scale
         self.temp += heat_from_light - cooling
-        # Viscous/Ohmic heating from impeller (scales with RPM^3, max ~0.5°C at 200 RPM)
-        stir_heat = (stir_rpm / 200.0) ** 3 * 0.5 * self.dt * phys_scale
+        # Impeller heating, ~P = Np*rho*N^3*D^5 (~2 W at 200 RPM in 20 L, ~0.1 C/h).
+        stir_heat = (stir_rpm / 200.0) ** 3 * 0.1 * self.dt * phys_scale
         self.temp += stir_heat
-        
+        # Thermostat (proportional heater/chiller, capacity-limited).
+        u = _fclip(2.0 * (self.T_SETPOINT - self.temp), -self.COOL_MAX_C_PER_H, self.HEAT_MAX_C_PER_H)
+        self.temp += u * self.dt
+
         self.temp = np.clip(self.temp, 15.0, 45.0)
 
     def _update_fouling(self, stir_rpm):
@@ -774,211 +842,117 @@ class GeneticPhotobioreactorEnv(gym.Env):
             # Physical Lower Bound: 1.0 (Single Cell)
             self.clump_mass[self._aidx()] = np.maximum(self.clump_mass[self._aidx()], 1.0)
 
-    def _move_cells(self, mix_intensity, dt_sec):
-        """Advect/diffuse cells (turbulent mixing, or sedimentation at low RPM), then reflect at the walls."""
-        if self.num_active > 0 and mix_intensity > 0.01:
-            # --- 2D Kinematic Turbulence (Airlift / Convection Loop) ---
-            # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1007)
-            
-            x_pos = self.cells_x[self._aidx()]
-            z_pos = self.cells_z[self._aidx()]
-            
-            # 1. Vertical Velocity (Vz)
-            # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1015)
-            v_max_z = 0.05 * mix_intensity   # 0.05 m/s at max RPM — realistic for 30L flat-panel airlift
-            # Damping at top/bottom walls (z close to 0 or D)
-            v_macro_z = v_max_z * -np.cos(2 * np.pi * (x_pos - 0.5)) 
-            
-            # 2. Horizontal Velocity (Vx)
-            v_max_x = v_max_z * 5.0 # Aspect ratio scaling (Width >> Depth)
-            v_macro_x = v_max_x * (x_pos - 0.5) * np.cos(np.pi * z_pos / self.reactor_depth)
-            
-            # 3. Turbulence (Random Perturbations)
-            # Perlin-like noise
-            indices = self._aidx()
-            turb_freq = 5.0
-            turb_phase = 10.0 * self.time_t
-            
-            v_turb_x = 0.002 * mix_intensity * np.sin(turb_freq * z_pos * 100 - turb_phase + indices)
-            v_turb_z = 0.002 * mix_intensity * np.cos(turb_freq * x_pos * 10 - turb_phase + indices)
-            
-            # 4. Sinking & Diffusion
-            r_eff = self.clump_mass[self._aidx()] ** (1.0/3.0)
-            v_sink = 0.001 * (self.clump_mass[self._aidx()] ** (2.0/3.0))
-            
-            noise_x = np.random.normal(0, 1, self.num_active)
-            noise_z = np.random.normal(0, 1, self.num_active)
-            
-            # Brownian displacement over the step: sqrt(2*D*dt), D = 1e-7 m^2/s scaled by clump size.
-            diff_x = (np.sqrt(2 * 1e-7 * dt_sec) / r_eff) * noise_x
-            diff_z = (np.sqrt(2 * 1e-7 * dt_sec) / r_eff) * noise_z
-
-            # Integrate
-            dz = (v_macro_z + v_turb_z - v_sink) * dt_sec + diff_z
-            dx = (v_macro_x + v_turb_x) * dt_sec + diff_x
-            
-            self.cells_z[self._aidx()] += dz
-            self.cells_x[self._aidx()] += dx
-            
-        else:
-            # Low mixing -> Sedimentation
-            sink_speed = 0.005 * (self.clump_mass[self._aidx()] ** (2.0/3.0))
-            r_eff = self.clump_mass[self._aidx()] ** (1.0/3.0)
-            
-            noise = np.random.normal(0, 1, self.num_active)
-            dz = -sink_speed * self.dt + ((np.sqrt(2 * 1e-7 * dt_sec)/r_eff) * noise)
-            
-            # X Diffusion only
-            noise_x = np.random.normal(0, 1, self.num_active)
-            dx = (np.sqrt(2 * 1e-7 * dt_sec)/r_eff) * noise_x
-            
-            self.cells_z[self._aidx()] += dz
-            self.cells_x[self._aidx()] += dx
-        
-        # Reflecting walls. One step can carry a cell several reactor widths (velocity x
-        # dt_sec, up to ~9 m in a 1 m tank), so fold with a triangle wave. Reflecting once and
-        # then clipping sent every large overshoot to the wall, which piled all cells at
-        # x=0, z=0 within ~50 steps and collapsed the depth-dependent light and gas-layer models.
-        self.cells_z = self._reflect(self.cells_z, self.reactor_depth)
-        self.cells_x = self._reflect(self.cells_x, self.reactor_width)
-
-    @staticmethod
-    def _reflect(pos, length):
-        """Map positions into [0, length] as if bounced off both walls any number of times."""
-        pos = np.mod(pos, 2.0 * length)
-        return np.where(pos > length, 2.0 * length - pos, pos).astype(np.float32)
+    def _mix_cells(self):
+        """Well-mixed culture. At dt = 72 s every cell circulates the 0.3 m tank many times per
+        step, so its position is redrawn uniformly each step. The 2-D velocity field this
+        replaces moved cells up to 18 m per step, which amounted to the same thing."""
+        if self.num_active > 0:
+            idx = self._aidx()
+            self.cells_z[idx] = np.random.uniform(0.0, self.reactor_depth, self.num_active)
+            self.cells_x[idx] = np.random.uniform(0.0, self.reactor_width, self.num_active)
 
     def _update_biology(self, I_surface, stir_rpm, mix_intensity, nut_flow):
-        """Light field, growth, lysis, nutrient uptake and division. Returns (total_uptake_mg, shock_factor)."""
+        """Light field, growth, lysis, nutrient uptake and division. Returns (dosed_mg, shock_factor)."""
         # --- BIOLOGY ---
         
         # 1. Shear Stress (RPM > 400)
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1083)
 
-        total_uptake_mg = 0.0
+        dosed_mg = 0.0
         if self.num_active > 0:
             params = self.strain_params
-            
-            # 1. Spectral Light Field (RGB Physics)
+            idx = self._aidx()
+
+            # 1. Spectral light field across the 6.7 cm light path.
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1093)
-            
-            # Split Spectrum (Grow Light logic: High Red/Blue, Low Green)
-            I_s_red = I_surface * 0.4
-            I_s_blue = I_surface * 0.4
-            I_s_green = I_surface * 0.2
-            
-            # Optical Density (Biomass)
-            total_mass_mg = np.sum(self.cells_mass[self._aidx()]) * 1e-9
-            current_od = (total_mass_mg / self.volume_L) / 300.0
-            
-            # Attenuation Coefficients (k)
-            # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1106)
-            
-            # Bubble Scattering (0.004 * RPM)
+            fouling = np.exp(-self.fouling_factor)
+            I_s_red = I_surface * self.RED_FRAC * fouling
+            I_s_blue = I_surface * self.BLUE_FRAC * fouling
+            I_s_green = I_surface * self.GREEN_FRAC * fouling
+
+            # Attenuation: water + bubble scattering + biomass (specific extinction x mg/L).
+            X_mgL = np.sum(self.cells_mass[idx]) * self.MG_PER_MASS_UNIT / self.volume_L
             k_scatter = stir_rpm * 0.004
-            
-            k_red = 0.5 + (3.5 * current_od) + k_scatter
-            # Blue: Absorbed by pigments but penetrates better (3x better than Red?)
-            k_blue = 0.2 + (1.5 * current_od) + k_scatter
-            # Green: Reflected/Transmitted (Deep penetration)
-            k_green = 0.05 + (0.5 * current_od) + k_scatter
-            
-            # ── Turbulent Flash-Light Effect (Biologically Accurate) ──────────
-            # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1119)
-            static_z = self.cells_z[self._aidx()]
-            # 2-layer gas: surface = top 10cm (z < 0.10m), bulk = bottom 20cm
-            surface_cell_mask = static_z < 0.10
+            k_red = 0.5 + self.EXT_RED * X_mgL + k_scatter
+            k_blue = 0.2 + self.EXT_BLUE * X_mgL + k_scatter
+            k_green = 0.05 + self.EXT_GREEN * X_mgL + k_scatter
+
+            # Gas layer each cell sits in this step (surface = top 10 cm).
+            surface_cell_mask = self.cells_z[idx] < 0.10
             self._f_surface_cells = float(np.mean(surface_cell_mask))
             cells_local_do2 = np.where(surface_cell_mask, self.do2_s, self.do2_b).astype(np.float32)
-            cells_local_co2 = np.where(surface_cell_mask, self.co2_s, self.co2_b).astype(np.float32)
+            cells_local_co2 = self.dissolved_co2
 
-            turbulent_z = np.random.uniform(0.0, self.reactor_depth, size=static_z.shape)
-            # Turbulent fraction scales with mix_intensity (0 → rest, 0.95 → 500 RPM max mixing)
-            turb_fraction = min(0.95, mix_intensity * 0.95)
-            z_pos = (1.0 - turb_fraction) * static_z + turb_fraction * turbulent_z
-            
-            # Calculate Light at each cell depth
-            # Apply Clump Self-Shading (Geometric) — Mass^(-1/3) (Surface/Volume Scaling)
-            f_clump_shade = self.clump_mass[self._aidx()] ** (-1.0/3.0)
-            
-            # Biofouling Effect
-            I_s_red *= np.exp(-self.fouling_factor)
-            I_s_blue *= np.exp(-self.fouling_factor)
-            I_s_green *= np.exp(-self.fouling_factor)
-            
-            I_red = I_s_red * np.exp(-k_red * z_pos) * f_clump_shade
-            I_blue = I_s_blue * np.exp(-k_blue * z_pos) * f_clump_shade
-            I_green = I_s_green * np.exp(-k_green * z_pos) * f_clump_shade
-            
-            # Total Energy (for Inhibition/Bleaching/Acclimation)
-            cells_I_total = I_red + I_blue + I_green
-            
-            # Growth Energy (Photosynthetically Active Radiation - PUR)
-            # Plants primarily use Red light for efficient growth
-            cells_I_growth = I_red 
-            
+            # Every cell crosses the light path many times per 72 s step, so it experiences the
+            # whole gradient: growth averages the instantaneous light response over the path
+            # (8-point midpoint rule); slow processes (acclimation, shock) see the path mean.
+            zq = (np.arange(8) + 0.5) / 8.0 * self.light_path_m
+            q_red = I_s_red * np.exp(-k_red * zq)
+            q_tot = q_red + I_s_blue * np.exp(-k_blue * zq) + I_s_green * np.exp(-k_green * zq)
+
+            # Clump self-shading (geometric, mass^-1/3 surface/volume scaling).
+            f_clump_shade = self.clump_mass[idx] ** (-1.0 / 3.0)
+            cells_I_growth = f_clump_shade[:, None] * q_red[None, :]      # (n, 8)
+            cells_I_q = f_clump_shade[:, None] * q_tot[None, :]
+            cells_I_total = cells_I_q.mean(axis=1)                        # path-mean light
+            self.mean_cell_light = float(np.mean(cells_I_total))
+
             # --- Photo-Acclimation (Hysteresis) ---
-            # EMA lag = tau_acclim (1–4h per strain); corrected from fixed 0.1 (~0.2h, 5–20× too fast)
+            # EMA lag = tau_acclim (1–4h per strain)
             alpha_accum = self.dt / max(params['tau_acclim'], 0.01)
-            self.cells_acclimation[self._aidx()] += alpha_accum * (cells_I_total - self.cells_acclimation[self._aidx()])
-            I_effective = self.cells_acclimation[self._aidx()]
-            
+            self.cells_acclimation[idx] += alpha_accum * (cells_I_total - self.cells_acclimation[idx])
+            I_effective = self.cells_acclimation[idx]
+
             # 2. Temperature Factor (Gaussian)
             temp_factor = np.exp(-0.5 * ((self.temp - params['T_opt'])/5.0)**2)
-            
-            # Photo-Inhibition / Shock
+
+            # Photo-Inhibition / Shock (sustained light change vs the acclimated level)
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1168)
             diff = (cells_I_total - I_effective)
-            shock_factor = np.exp(-0.000003 * (diff**2))  # 3e-6: 24% penalty at diff=300 (was 9%)
+            shock_factor = np.exp(-0.000003 * (diff**2))  # 24% penalty at diff=300
 
-            # --- Oxygen Toxicity (ROS Damage) — per-cell using local layer DO2 ---
+            # --- Oxygen inhibition (D1+). Spirulina productivity falls noticeably above
+            # ~25 mg/L DO and roughly halves by ~35 mg/L.
             if self.difficulty >= 1:
                 phys_scale = 0.75 if self.difficulty == 1 else 1.0
-                f_O2 = np.maximum(0.0, 1.0 - ((cells_local_do2 / 22.0)**4) * phys_scale)
+                f_O2 = 1.0 / (1.0 + phys_scale * (cells_local_do2 / 35.0) ** 4)
             else:
                 f_O2 = np.ones(self.num_active, dtype=np.float32)
-            
-            # 3. Growth Rate (Haldane)
+
+            # 3. Growth Rate (Haldane), red light drives growth, total light inhibits.
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1182)
-            
-            # Parameters — both now strain-specific (Kii bug fix: was hardcoded 2500)
             Ks_I = params['Ks_light']
             Ki_I = params['Kii']
-            f_I_raw = cells_I_growth / (Ks_I + cells_I_growth + (cells_I_total**2 / Ki_I))
-            f_I_raw = np.nan_to_num(f_I_raw)
-            # Normalise to [0,1] by the Haldane theoretical maximum at I_peak = sqrt(Ks_I * Ki_I).
-            # Replaces the ×1.5 hack that allowed f_I > 1.0 and effective mu > mu_max.
-            I_peak    = np.sqrt(Ks_I * Ki_I)
-            f_I_max   = I_peak / (2.0 * Ks_I + I_peak)
-            f_I = np.clip(f_I_raw / (f_I_max + 1e-8), 0.0, 1.0)
+            f_I_raw = cells_I_growth / (Ks_I + cells_I_growth + (cells_I_q**2 / Ki_I))
+            # Normalise by the curve's true maximum. It peaks at total I* = sqrt(Ks*Ki), where the
+            # red share is RED_FRAC*I*; normalising by the all-red peak (as before) capped f_I
+            # at ~0.70 and silently cut the effective mu_max by 30%.
+            I_peak = np.sqrt(Ks_I * Ki_I)
+            f_I_max = self.RED_FRAC * I_peak / (2.0 * Ks_I + self.RED_FRAC * I_peak)
+            f_I = np.clip(np.nan_to_num(f_I_raw).mean(axis=1) / (f_I_max + 1e-8), 0.0, 1.0)
 
-            # DEBUG: Save RGB Ratio for observation
-            avg_red = np.mean(I_red)
-            mean_blue = np.mean(I_blue)
-            avg_blue = mean_blue if mean_blue > 0.001 else 1.0
-            self.rgb_ratio = avg_red / avg_blue
-            
+            self.rgb_ratio = float(np.mean(q_red)) / max(float(np.mean(I_s_blue * np.exp(-k_blue * zq))), 1e-3)
+
             # Droop Quota
-            # Only update active quotas
-            current_quotas = self.cells_quota[self._aidx()]
-            
+            current_quotas = self.cells_quota[idx]
             f_Q = np.maximum(0.0, 1.0 - params['Q_min'] / (current_quotas + 1e-6))
-            
-            # pH Inhibition (Asymmetric Gaussian — Arthrospira/Spirulina platensis)
+
+            # pH (Arthrospira): optimum ~9.5-10, sharper decline above ~10.5.
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1209)
-            if self.ph <= 9.3:
-                f_pH = np.exp(-0.5 * ((self.ph - 9.3) / 0.7) ** 2)
+            if self.ph <= 9.8:
+                f_pH = np.exp(-0.5 * ((self.ph - 9.8) / 0.9) ** 2)
             else:
-                f_pH = np.exp(-0.5 * ((self.ph - 9.3) / 1.0) ** 2)
-            
-            # Osmotic Stress — conductivity as ionic strength proxy (all ions: N, P, HCO3-, salts)
+                f_pH = np.exp(-0.5 * ((self.ph - 9.8) / 0.7) ** 2)
+
+            # Osmotic stress. Zarrouk itself is ~30 mS/cm and is Spirulina's native medium, so
+            # the onset sits above it.
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1218)
-            cond_for_osmosis = getattr(self, 'conductivity', 19000.0)
-            if cond_for_osmosis > 25000.0:
-                f_Osmosis = np.exp(-0.5 * ((cond_for_osmosis - 25000.0) / 15000.0) ** 2)
+            cond_for_osmosis = getattr(self, 'conductivity', 30000.0)
+            if cond_for_osmosis > 40000.0:
+                f_Osmosis = np.exp(-0.5 * ((cond_for_osmosis - 40000.0) / 15000.0) ** 2)
             else:
                 f_Osmosis = 1.0
-                
+
             # Debug stats (debug_shock/debug_clump are set every step in _update_episode_stats)
             if self.step_count % 100 == 0:
                 self.debug_f_I = np.mean(f_I)
@@ -1035,8 +1009,10 @@ class GeneticPhotobioreactorEnv(gym.Env):
             growth_mult = np.exp(net_mu * self.dt)
             # Clip multiplier to avoid single-step explosion (both up and down)
             growth_mult = np.clip(growth_mult, 0.5, 2.0)
-            
-            self.cells_mass[self._aidx()] *= growth_mult
+
+            # Dry biomass built this step (mg); sets the medium drawdown below.
+            grown_mg = float(np.sum(self.cells_mass[idx] * np.maximum(growth_mult - 1.0, 0.0))) * self.MG_PER_MASS_UNIT
+            self.cells_mass[idx] *= growth_mult
 
             # Droop quota dilution: as cells grow, intracellular quota (N/biomass) is diluted.
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1301)
@@ -1080,24 +1056,19 @@ class GeneticPhotobioreactorEnv(gym.Env):
             # Enforce Q_max: prevents unbounded hyperaccumulation (Droop model assumption)
             self.cells_quota[self._aidx()] = np.minimum(self.cells_quota[self._aidx()], params['Q_max'])
 
-            # N drain factor 0.01: max drain ~37.5 mg N/h at 7500 cells (calibrated; see calibration.md)
-            total_uptake_mg = uptake_amount * self.num_active * 0.01
-            # P uptake: Monod saturation with strain-specific Ks_P.
-            # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1360)
-            p_uptake_rate = self.p_pool / (Ks_P + self.p_pool)
-            total_p_uptake_mg = p_uptake_rate * self.dt * self.num_active * 0.0014
-            # nut_flow dosing composition: 79% N, 16% P, 5% inorganic salts (Zarrouk stock ratio).
-            # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1365)
-            n_input_step = nut_flow * 0.79 * self.dt
-            # N waste penalty removed: it caused mode collapse (early overdose, then zero dosing
-            # for the rest of the episode).
-            # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1369)
-            self.n_pool        = max(0.0, self.n_pool        - total_uptake_mg    + n_input_step)
-            self.p_pool        = max(0.0, self.p_pool        - total_p_uptake_mg  + (nut_flow * 0.16 * self.dt))
-            # K, Mg consumed proportionally to N uptake (~2% of N uptake by mass); floor at 50 mg/L
-            ext_uptake_mg = total_uptake_mg * 0.02
-            self.ext_nutrients = max(50.0, self.ext_nutrients - ext_uptake_mg     + (nut_flow * 0.05 * self.dt))
-            
+            # Medium drawdown follows the biomass actually built (N_FRAC etc. of dry weight).
+            # It used to scale with agent count, ran on at Q_max, and took mg from mg/L pools:
+            # ~600x the N the biomass needed. Dosing enters as mg into the whole tank.
+            dosed_mg = nut_flow * self.dt
+            V = self.volume_L
+            n_drain = grown_mg * self.N_FRAC / V
+            self.n_pool = max(0.0, self.n_pool - n_drain + dosed_mg * self.DOSE_N_FRAC / V)
+            self.p_pool = max(0.0, self.p_pool - grown_mg * self.P_FRAC / V + dosed_mg * self.DOSE_P_FRAC / V)
+            self.ext_nutrients = max(50.0, self.ext_nutrients - grown_mg * self.EXT_FRAC / V
+                                     + dosed_mg * self.DOSE_EXT_FRAC / V)
+            # Nitrate assimilation releases OH-: +1 eq alkalinity per mol N.
+            self.alkalinity += n_drain / 14.0
+
             # --- CELL DIVISION (Reproduction) ---
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1378)
             ready_to_divide = (self.active_mask) & (self.cells_mass >= 1.4e8)
@@ -1143,7 +1114,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             # shock_factor is otherwise only assigned in the num_active>0 branch above;
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1424)
             shock_factor = np.array([1.0], dtype=np.float32)
-        return total_uptake_mg, shock_factor
+        return dosed_mg, shock_factor
 
     def _gas_transfer(self, stir_rpm):
         """Gas fractions and the kLa transfer coefficient. Returns (k_La, o2_frac, co2_frac)."""
@@ -1151,11 +1122,13 @@ class GeneticPhotobioreactorEnv(gym.Env):
         od = self.od
         avg_clump = np.mean(self.clump_mass[self._aidx()]) if self.num_active > 0 else 1.0
         
-        # Resistance starts at 1.0 (water-like broth) and increases with OD/clumping.
-        # od/0.5: broth viscosity doubles at OD=0.5 — consistent with real PBR measurements.
-        flow_resistance = 1.0 + ((od / 0.5)**2) * (avg_clump ** 0.5)
-        
-        co2_flow_lpm = 0.0  # no CO2 injection — ambient air sparge only (see gas-phase config)
+        # Resistance starts at 1.0 (water-like broth) and rises with density/clumping. Spirulina
+        # broth stays near water viscosity below a few g/L; od 10 is ~3 g/L here.
+        flow_resistance = 1.0 + ((od / 10.0)**2) * (avg_clump ** 0.5)
+
+        # pH-stat CO2 feed: proportional above PH_SETPOINT, full flow 0.3 pH units over.
+        co2_flow_lpm = _fclip(self.CO2_MAX_LPM * (self.ph - self.PH_SETPOINT) / 0.3, 0.0, self.CO2_MAX_LPM)
+        self.co2_flow_lpm = co2_flow_lpm
         total_gas_lpm = max(1e-6, self.base_air_flow_lpm + co2_flow_lpm)
         co2_frac = ((self.ambient_co2_frac * self.base_air_flow_lpm) + co2_flow_lpm) / total_gas_lpm
         co2_frac = _fclip(co2_frac, self.ambient_co2_frac, 0.12)
@@ -1174,10 +1147,10 @@ class GeneticPhotobioreactorEnv(gym.Env):
     def _biomass_change(self):
         """Net biomass change this step (mg), measured against last step's mass."""
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1464)
-        total_mass_mg = np.sum(self.cells_mass[self._aidx()]) * 1e-9  # pg -> mg
+        total_mass_mg = np.sum(self.cells_mass[self._aidx()]) * self.MG_PER_MASS_UNIT
         if self.step_count == 0:
             return 0.0
-        return float(total_mass_mg - self.last_mass * 1e-9)
+        return float(total_mass_mg - self.last_mass * self.MG_PER_MASS_UNIT)
 
     def _apply_harvest(self):
         """Periodic semi-continuous harvest/dilution. Returns (harvested_mg, is_harvest_event)."""
@@ -1208,18 +1181,16 @@ class GeneticPhotobioreactorEnv(gym.Env):
             remove_local = np.random.uniform(0.0, 1.0, len(active_idx)) < frac_diluted
             remove_idx = active_idx[remove_local]
             if len(remove_idx) > 0:
-                harvested_this_step_mg = float(np.sum(self.cells_mass[remove_idx])) * 1e-9
+                harvested_this_step_mg = float(np.sum(self.cells_mass[remove_idx])) * self.MG_PER_MASS_UNIT
                 self._remove_cells(remove_idx)
 
             # The removed volume is replaced with fresh medium (FRESH_MEDIUM, the same fill as
             # reset()); dissolved gases refill air-equilibrated, not at zero.
             fresh, keep = self.FRESH_MEDIUM, 1.0 - frac_diluted
-            for pool in ("ext_nutrients", "n_pool", "p_pool", "bicarbonate", "salt"):
+            for pool in ("ext_nutrients", "n_pool", "p_pool", "alkalinity", "dic", "salt"):
                 setattr(self, pool, getattr(self, pool) * keep + fresh[pool] * frac_diluted)
             for layer in ("do2_s", "do2_b"):
                 setattr(self, layer, getattr(self, layer) * keep + fresh["do2"] * frac_diluted)
-            for layer in ("co2_s", "co2_b"):
-                setattr(self, layer, getattr(self, layer) * keep + fresh["co2"] * frac_diluted)
 
         self.cumulative_harvested_mg += harvested_this_step_mg
         if self.step_count >= self.BACK_HALF_STEP:
@@ -1228,24 +1199,17 @@ class GeneticPhotobioreactorEnv(gym.Env):
         return harvested_this_step_mg, is_harvest_event
 
     def _update_gas_and_carbonate(self, k_La, o2_frac, co2_frac, mix_intensity, delta_mass_mg):
-        """2-layer O2/CO2 balances, bicarbonate, and pH."""
-        # 2-layer model: surface z<10cm (10 L), bulk z>=10cm (20 L).
+        """2-layer O2 balance, one well-mixed DIC pool, and pH from alkalinity + DIC."""
+        # 2-layer O2: surface z<10cm (6.7 L), bulk (13.3 L).
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1560)
         LAYER_DEPTH = 0.10
-        vol_s = self.volume_L * (LAYER_DEPTH / self.reactor_depth)   # 10 L
-        vol_b = self.volume_L - vol_s                                  # 20 L
-        f_s   = getattr(self, '_f_surface_cells', LAYER_DEPTH / self.reactor_depth)
+        vol_s = self.volume_L * (LAYER_DEPTH / self.reactor_depth)
+        vol_b = self.volume_L - vol_s
+        w_s = getattr(self, '_f_surface_cells', LAYER_DEPTH / self.reactor_depth)
+        w_b = 1.0 - w_s
 
-        # Net O2 yield: photosynthesis 6CO2+6H2O→C6H12O6+6O2 gives 5.33 mg O2/mg C (50% C biomass → 2.67 mg O2/mg DW gross).
-        # Net (after growth respiration ~40% overhead): ~1.5 mg O2 per mg net DW gained.
-        o2_production = delta_mass_mg * 1.5  # mg O2 total (net stoichiometric yield)
-
-        # Distribute O2/CO2 by productivity: surface cells are ~3× more active per cell
-        surf_prod  = f_s * 3.0
-        bulk_prod  = (1.0 - f_s) * 1.0
-        total_prod = max(surf_prod + bulk_prod, 1e-9)
-        w_s = surf_prod / total_prod
-        w_b = bulk_prod / total_prod
+        # Net O2 yield ~1.5 mg O2 per mg DW gained (2.67 gross, less growth respiration).
+        o2_production = delta_mass_mg * 1.5
 
         # Per-layer gas-atmosphere exchange; surface gets slight headspace bonus (+20%)
         kLa_s = k_La * 1.20
@@ -1258,52 +1222,27 @@ class GeneticPhotobioreactorEnv(gym.Env):
         kLa_inter = k_La * mix_intensity * 0.5
         mix_s, mix_b = self._layer_exchange(self.do2_s, self.do2_b, kLa_inter, vol_s, vol_b)
 
-        self.do2_s = _fclip(mix_s + (o2_production * w_s / vol_s) + o2_xfer_s, 0.0, 40.0)
-        self.do2_b = _fclip(mix_b + (o2_production * w_b / vol_b) + o2_xfer_b, 0.0, 30.0)
+        self.do2_s = _fclip(mix_s + (o2_production * w_s / vol_s) + o2_xfer_s, 0.0, 60.0)
+        self.do2_b = _fclip(mix_b + (o2_production * w_b / vol_b) + o2_xfer_b, 0.0, 60.0)
+        self.do2 = (self.do2_s * vol_s + self.do2_b * vol_b) / self.volume_L
 
-        # DIC balance per layer
-        # Henry's law: [CO2(aq)] = K_H * pCO2; K_H=29 mol/(L·atm), MW=44 → 1276 mg/(L·atm) at 30°C
-        co2_sat = _fclip(1276.0 * co2_frac, 0.3, 60.0)
-        co2_xfer_s = kLa_s * (co2_sat - self.co2_s) * self.dt
-        co2_xfer_b = kLa_b * (co2_sat - self.co2_b) * self.dt
-        co2_mix_s, co2_mix_b = self._layer_exchange(self.co2_s, self.co2_b, kLa_inter, vol_s, vol_b)
+        # DIC: gas exchange of CO2(aq) toward the sparge gas, minus carbon fixed into biomass
+        # (C_FRAC of dry weight), plus carbon returned by net biomass loss.
+        co2_sat = _fclip(1276.0 * co2_frac, 0.3, 160.0)          # mg/L, Henry at ~30C
+        co2_flux_mM = k_La * (co2_sat - self.dissolved_co2) * self.dt / 44.0
+        bio_mM = delta_mass_mg * self.C_FRAC / 12.0 / self.volume_L
+        self.dic = max(1e-3, self.dic + co2_flux_mM - bio_mM)
+        self._update_carbonate_speciation()
 
-        # Photosynthetic stoichiometry: 6CO2 → C6H12O6; 6×44/(6×12) = 3.67 mg CO2/mg C fixed.
-        # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1600)
-        co2_uptake = max(0.0, delta_mass_mg) * 1.835
-        co2_release = max(0.0, -delta_mass_mg) * 1.835
-        co2_bio_s = _fclip((co2_release * w_s - co2_uptake * w_s) / vol_s, -1.0, 1.0)
-        co2_bio_b = _fclip((co2_release * w_b - co2_uptake * w_b) / vol_b, -1.0, 1.0)
-
-        self.co2_s = _fclip(co2_mix_s + co2_xfer_s + co2_bio_s, 0.0, 80.0)
-        self.co2_b = _fclip(co2_mix_b + co2_xfer_b + co2_bio_b, 0.0, 80.0)
-
-        # Volume-weighted averages — used by reward, PBRS, observations
-        self.do2         = (self.do2_s * vol_s + self.do2_b * vol_b) / self.volume_L
-        self.dissolved_co2 = (self.co2_s * vol_s + self.co2_b * vol_b) / self.volume_L
-
-        # Bicarbonate balance: depleted by photosynthesis (85% of DIC uptake via HCO3-,
-        # matching f_carbon), replenished by CO2 sparging at a pH-dependent fraction.
-        # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1615)
-        bicarb_consumed_mM = (max(0.0, delta_mass_mg) * 0.85 / 12.0) / self.volume_L  # C fixed via HCO3-
-        co2_to_hco3_mg = max(0.0, co2_xfer_s * vol_s + co2_xfer_b * vol_b)  # CO2 absorbed from sparging
-        # At current pH, fraction of newly dissolved CO2 that converts to HCO3- (Henderson-Hasselbalch equilibrium)
-        f_to_hco3 = float(10.0 ** (self.ph - 6.35) / (1.0 + 10.0 ** (self.ph - 6.35)))
-        bicarb_added_mM = (co2_to_hco3_mg / 44.0 / self.volume_L) * f_to_hco3
-        # NOTE: this 5.0 ceiling is 40x below the 200 mM Zarrouk baseline set in reset(), and
-        # it is load-bearing: raising it pushes pH to ~10.5 and halves yield, because the
-        # carbonate constants were never calibrated to 200 mM. Known physics debt.
-        # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1623)
-        self.bicarbonate = _fclip(self.bicarbonate - bicarb_consumed_mM + bicarb_added_mM, 0.0, self.BICARB_CEILING_MM)
-
-        # pH via Henderson-Hasselbalch: pH = pKa1 + log10([HCO3-]/[CO2(aq)])
-        # pKa1 temperature correction: -0.002/°C (symmetric around 25°C; Stumm & Morgan 1996)
-        pKa1 = 6.35 - 0.002 * (self.temp - 25.0)
-        # mg/L ÷ g/mol = mM (dimensional identity: mg/L × mol/g = 10^-3 mol/L = mM)
-        co2_aq_mM = max(self.co2_b, 0.001) / 44.0
-        ph_eq = _fclip(pKa1 + np.log10(max(self.bicarbonate, 0.001) / co2_aq_mM), 5.0, 11.0)
-        # pH tracks CO2 dissolution rate (kLa ~1.5-5/h); 2.0/h gives ~30-min response — physically correct
-        self.ph = _fclip(self.ph + 2.0 * self.dt * (ph_eq - self.ph), 5.0, 11.0)
+    def _update_carbonate_speciation(self):
+        """pH, CO2(aq), HCO3- and CO3(2-) from alkalinity and DIC (equilibrium is fast)."""
+        self.ph = _solve_ph(self.alkalinity, self.dic, self.temp)
+        K1, K2 = _carbonate_constants(self.temp)
+        h = 10.0 ** -self.ph
+        d = h * h + K1 * h + K1 * K2
+        self.dissolved_co2 = self.dic * h * h / d * 44.0     # mg/L
+        self.bicarbonate = self.dic * K1 * h / d              # mM
+        self.carbonate = self.dic * K1 * K2 / d               # mM
 
     def _layer_exchange(self, c_s, c_b, k, vol_s, vol_b):
         """One explicit step of first-order mixing between the surface and bulk layers.
@@ -1316,23 +1255,18 @@ class GeneticPhotobioreactorEnv(gym.Env):
         moved_mg = k * (c_b - c_s) * self.dt * vol_s
         return c_s + moved_mg / vol_s, c_b - moved_mg / vol_b
 
-    def _update_pigment_and_salt(self, I_surface, delta_mass_mg, total_uptake_mg):
-        # Pigment dynamics (photo-inhibition & chlorosis)
-        # Bleaching: High Light (>1000) or Low Nitrogen (<100) damages pigment
-        avg_light = I_surface * np.exp(-0.2 * self.reactor_depth/2) # Approx mid-depth light
-        is_bleached = (avg_light > 1000.0) or (self.n_pool < 75.0)  # rescaled to Zarrouk's richer N baseline
-        
+    def _update_pigment_and_salt(self, delta_mass_mg, dosed_mg):
+        # Pigment: bleaches when cells see high light on average, or under N starvation.
+        is_bleached = (getattr(self, 'mean_cell_light', 0.0) > 1000.0) or (self.n_pool < 75.0)
         if is_bleached:
-            self.pigment -= 0.01 * self.dt # Slow degradation
+            self.pigment -= 0.01 * self.dt
         else:
-            self.pigment += 0.01 * self.dt # Slow recovery
-        self.pigment = np.clip(self.pigment, 0.2, 1.0) # Min 20% pigment
-        
-        # Salinity accumulation
-        lysis_mg      = max(0.0, -delta_mass_mg)
-        salt_inflow_mg = total_uptake_mg * 0.1  # impurity carryover from nutrient feed
-        salt_decay_mg  = lysis_mg * 0.5          # ion release from lysed cells
-        self.salt += (salt_inflow_mg + salt_decay_mg) / max(self.volume_L, 1e-9)
+            self.pigment += 0.01 * self.dt
+        self.pigment = np.clip(self.pigment, 0.2, 1.0)
+
+        # Salinity: impurities carried in with the nutrient stock, ions from lysed biomass.
+        lysis_mg = max(0.0, -delta_mass_mg)
+        self.salt += (dosed_mg * 0.02 + lysis_mg * 0.5) / self.volume_L
 
     def _conductivity(self):
         """Kohlrausch molar-conductance estimate of the medium's conductivity (µS/cm)."""
@@ -1353,11 +1287,14 @@ class GeneticPhotobioreactorEnv(gym.Env):
         # pH: OH⁻ (198.0) and H⁺ (349.8) — replaces linear 100×|7-pH| proxy
         sigma_ph   = 198.0 * (10.0 ** (self.ph - 14.0)) + 349.8 * (10.0 ** (-self.ph))
 
-        # NaHCO3 bicarbonate: HCO3- λ=44.5 S·cm²/mol, MW=61 g/mol — fixes O7 calibration gap
-        sigma_hco3 = (44.5 / 61000.0) * (self.bicarbonate * 61.0)  # bicarbonate in mM → mg/L equiv
+        # Carbonate system: Na+ counter-ion (= alkalinity, from NaHCO3), HCO3- and CO3(2-).
+        sigma_hco3 = (50.1 * self.alkalinity + 44.5 * self.bicarbonate + 138.6 * self.carbonate) / 1000.0
         # Kohlrausch temperature correction ~2%/°C
         cond_temp    = 1.0 + 0.020 * (self.temp - 25.0)
-        return (sigma_n + sigma_p + sigma_ext + sigma_salt + sigma_ph + sigma_hco3) * cond_temp * 1000.0
+        # Summing limiting conductances overestimates at Zarrouk's ~0.3 M ionic strength, where
+        # molar conductivities run ~25% below their infinite-dilution values.
+        concentration_factor = 0.75
+        return (sigma_n + sigma_p + sigma_ext + sigma_salt + sigma_ph + sigma_hco3) * concentration_factor * cond_temp * 1000.0
 
     def _update_sensors(self):
         """Sensor-facing state: RGB absorbance, strain micro-drift, conductivity."""

@@ -71,17 +71,12 @@ def _():
     assert abs(env.ext_nutrients - fresh_ext) < 5.0, f"ext_nutrients {env.ext_nutrients:.1f} vs fresh {fresh_ext}"
 
 
-@check("reset() conductivity uses the same formula as step()")
+@check("fresh Zarrouk medium sits at pH ~9.6-10.2 with ~200 meq/L alkalinity")
 def _():
     env = GeneticPhotobioreactorEnv(initial_cells=400, difficulty=0)
     env.reset(seed=4)
-    sigma = ((71.4 + 50.1) * (env.n_pool / 14000.0) + (57.0 + 2.0 * 73.5) * (env.p_pool / 30970.0)
-             + (307.0 / 174300.0) * env.ext_nutrients + (126.5 / 58440.0) * env.salt
-             + 198.0 * (10.0 ** (env.ph - 14.0)) + 349.8 * (10.0 ** (-env.ph))
-             + (44.5 / 61000.0) * (env.bicarbonate * 61.0))
-    expected = sigma * (1.0 + 0.020 * (env.temp - 25.0)) * 1000.0
-    assert abs(env.conductivity - expected) < 1e-6 * expected, \
-        f"reset conductivity {env.conductivity:.1f} vs step formula {expected:.1f}"
+    assert 9.6 < env.ph < 10.2, f"fresh-medium pH {env.ph:.2f}"
+    assert abs(env.alkalinity - 200.0) < 1e-6 and 100.0 < env.dic < 200.0, f"alk {env.alkalinity} dic {env.dic:.1f}"
 
 
 @check("inter-layer gas exchange is first-order and mass-conserving")
@@ -115,12 +110,12 @@ def _():
 def _():
     env = GeneticPhotobioreactorEnv(max_cells=7500, initial_cells=300, difficulty=2)
     env.reset(seed=13)
-    fresh = (env.p_pool, env.co2_s, env.co2_b, env.n_pool)
+    fresh = (env.p_pool, env.alkalinity, env.dic, env.n_pool)
     legacy = {k: getattr(env, k) for k in ("cells_mass", "cells_quota", "cells_z", "clump_mass",
                                             "pigment", "num_active", "active_mask", "ext_nutrients",
                                             "ph", "do2", "salt")}
     curriculum_starts.apply_saved_population(env, legacy)
-    got = (env.p_pool, env.co2_s, env.co2_b, env.n_pool)
+    got = (env.p_pool, env.alkalinity, env.dic, env.n_pool)
     assert got == fresh, f"missing keys defaulted to {got}, fresh medium is {fresh}"
 
 
@@ -256,6 +251,47 @@ def _():
     c0 = env.conductivity
     env.step(STEADY)
     assert abs(env.conductivity - c0) < 0.01 * c0, f"reset {c0:.0f} vs step 1 {env.conductivity:.0f} uS/cm"
+
+
+@check("medium drawdown matches the biomass grown (N at N_FRAC of dry weight)")
+def _():
+    env = GeneticPhotobioreactorEnv(max_cells=7500, initial_cells=700, difficulty=0)
+    env.reset(seed=8)
+    n0 = env.n_pool
+    for _ in range(300):
+        env.step(np.array([-0.5, 0.2, -1.0], dtype=np.float32))
+        assert env.current_nut_flow == 0.0, "dosing switched on; test assumes none"
+    drawn = n0 - env.n_pool
+    assert drawn > 0.0, "no N drawn down while the culture grew"
+    # Upper bound: every mg of biomass now present (including survivors' growth) could not
+    # have used more than N_FRAC of itself.
+    total_mg = float(np.sum(env.cells_mass[env.active_mask])) * env.MG_PER_MASS_UNIT
+    assert drawn * env.volume_L <= env.N_FRAC * (total_mg + 1e3),         f"drew {drawn * env.volume_L:.0f} mg N for at most {total_mg:.0f} mg biomass"
+
+
+@check("light response can reach its maximum (normalisation matches the red-driven curve)")
+def _():
+    env = GeneticPhotobioreactorEnv(max_cells=7500, initial_cells=45, difficulty=0)
+    env.reset(seed=9)
+    Ks, Ki = env.strain_params["Ks_light"], env.strain_params["Kii"]
+    I_star = float(np.sqrt(Ks * Ki))
+    red = env.RED_FRAC * I_star
+    f = red / (Ks + red + I_star ** 2 / Ki)
+    f_max = env.RED_FRAC * I_star / (2.0 * Ks + env.RED_FRAC * I_star)
+    assert abs(f / f_max - 1.0) < 1e-9, f"f_I at the optimum is {f / f_max:.3f}, not 1"
+
+
+@check("self-shading engages at production density; thermostat holds 35C below ~1500 umol")
+def _():
+    env = GeneticPhotobioreactorEnv(max_cells=7500, initial_cells=700, difficulty=2)
+    env.reset(seed=10)
+    X = float(np.sum(env.cells_mass[env.active_mask])) * env.MG_PER_MASS_UNIT / env.volume_L
+    back = np.exp(-(0.5 + env.EXT_RED * X) * env.light_path_m)
+    assert X > 200.0 and back < 0.05, f"{X:.0f} mg/L, back-wall red light {back:.2%} of surface"
+    light = np.interp(1400, [0, 2000], [-1, 1])
+    for _ in range(1500):
+        env.step(np.array([-0.5, light, -1.0], dtype=np.float32))
+    assert abs(env.temp - env.T_SETPOINT) < 0.5, f"T {env.temp:.1f}C at 1400 umol"
 
 
 if __name__ == "__main__":

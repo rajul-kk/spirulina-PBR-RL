@@ -1,6 +1,6 @@
 """Regression checks for the 2026-09-24 core audit of the env, TD3, PPO and curriculum code.
 
-Each check targets one audited bug and fails on the pre-fix code. Run after any change to
+Each check targets one audited bug (or the 2026-09-25 thermal-Phi fix) and fails on the pre-fix code. Run after any change to
 genetic_env.py, curriculum_starts.py, TD3.py, deterministic_eval.py or callbacks.py.
 
   python experiments/env_diagnosis/core_audit_check.py
@@ -236,6 +236,17 @@ def _():
         if not any(s <= k < s + TD3.SEQ_LEN for k in range(step, 7200, step)):
             misses += 1
     assert misses == 0, f"{misses}/3000 harvest-biased windows miss every harvest event"
+
+
+@check("PBRS potential scores an overheated culture below a healthy one")
+def _():
+    env = GeneticPhotobioreactorEnv(initial_cells=700, difficulty=1)
+    env.reset(seed=21)
+    env.temp = env.strain_params["T_opt"]
+    healthy = env._potential()
+    env.temp = 45.0
+    cooked = env._potential()
+    assert cooked < 0.5 * healthy, f"Phi at 45C {cooked:.3f} vs at T_opt {healthy:.3f}"
 
 
 if __name__ == "__main__":

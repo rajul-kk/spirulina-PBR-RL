@@ -441,7 +441,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
     def _potential(self):
         """Phi(s) for PBRS. A pure, bounded function of the CURRENT state only.
 
-        Two components, each in [0, 1] before weighting:
+        Two weighted components, each in [0, 1], scaled by a multiplicative thermal factor:
           - OD health: peaks at 1.0 exactly at OD_TARGET, falls off both ways. Below target
             the culture is under-productive; above it, overgrown (light limitation, crash
             risk). Uses a log-ratio distance so the falloff is symmetric in relative terms
@@ -450,6 +450,10 @@ class GeneticPhotobioreactorEnv(gym.Env):
           - Population health: saturating in num_active, so extinction is a deep hole and
             large populations plateau rather than paying unbounded reward for hoarding
             biomass the agent never harvests.
+          - Thermal health: the growth model's own temperature factor, ~1 near the strain's
+            optimum. Without it a culture cooked to 45C by sustained max light, parked at OD
+            target, scored maximal Phi while it stopped growing; the damage only reached the
+            reward ~1000 steps later as lost harvest, and v58/v59 both drifted into it.
 
         Must stay a function of state alone: no deltas, no action, no episode phase. Adding
         any transition-dependent quantity here silently voids the policy-invariance guarantee.
@@ -460,8 +464,10 @@ class GeneticPhotobioreactorEnv(gym.Env):
 
         phi_pop = float(np.tanh(self.num_active / self.PHI_POP_REF))
 
+        phi_temp = float(np.exp(-0.5 * ((self.temp - self.strain_params['T_opt']) / 5.0) ** 2))
+
         phi = self.PHI_OD_W * phi_od + self.PHI_POP_W * phi_pop
-        return self.PHI_SCALE * phi / (self.PHI_OD_W + self.PHI_POP_W)
+        return self.PHI_SCALE * phi * phi_temp / (self.PHI_OD_W + self.PHI_POP_W)
 
     def _compute_reward(self, harvested_this_step_mg, is_harvest_event):
         """Task reward (harvest yield, harvest-collapse penalty) plus PBRS shaping.

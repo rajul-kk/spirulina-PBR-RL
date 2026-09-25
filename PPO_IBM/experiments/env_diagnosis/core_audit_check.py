@@ -249,6 +249,15 @@ def _():
     assert cooked < 0.5 * healthy, f"Phi at 45C {cooked:.3f} vs at T_opt {healthy:.3f}"
 
 
+@check("first observation's conductivity matches step 1 (no bicarbonate-clip jump)")
+def _():
+    env = GeneticPhotobioreactorEnv(initial_cells=400, difficulty=0)
+    env.reset(seed=6)
+    c0 = env.conductivity
+    env.step(STEADY)
+    assert abs(env.conductivity - c0) < 0.01 * c0, f"reset {c0:.0f} vs step 1 {env.conductivity:.0f} uS/cm"
+
+
 if __name__ == "__main__":
     print("=" * 78)
     for name, ok, msg in RESULTS:

@@ -193,7 +193,9 @@ class GeneticPhotobioreactorEnv(gym.Env):
         self.ext_nutrients = fresh["ext_nutrients"]
         self.n_pool = fresh["n_pool"]
         self.p_pool = fresh["p_pool"]
-        self.bicarbonate = fresh["bicarbonate"]
+        # Start at the ceiling every step clips to (see BICARB_CEILING_MM), so the first
+        # observation's conductivity matches every later one.
+        self.bicarbonate = min(fresh["bicarbonate"], self.BICARB_CEILING_MM)
         self.ph = self.buffer_equilibrium_ph
         self.do2 = self.do2_s = self.do2_b = fresh["do2"]
         self._f_surface_cells = 1.0 / 3.0
@@ -421,6 +423,10 @@ class GeneticPhotobioreactorEnv(gym.Env):
         "do2": 7.0,              # mg/L — air-equilibrated
         "co2": 6.2,              # mg/L — CO2(aq) at pH 9.5 with 200 mM HCO3-
     }
+
+    # Working bicarbonate ceiling (mM), far below FRESH_MEDIUM's 200 mM and load-bearing; see
+    # the NOTE in _update_gas_and_carbonate.
+    BICARB_CEILING_MM = 5.0
 
     # Light-path biofouling coefficient. NOTE: 0.0002 was calibrated for lab OD600 units,
     # ~250x larger than this sim's od, so the term is nearly inert.
@@ -1288,7 +1294,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         # it is load-bearing: raising it pushes pH to ~10.5 and halves yield, because the
         # carbonate constants were never calibrated to 200 mM. Known physics debt.
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1623)
-        self.bicarbonate = _fclip(self.bicarbonate - bicarb_consumed_mM + bicarb_added_mM, 0.0, 5.0)
+        self.bicarbonate = _fclip(self.bicarbonate - bicarb_consumed_mM + bicarb_added_mM, 0.0, self.BICARB_CEILING_MM)
 
         # pH via Henderson-Hasselbalch: pH = pKa1 + log10([HCO3-]/[CO2(aq)])
         # pKa1 temperature correction: -0.002/°C (symmetric around 25°C; Stumm & Morgan 1996)

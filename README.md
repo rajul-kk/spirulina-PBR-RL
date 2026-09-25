@@ -109,15 +109,15 @@ Each folder has its own README.
 
 | folder | contents |
 |---|---|
-| `environments/` | `genetic_env.py` — the simulator (physics, reward, observation); `heavy_env.py` (simplified variant) |
+| `environments/` | `genetic_env.py` — the simulator (physics, reward, observation) |
 | `td3/` | **Primary algorithm.** `TD3.py` (LSTM-core TD3+BC trainer), `TD3_lru.py` + `lru_core.py` (diagonal-LRU core), `actor_io.py` (checkpoint loading / core detection) |
 | `training/` | Curriculum shared by all trainers (`curriculum_schedule.py`, `curriculum_starts.py`, `training_state.py`) and the parked RecurrentPPO pipeline |
 | `bc/` | `bc_pretrain.py` — behaviour cloning from the scripted OD-feedback expert |
 | `experiments/` | `env_diagnosis/` — current-env checks, incl. `core_audit_check.py` (regression suite); `bc_scaffold/` — `td3_held_out_sweep.py` and the BC scaffold; `harvest_ablation/` |
 | `diagnostics/` | PPO/TD-MPC2-era one-off probes (`held_out_sweep.py`, `reward_ab.py`, …) |
 | `scripts/` | PPO run operations: `run_training.py`, `finish_run.py`, `validate.py` |
-| `legacy/` | Retired algorithms: `TD_MPC2.py`, `Var_MPC.py`, SAC variants |
-| `tools/` | `config_studio/`, `visualize_growth.py`, `report/` (coursework `.docx` formatting) |
+| `legacy/` | Retired algorithm: `TD_MPC2.py` (v27 baseline) |
+| `tools/` | `config_studio/`, `report/` (coursework `.docx` formatting) |
 | `docs/` | Live: `decision_history.md`, `known_limitations.md`, `USAGE.md`; plus `reports/`, `reference/`, `coursework/`, `archive/` (see `docs/README.md`) |
 | `model_data/` | Checkpoints (`td3_checkpoints*`, `td3_lru_checkpoints*`, PPO's `best_det_checkpoint/`), `archive_*/` per run, `runs_registry.csv` |
 | `logs/` | Training logs and per-run config snapshots |
@@ -130,11 +130,10 @@ registry use the paths of their time:
 |---|---|
 | `legacy/TD3.py`, `TD3_lru.py`, `lru_core.py`, `actor_io.py` | `td3/` |
 | `legacy/format_docx.py`, `word_count*.py` | `tools/report/` |
-| `legacy/visualize_growth.py` | `tools/visualize_growth.py` |
 | `finalresults.md`, `novelty_report.md`, `statistical_validation.md` | `docs/reports/` |
 | `docs/lstm_lru_reset_interval_grid_report.md`, `docs/entropy_changes_apr_05_2026.md` | `docs/reports/` |
 | `docs/literature.md`, `docs/real_data_integration.md` | `docs/reference/` |
-| `docs/calibration.md`, `docs/proxy.md`, `environments/env_attributes.md` | `docs/archive/` |
+| `docs/proxy.md` | `docs/archive/` |
 | `docs/genetic_env.md`, `docs/light_env.md`, `artifacts/*.docx` | `docs/coursework/` |
 
 ## Tooling

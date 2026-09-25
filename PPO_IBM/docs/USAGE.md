@@ -1,188 +1,88 @@
-# PPO-IBM Project — Usage Guide
+# Usage guide
+
+Run everything from `PPO_IBM/`: scripts resolve `model_data/...` and `logs/...` against the
+working directory. On Windows, prefix direct invocations with `PYTHONIOENCODING=utf-8` (the
+console default cp1252 crashes on the box-drawing characters in log output).
 
 ---
 
-## 1. Clearing `__pycache__` (Bytecode Cache)
+## 1. TD3+BC (primary)
 
-Python caches compiled bytecode in `__pycache__` folders.  
-After any significant code change, stale `.pyc` files can cause old behaviour to persist.  
-Always clear the cache before re-running if you have edited source files.
-
-**Delete all `__pycache__` folders (PowerShell):**
-
-```powershell
-Get-ChildItem -Path e:\SEGP\PPO_IBM -Filter __pycache__ -Recurse -Force | Remove-Item -Recurse -Force
+```
+python td3/TD3.py                  # LSTM core, fresh run
+python td3/TD3.py --resume         # resume from model_data/td3_checkpoints/
+python td3/TD3_lru.py              # diagonal-LRU core, fresh run
+python td3/TD3_lru.py --resume     # resume from model_data/td3_lru_checkpoints/
 ```
 
-This removes the top-level `__pycache__` **and** the ones inside `environments/`, `model_data/`, etc., in a single command.
+A fresh run starts from scratch only if `model_data/td3_training_state.pkl` (or
+`td3_lru_training_state.pkl`) is absent; move the previous run's state and checkpoint dirs into
+`model_data/archive_<tag>/` first.
 
-**Delete just the top-level one:**
-
-```powershell
-Remove-Item -Recurse -Force e:\SEGP\PPO_IBM\__pycache__
-```
-
-**When to do this:**
-- After pulling new commits
-- After editing any `.py` file and seeing unexpected old behaviour
-- When a log line looks different from the current source (e.g., missing `chunk_eps=` prefix)
-
----
-
-## 2. `tools/visualize_growth.py` — Rule-Based Growth Benchmark
-
-Runs two deterministic rule-based policies (*Fixed* and *Optimised Rule*) for up to 50,000 steps each and plots Biomass (OD) and Nutrient curves side-by-side.  
-No arguments — just run it:
-
-```powershell
-python tools/visualize_growth.py
-```
-
-Stop early at any time with `Ctrl+C`; it will plot whatever data was collected.
-
----
-
-## 3. `recurrent_ppo.py` — Recurrent PPO Trainer
-
-### Arguments
-
-| Flag | Type | Default | Description |
-|---|---|---|---|
-| `--finetune` | flag | off | Load saved model and continue training |
-| `--steps` | `int` | `500000` | Extra steps when using `--finetune` |
-
-### Train from Scratch
-
-```powershell
-python recurrent_ppo.py
-```
-
-Trains the RecurrentPPO agent through the adaptive curriculum (D0 → D1 → D2).  
-Checkpoints are saved in `model_data/recurrent_checkpoints/`.  
-TensorBoard logs land in `ppo_recurrent_tensorboard/`.
-
-### Fine-tune a Saved Model
-
-```powershell
-# Fine-tune with default 500,000 extra steps
-python recurrent_ppo.py --finetune
-
-# Fine-tune with a custom step count
-python recurrent_ppo.py --finetune --steps 1000000
-```
-
-### View TensorBoard
-
-```powershell
-tensorboard --logdir e:\SEGP\PPO_IBM\ppo_recurrent_tensorboard
-```
-
----
-
-## 4. `Var_MPC.py` — Variational MPC Trainer
-
-### Arguments
-
-| Flag | Type | Default | Description |
-|---|---|---|---|
-| `--resume` | flag | off | Resume curriculum from the latest checkpoint |
-| `--finetune [N]` | optional `int` | `500000` | Fine-tune saved model; optionally pass step count |
-
-### Train from Scratch
-
-```powershell
-python Var_MPC.py
-```
-
-### Resume Interrupted Training
-
-```powershell
-python Var_MPC.py --resume
-```
-
-Picks up from the highest-numbered checkpoint in `model_data/varmpc_checkpoints/`.
-
-### Fine-tune a Saved Model
-
-```powershell
-# Fine-tune with default 500,000 extra steps
-python Var_MPC.py --finetune
-
-# Fine-tune with a custom step count
-python Var_MPC.py --finetune 1000000
-```
-
-Checkpoints are saved in `model_data/varmpc_checkpoints/`.
-
----
-
-## 5. `TD_MPC2.py` — TD-MPC2 Trainer
-
-### Arguments
-
-| Flag | Type | Default | Description |
-|---|---|---|---|
-| `--resume` | flag | off | Resume curriculum from the latest checkpoint |
-| `--finetune [N]` | optional `int` | `500000` | Fine-tune saved model; optionally pass step count |
-| `--priv-distill` | flag | off | Enable privileged-information distillation during training |
-
-### Train from Scratch
-
-```powershell
-python TD_MPC2.py
-```
-
-### Resume Interrupted Training
-
-```powershell
-python TD_MPC2.py --resume
-```
-
-### Fine-tune a Saved Model
-
-```powershell
-# Fine-tune with default 500,000 extra steps
-python TD_MPC2.py --finetune
-
-# Fine-tune with a custom step count
-python TD_MPC2.py --finetune 1000000
-```
-
-### Train with Privileged Distillation
-
-Passes ground-truth environment state (OD, nutrients, pH, temperature) as a teacher signal during the latent representation update. Useful when you want the world model to be guided by privileged information only available at training time.
-
-```powershell
-# Fresh training with privileged distillation
-python TD_MPC2.py --priv-distill
-
-# Resume + privileged distillation
-python TD_MPC2.py --resume --priv-distill
-
-# Fine-tune + privileged distillation
-python TD_MPC2.py --finetune --priv-distill
-```
-
-Checkpoints are saved in `model_data/tdmpc2_checkpoints/`.
-
----
-
-## 6. Curriculum Overview
-
-All three trainers share the same adaptive mastery curriculum:
-
-| Level | Label | Description |
+| env var | default | effect |
 |---|---|---|
-| D0 | Easy | Stable conditions, low noise |
-| D1 | Medium | Moderate perturbations |
-| D2 | Hard | Full sensor noise, events, disturbances |
+| `TD3_HIDDEN_RESET_INTERVAL` | `SEQ_LEN` (60) | rollout/det-eval hidden-state reset cadence; current runs use 600 |
+| `TD3_THREADS` | LRU: 6, LSTM: all cores | torch CPU threads |
+| `TD3_BC_COEF` | 1.0 | behaviour-cloning anchor strength |
+| `TD3_DEMO_FRACTION` | 0.25 | share of each batch drawn from the expert demo buffer |
+| `TD3_STEPS` | 2,000,000 | step budget |
 
-**Promotion criteria (must be met for 2 consecutive chunks):**
+Record every run in `model_data/runs_registry.csv`.
 
-| Gate | D0 → D1 | D1 → D2 |
-|---|---|---|
-| `median_OD ≥` | 0.02 | 0.05 |
-| `crash_rate ≤` | 5 % | 5 % |
-| `reward_std ≤` | 250 (PPO/VarMPC) / 300 (TD) | 350 (PPO/VarMPC) / 400 (TD) |
+## 2. Validation and checks
 
-**Demotion** occurs on any chunk where `crash_rate ≥ 20 %` or `median_OD < 50 %` of the previous level's baseline.
+```
+# held-out validation, required before any mastery claim
+python experiments/bc_scaffold/scripts/td3_held_out_sweep.py \
+    --actor-path model_data/td3_checkpoints_best/actor.pth --difficulty 2 --high-pop 12
+
+# env/trainer regression suite: run after any change to the env, curriculum or TD3
+python experiments/env_diagnosis/core_audit_check.py
+```
+
+Other current-env diagnostics are in `experiments/env_diagnosis/` (see its README).
+
+## 3. RecurrentPPO (parked)
+
+Launch through the guarded launcher rather than the trainer directly:
+
+```
+python scripts/run_training.py --tag <tag> [--resume <dir>] [--archive-prev <name>] [--note "..."] [--dry-run]
+python scripts/finish_run.py --tag <tag> --result "<one-line verdict>"
+python scripts/validate.py --model <checkpoint-without-.zip> [--n 40]
+```
+
+The trainer itself is `training/recurrent_ppo.py` (`--resume [dir]`, `--finetune --steps N`,
+`--reset-training`). TensorBoard: `tensorboard --logdir ppo_recurrent_tensorboard`.
+
+## 4. TD-MPC2 (retired)
+
+```
+python legacy/TD_MPC2.py [--resume] [--finetune [N]] [--priv-distill] [--steps N]
+```
+
+Not re-run since physics v2; see `legacy/README.md`.
+
+## 5. Curriculum
+
+All trainers share `training/curriculum_schedule.py`. D0 → D1 → D2 raise sensor noise, drift and
+lag, actuator error and the physics scaling. Advancing requires **both** gates for 2
+consecutive chunks: the stochastic gate on training episodes and the deterministic gate on a
+fixed 9-episode evaluation set. Thresholds (`ADVANCE_TARGETS`, physics v2 scale):
+
+| to leave | median harvest | p25 harvest | median time-avg od | max crash rate |
+|---|---|---|---|---|
+| D0 | 2060 mg | 1310 mg | 0.16 | 15% |
+| D1 | 4030 mg | 2620 mg | 0.32 | 10% |
+| D2 (mastery) | 5410 mg | 4780 mg | 0.45 | 8% |
+
+Demotion: training crash rate ≥ 35% for 2 chunks, or the deterministic gate failing 12
+consecutive chunks. At D0 the latter aborts the run.
+
+## 6. Stale bytecode
+
+After pulling or editing, clear cached bytecode if behaviour looks older than the source:
+
+```powershell
+Get-ChildItem -Path . -Filter __pycache__ -Recurse -Force | Remove-Item -Recurse -Force
+```

@@ -15,7 +15,3 @@ diagnostics use `experiments/env_diagnosis/`.
 | `fouling_feasibility.py` | Whether real biofouling would make D2 unreachable. |
 | `zombie_diagnosis.py` | The "zombie culture" failure mode. |
 | `tdmpc2_cost_probe.py`, `tdmpc2_held_out_sweep.py` | TD-MPC2 cost check and held-out sweep (need `legacy/TD_MPC2.py`). |
-| `test_heavy.py` | Smoke test for `environments/heavy_env.py`. |
-| `test_why_die.py` | Early culture-death probe. |
-| `check_training.py` | Reads a hard-coded PPO TensorBoard run. |
-| `_verify_envs.py` | **Broken:** sends a 4-D action; the env has taken 3-D actions since the CO2 channel was removed. |

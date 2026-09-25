@@ -29,6 +29,11 @@
 # PPO_IBM/docs/reports/finalresults.md, which is tracked.
 PPO_IBM/model_data/archive_*/*.log
 
+# Live TD3 checkpoint dirs: rewritten by every running job. Finished runs are archived under
+# model_data/archive_*/, where their best_info.txt is tracked.
+PPO_IBM/model_data/td3_checkpoints*/
+PPO_IBM/model_data/td3_lru_checkpoints*/
+
 # ── TensorBoard event files ────────────────────────────────────────────────────────────
 **/ppo_recurrent_tensorboard/
 **/rsac_tensorboard/

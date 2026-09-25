@@ -7011,3 +7011,53 @@ Undiscounted episode return is NOT a valid check here: with gamma < 1 each step 
 
 Regression check added to experiments/env_diagnosis/core_audit_check.py. Relaunched as the
 matched pair v60 (LRU) / v61 (LSTM). Reward values are not comparable with v57-v59.
+
+## --physics-v2-2026-09-26
+
+Implements the fixes from the 2026-09-26 physics and scale audit (known_limitations O16) as
+one recalibration, since each one changes the task and all baselines must be rebuilt anyway.
+
+- **Scale.** `MG_PER_MASS_UNIT` 1e-9 -> 1e-7: one agent is ~10 mg dry weight, so the
+  curriculum's 45-7500 agents span ~25 mg/L to ~5 g/L. The scripted expert's standing density
+  is now ~225 mg/L (od 0.75) instead of ~4 mg/L.
+- **Light.** Light crosses the panel's 6.7 cm thickness (20 L / 0.3 m^2 face) with
+  specific extinction 0.20/0.25/0.06 m^2/g (red/blue/green, PAR mean ~0.19, the A. platensis
+  range). The back wall now gets <5% of surface light at production density. Growth averages
+  the light response over the path (8-point rule); acclimation and photo-shock use the
+  path-mean light, because cells cross the path many times per 72 s step.
+- **Light response.** The Haldane term was normalised by the all-red peak while red is 40%
+  of the light, capping f_I at ~0.70. Now normalised by the true peak; mu_max mean lowered
+  0.055 -> 0.040/h so the effective maximum is about what it was.
+- **Temperature.** Proportional thermostat at 35C (heater 2 C/h, chiller 0.6 C/h), so light
+  no longer doubles as the heater. Full light still warms the tank to ~39C. Impeller heat
+  cut ~5x to a power-number estimate.
+- **Nutrients.** N, P and minerals are drawn down by the biomass actually grown (10% N,
+  1.2% P, 2% minerals of dry weight), in mg/L; dosing adds mg into the whole 20 L. The stock
+  is 83% N / 10% P / 7% minerals (~8:1 N:P, matching demand), so P no longer starves while
+  N piles up.
+- **Carbonate.** Alkalinity (200 meq/L Zarrouk) and DIC replace the 5 mM-clipped
+  bicarbonate: pH is solved from both dissociations (apparent pK1 6.1, pK2 10.0 at ~0.2 M
+  ionic strength). Fresh medium is air-equilibrated (~137 mM DIC, pH ~9.8-9.9). A pH-stat
+  injects CO2 above pH 10, as Spirulina production does. Nitrate uptake adds alkalinity. The
+  pH response is centred at 9.8. Conductivity counts the Na+ counter-ion and CO3(2-) and
+  applies a 0.75 concentration factor (~32 mS/cm fresh); the osmotic onset moved to 40 mS/cm.
+- **Gases.** The two CO2 layers are gone (one DIC pool). O2 inhibition is a Hill curve
+  (half at 35 mg/L); the broth-viscosity term now bites at od ~10, not 0.5.
+- **Mixing.** Cell positions are redrawn uniformly each step instead of moved by a velocity
+  field that already carried them up to 18 m per step. About 3x faster per episode.
+- **Removed:** the 24 h grace period that turned light actions above its cap into no-ops.
+- **Sensors.** Turbidity ~250 NTU per od (was 1000, which saturated at ~4 mg/L of the new
+  scale). BH1750 ~30 lux per umol (red/blue LED), so light no longer saturates at ~820 umol.
+
+Calibration. Grid over stir x light x od setpoint (D2, inits 120/700/2500, 2 seeds): harvest
+is a flat ~23 g/episode across 50-85 rpm, 1300-1500 umol, setpoint 0.45-0.8, with 0 crashes.
+That is ~0.19 g/L/day, the low end of real Spirulina productivity. New expert: setpoint 0.6,
+stir 55-75, light 1300-1500. `OD_TARGET` 0.75 (middle of the plateau), `TARGET_MG_PER_EVENT`
+850 (expert cold-start median / 12, the same rule as before). `ADVANCE_TARGETS` were multiplied
+per statistic by the expert's new/old ratio on TD3's cold-start distribution (harvest x60-69,
+p25 x87-96, time-avg od x39-41), keeping the gates at the same fraction of expert performance.
+
+Not done (still in O16): raw, unscaled observations into the TD3 networks (conductivity
+~32,000 next to pH ~10); pigment still affects only sensor readings.
+
+Runs: v60 (LRU) and v61 (LSTM), relaunched on this physics.

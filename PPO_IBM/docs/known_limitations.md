@@ -123,7 +123,7 @@ found but left alone, because each is a modelling decision rather than a clear d
 - **`experiments/harvest_ablation/recurrent_ppo_harvest_fixed.py`** is a frozen copy of the PPO
   trainer for the v37 ablation and keeps the pre-audit resume and callback bugs by design.
 
-## O16 — Physics and scale audit, 2026-09-26 (found, not yet changed)
+## O16 — Physics and scale audit, 2026-09-26 *(mostly RESOLVED by physics v2, see decision_history #--physics-v2-2026-09-26; still open: raw unscaled observations into the TD3 networks, pigment affects only sensors)*
 
 Measured with scripted probes against the current env (numbers below are from those runs).
 None of these is fixed yet except the conductivity item at the end: each changes the task, so

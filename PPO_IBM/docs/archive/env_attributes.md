@@ -5,7 +5,7 @@
 > referenced by any current training script, diagnostic, or the active curriculum pipeline
 > (all of which use `environments/genetic_env.py`). Values here (e.g. `dt=0.01h`,
 > `max_steps=14400`, `max_cells` convention) do not describe the actively-trained-on
-> environment — see `docs/literature.md` and `genetic_env.py` directly for that.
+> environment — see `docs/reference/literature.md` and `genetic_env.py` directly for that.
 
 ## Reactor Configuration
 

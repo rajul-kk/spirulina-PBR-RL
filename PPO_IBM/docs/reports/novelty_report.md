@@ -59,7 +59,7 @@ credit-assignment defect," a materially smaller and more defensible claim.
    run-to-run variance). This is the project's only n=2 result and its most novel finding.
 5. **Grid completed (v56, LSTM at reset=600).** Passed the D2 gate, but retained 37-66% at
    high population vs 153-219% for LRU at the same reset interval. The effect is real but
-   confined to the high-population tail. See `docs/lstm_lru_reset_interval_grid_report.md`.
+   confined to the high-population tail. See `docs/reports/lstm_lru_reset_interval_grid_report.md`.
 
 **What the literature says.** A targeted search (2026-09-18) for hidden-state reset cadence,
 context length, and bounded-vs-unbounded recurrent state in RL found no work addressing this

@@ -4,7 +4,7 @@ Neither of these was ever given its own `archive_v*`/`best_det_checkpoint` dir; 
 existed as full-run intermediate snapshots inside `recurrent_checkpoints_pre_v22` /
 `recurrent_checkpoints_pre_v24` (the `run_training.py` "move previous checkpoint dir aside,
 never delete" guard). Extracted their final (8,060,000-step, end-of-8M-budget) checkpoint
-before that bulk was deleted. See `finalresults.md` for full context.
+before that bulk was deleted. See `docs/reports/finalresults.md` for full context.
 
 No `vec_normalize.pkl` / `training_state.pkl` accompanies either snapshot -- these dirs held
 policy weights only, no normalization stats. Usable to load/inspect the policy, not to
@@ -33,15 +33,15 @@ harvest/p25 bars outright -- but fails D1/D2 on time_avg_od.
 | median time_avg_od | 0.0066 | ≥0.011 (FAILS) |
 | verdict | fail (od only) | |
 
-`finalresults.md`'s own read: "Harvest yield is solved... `time_avg_od` is the entire
+`docs/reports/finalresults.md`'s own read: "Harvest yield is solved... `time_avg_od` is the entire
 obstacle -- five runs [v20-v24] span 0.0035-0.0094... against D2's requirement of 0.011."
 v21 and v23 (same architecture, different training-seed outcome) bracket that finding: one
 clears od on D1, the other clears yield but not od -- illustrating the ~30% seed-driven
-variance in this metric documented elsewhere in this project (`statistical_validation.md`).
+variance in this metric documented elsewhere in this project (`docs/reports/statistical_validation.md`).
 
 ## Standing recommendation, unchanged by this preservation
 
-`finalresults.md` and `README.md` both name `model_data/BEST_bc_clone_D2_validated/` (a pure
+`docs/reports/finalresults.md` and `README.md` both name `model_data/BEST_bc_clone_D2_validated/` (a pure
 behaviour-cloned controller, no RL) as the project's actual recommended PPO-track artifact:
 109.4mg median / 63.8 p25 / time_avg_od 0.0191 / 0% crash, the only PPO-track policy to PASS
 the full D2 held-out gate on every criterion at once. v21/v23 above are preserved as the

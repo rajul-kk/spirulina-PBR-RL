@@ -2285,7 +2285,7 @@ Relocated comment blocks (originally >2 lines) from source files, verbatim. Each
         # at the end, restart. This replaces the earlier semi-continuous/agent-harvest
         # design (narrow harvest-rate band, per-step dilution physics) which assumed a
         # continuously-diluted turbidostat-style operation that doesn't match the actual
-        # process (see docs/real_data_integration.md's example harvest schema: one
+        # process (see docs/reference/real_data_integration.md's example harvest schema: one
         # harvest-measurement row per ~144h run, not a continuous rate).
 ```
 
@@ -6884,7 +6884,7 @@ medians are indistinguishable. Still open (single seed): why v56 recovered from 
 v50 and v52 never recovered from.
 
 Checkpoints: `model_data/archive_v56_lstm_long_reset_interval/`. Grid summary:
-`docs/lstm_lru_reset_interval_grid_report.md`.
+`docs/reports/lstm_lru_reset_interval_grid_report.md`.
 
 ## --environments-genetic_env-reward-pre-pbrs-archive
 
@@ -6895,7 +6895,7 @@ The additive reward that PBRS replaced on 2026-09-23. Every run up to v56 was tr
 1. `reward_od`, standing OD level: `0.15 * od_x * exp(1 - od_x)` below target. Above target,
    linear `0.15 - 0.03*(od_x - 1)` down to a knee at -0.05, then a log tail
    `-0.05 - 0.02*log(od_x/knee)`. The log tail replaced a hard floor whose zero gradient past
-   7.67x target was a dead zone (C3 in `novelty_report.md`).
+   7.67x target was a dead zone (C3 in `docs/reports/novelty_report.md`).
 2. `reward_biomass`, per-cell growth rate: `0.20 * tanh(g / 5.0)` with
    `g = delta_mass_mg / num_active * 1000`, minus 0.010 when `g < 0.01`.
 3. `reward_od_delta`, OD rate of change: `0.01 * tanh(rel_delta_od / 2e-4)`, zero on harvest

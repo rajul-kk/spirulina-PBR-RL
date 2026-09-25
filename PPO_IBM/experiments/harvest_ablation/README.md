@@ -3,7 +3,7 @@
 ## The question
 
 Every RL run in this project has struggled specifically with the harvest dimension
-(`finalresults.md`: stir/light learned correctly every run, harvest failed every run —
+(`docs/reports/finalresults.md`: stir/light learned correctly every run, harvest failed every run —
 the only 1-in-600-step-credit dimension). Fixing harvest at a good constant tests whether
 that's the whole bottleneck, or whether the environment has other independent sources of
 difficulty (biofouling, actuator noise, day/night cycling).

@@ -261,7 +261,7 @@ Cells cycle through light/dark zones at high mixing — `z_effective = (1 − tu
 ### Constrained / Safe Reinforcement Learning
 
 - **Altman, E. (1999).** *Constrained Markov Decision Processes*. Chapman and Hall/CRC.
-  - Formal foundation for treating a secondary objective (e.g. a minimum sustained OD) as an explicit constraint rather than folding it into a single scalar reward via a hand-tuned weight — the alternative to this project's current additive-weighted-sum reward design, discussed as a candidate fix for the harvest-fraction reward-cliff finding (`finalresults.md`).
+  - Formal foundation for treating a secondary objective (e.g. a minimum sustained OD) as an explicit constraint rather than folding it into a single scalar reward via a hand-tuned weight — the alternative to this project's current additive-weighted-sum reward design, discussed as a candidate fix for the harvest-fraction reward-cliff finding (`docs/reports/finalresults.md`).
 - **Achiam, J., Held, D., Tamar, A., & Abbeel, P. (2017).** Constrained policy optimization. *ICML 2017*.
   - Practical trust-region method for constrained RL; one concrete route to a Lagrangian-style harvest-vs-OD formulation.
 - **Stooke, A., Achiam, J., & Abbeel, P. (2020).** Responsive safety in reinforcement learning by PID Lagrangian methods. *ICML 2020*.

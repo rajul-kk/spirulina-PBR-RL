@@ -26,7 +26,7 @@
 
 # Per-run training logs copied into each archive directory alongside its checkpoint. Multi-MB
 # each and dominated by per-step [EnvDebug] output; the findings are summarised in
-# PPO_IBM/finalresults.md, which is tracked.
+# PPO_IBM/docs/reports/finalresults.md, which is tracked.
 PPO_IBM/model_data/archive_*/*.log
 
 # ── TensorBoard event files ────────────────────────────────────────────────────────────

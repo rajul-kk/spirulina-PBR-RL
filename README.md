@@ -24,7 +24,7 @@ project directory this README describes.
   run ledger: one row per run (`v11`...) with its config, held-out numbers, and a compact
   narrative of what happened and why. Faster to scan than the decision history for "what has
   been tried."
-- **[`finalresults.md`](PPO_IBM/finalresults.md)** (uncondensed version in
+- **[`docs/reports/finalresults.md`](PPO_IBM/docs/reports/finalresults.md)** (uncondensed version in
   git history, `8020ed1`) — covers the **PPO era only**, up to v31. Its "bottom line"
   (a behaviour-cloned controller beating every RL run) **predates TD3+BC and is now out of
   date** — see "Current status" below for the current best result.
@@ -154,7 +154,7 @@ estimates for this file were wrong by ~20x and ~1.8x respectively.
 ## Historical: PPO and TD-MPC2 (parked)
 
 Both were the project's primary tracks before TD3+BC. Neither ever produced a held-out-
-validated D2 policy. Summary (full detail in `finalresults.md` and `docs/decision_history.md`):
+validated D2 policy. Summary (full detail in `docs/reports/finalresults.md` and `docs/decision_history.md`):
 
 - **PPO** reached D2 in training twice (v14, v17) and passed a stochastic-only gate once (v26);
   all three failed independent held-out validation, at large margins (v14: 0.4mg vs a 90mg

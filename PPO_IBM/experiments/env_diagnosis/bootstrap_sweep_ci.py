@@ -1,6 +1,6 @@
 """Bootstrap confidence intervals for held-out sweep logs.
 
-`statistical_validation.md` put 95% CIs on the PPO/TD-MPC2-era sweeps and flagged the same
+`docs/reports/statistical_validation.md` put 95% CIs on the PPO/TD-MPC2-era sweeps and flagged the same
 treatment for the TD3 line as outstanding. This applies it: parse the per-episode lines any
 `td3_held_out_sweep.py` log already prints, and bootstrap the two gated yield statistics
 (median and p25 of harvested_mg) plus crash rate.

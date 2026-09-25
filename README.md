@@ -31,6 +31,12 @@ project directory this README describes.
 
 ## Current status: TD3+BC
 
+> **Physics v2 (2026-09-26)** rescaled the simulator to real Spirulina densities (~225 mg/L
+> standing instead of ~4 mg/L) and added a thermostat, a full carbonate system and
+> stoichiometric nutrients (`docs/decision_history.md#--physics-v2-2026-09-26`). Every result
+> below predates it and is **not comparable** with runs from v60 on; harvest numbers are now in
+> grams, not milligrams.
+
 TD3+BC is the first algorithm in this project to produce a **held-out-validated D2 policy**
 (PPO and TD-MPC2 never did — see below). Entry points: `td3/TD3.py` (LSTM core) and
 `td3/TD3_lru.py` (diagonal-LRU core, patches `TD3.py`'s module globals and reuses its
@@ -99,19 +105,37 @@ fail (or narrowly miss) held-out validation. For TD3, use
 
 ## Layout
 
+Each folder has its own README.
+
 | folder | contents |
 |---|---|
-| `environments/` | `genetic_env.py` — the simulator (physics, reward, observation) |
-| `legacy/` | `TD3.py` (LSTM-core TD3+BC trainer, current primary algorithm), `TD3_lru.py` + `lru_core.py` (diagonal-LRU core variant), `actor_io.py` (checkpoint core-detection/loading), `TD_MPC2.py` (parked second algorithm), `SAC_policy.py`/`recurrent_sac.py`/`Var_MPC.py` (unused one-offs) |
-| `experiments/` | `bc_scaffold/` — `td3_held_out_sweep.py` and the BC-clone scaffold; `env_diagnosis/` — read-only diagnostics (`q_magnitude_check.py`, `growth_diagnosis.py`, `population_range_check.py`, …); `harvest_ablation/` |
-| `training/` | PPO trainer + curriculum: `recurrent_ppo.py`, `curriculum_schedule.py` (also imported by TD3), `entropy_schedule.py`, `deterministic_eval.py`, `callbacks.py`, … |
+| `environments/` | `genetic_env.py` — the simulator (physics, reward, observation); `heavy_env.py` (simplified variant) |
+| `td3/` | **Primary algorithm.** `TD3.py` (LSTM-core TD3+BC trainer), `TD3_lru.py` + `lru_core.py` (diagonal-LRU core), `actor_io.py` (checkpoint loading / core detection) |
+| `training/` | Curriculum shared by all trainers (`curriculum_schedule.py`, `curriculum_starts.py`, `training_state.py`) and the parked RecurrentPPO pipeline |
 | `bc/` | `bc_pretrain.py` — behaviour cloning from the scripted OD-feedback expert |
-| `diagnostics/` | PPO/TD-MPC2 read-only probes: `held_out_sweep.py`, `tdmpc2_held_out_sweep.py`, `test_actions.py`, `reward_ab.py`, `noise_sensitivity.py`, sweeps |
-| `scripts/` | PPO operational tooling (below) |
-| `model_data/` | checkpoints (`td3_checkpoints*`, `td3_lru_checkpoints*`, PPO's `best_det_checkpoint/`), `archive_*/` per run, `runs_registry.csv` |
-| `logs/` | training logs, per-run config snapshots, `validation/`, `scratch/` |
-| `docs/` | `decision_history.md` (primary engineering log — see above), `known_limitations.md`, `calibration.md`, … |
-| `artifacts/` | plots, generated documents |
+| `experiments/` | `env_diagnosis/` — current-env checks, incl. `core_audit_check.py` (regression suite); `bc_scaffold/` — `td3_held_out_sweep.py` and the BC scaffold; `harvest_ablation/` |
+| `diagnostics/` | PPO/TD-MPC2-era one-off probes (`held_out_sweep.py`, `reward_ab.py`, …) |
+| `scripts/` | PPO run operations: `run_training.py`, `finish_run.py`, `validate.py` |
+| `legacy/` | Retired algorithms: `TD_MPC2.py`, `Var_MPC.py`, SAC variants |
+| `tools/` | `config_studio/`, `visualize_growth.py`, `report/` (coursework `.docx` formatting) |
+| `docs/` | Live: `decision_history.md`, `known_limitations.md`, `USAGE.md`; plus `reports/`, `reference/`, `coursework/`, `archive/` (see `docs/README.md`) |
+| `model_data/` | Checkpoints (`td3_checkpoints*`, `td3_lru_checkpoints*`, PPO's `best_det_checkpoint/`), `archive_*/` per run, `runs_registry.csv` |
+| `logs/` | Training logs and per-run config snapshots |
+| `artifacts/` | Generated plots (untracked) |
+
+**Path map (2026-09-26 reorganisation).** Older entries in `docs/decision_history.md` and the
+registry use the paths of their time:
+
+| old | new |
+|---|---|
+| `legacy/TD3.py`, `TD3_lru.py`, `lru_core.py`, `actor_io.py` | `td3/` |
+| `legacy/format_docx.py`, `word_count*.py` | `tools/report/` |
+| `legacy/visualize_growth.py` | `tools/visualize_growth.py` |
+| `finalresults.md`, `novelty_report.md`, `statistical_validation.md` | `docs/reports/` |
+| `docs/lstm_lru_reset_interval_grid_report.md`, `docs/entropy_changes_apr_05_2026.md` | `docs/reports/` |
+| `docs/literature.md`, `docs/real_data_integration.md` | `docs/reference/` |
+| `docs/calibration.md`, `docs/proxy.md`, `environments/env_attributes.md` | `docs/archive/` |
+| `docs/genetic_env.md`, `docs/light_env.md`, `artifacts/*.docx` | `docs/coursework/` |
 
 ## Tooling
 
@@ -186,7 +210,7 @@ attributed):
 
 | flag | default | effect |
 |---|---|---|
-| `LIGHT_FOULING_COEF` | `0.0002` | light-path biofouling. **Inert at this value** — calibrated for lab OD600 (~1–10) while this sim's `od` is ~0.018, so it accumulates ~0.0003 against a 0.5 cap. A realistic value is ~0.075, but a probe showed the culture is light-saturated so it changes no behaviour. |
+| `LIGHT_FOULING_COEF` | `0.0002` | light-path biofouling. Near-inert: even at physics v2's od ~0.75 it accumulates only ~0.01 over an episode against a 0.5 cap. Pre-v2 the culture was light-saturated, so fouling changed nothing; under v2's real light limitation a realistic coefficient (~0.075) would matter and is untested. |
 | `TURB_FOULING_COEF` | `0.0` | nephelometer window fouling (biases the reading high). Realistic, but works **against** the OD-reward fix it would otherwise improve. |
 | `HARVEST_PUMP_ERROR` | `0.0` | ±fraction harvest delivery error. Forces closed-loop harvest control. |
 | `USE_EPISODE_PHASE` | `True` | `True`: obs channel 7 = `step/max_steps` (only present when `OBS_EXTENDED=True`). Not sim-to-real transferable, and reveals when the `time_avg_od` scoring window opens — a gaming hazard held-out sweeps cannot detect by score alone (an action trace showed no gaming in practice). `False`: periodic harvest-cycle phase, transferable and non-gameable. Set `False` for anything intended for deployment. |

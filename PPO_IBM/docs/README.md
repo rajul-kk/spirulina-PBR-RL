@@ -6,7 +6,7 @@ Start with the three live documents at the top level; everything else is grouped
 
 | file | what it is |
 |---|---|
-| [`decision_history.md`](decision_history.md) | Primary engineering log. Every non-trivial decision, bug, fix and run result, anchored by `#--slug`. Source comments of the form `(full rationale: docs/decision_history.md#--...)` point here. Entries are historical: paths in them are as they were at the time (see the path map in [`../README.md`](../README.md)). |
+| [`decision_history.md`](decision_history.md) | Primary engineering log. Every non-trivial decision, bug, fix and run result, anchored by `#--slug`. Source comments of the form `(full rationale: docs/decision_history.md#--...)` point here. Entries are historical: paths in them are as they were at the time (see the path map in the [root README](../../README.md)). |
 | [`known_limitations.md`](known_limitations.md) | Accepted simplifications (`O1`...`O16`) and what each would take to fix. |
 | [`USAGE.md`](USAGE.md) | How to run the trainers, launchers and tools. |
 

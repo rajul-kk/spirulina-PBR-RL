@@ -135,7 +135,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         # so scale/weight choices here cannot introduce a perverse incentive the way the
         # replaced terms repeatedly did (v48/v50/v52/v53).
         # (full rationale: docs/decision_history.md#--environments-genetic_env-reward-pre-pbrs-archive)
-        # MUST match the trainer's discount (legacy/TD3.py GAMMA) or the invariance guarantee
+        # MUST match the trainer's discount (td3/TD3.py GAMMA) or the invariance guarantee
         # is only approximate.
         self.PBRS_GAMMA = 0.9995
         self.PHI_OD_W = 1.0                 # weight on the OD-health component of Phi

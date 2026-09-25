@@ -32,22 +32,22 @@ project directory this README describes.
 ## Current status: TD3+BC
 
 TD3+BC is the first algorithm in this project to produce a **held-out-validated D2 policy**
-(PPO and TD-MPC2 never did — see below). Entry points: `legacy/TD3.py` (LSTM core) and
-`legacy/TD3_lru.py` (diagonal-LRU core, patches `TD3.py`'s module globals and reuses its
+(PPO and TD-MPC2 never did — see below). Entry points: `td3/TD3.py` (LSTM core) and
+`td3/TD3_lru.py` (diagonal-LRU core, patches `TD3.py`'s module globals and reuses its
 training loop). Run directly from `PPO_IBM/`:
 
 ```
-python legacy/TD3.py                       # LSTM core, fresh run
-python legacy/TD3.py --resume              # resume from model_data/td3_checkpoints/
-python legacy/TD3_lru.py                   # diagonal-LRU core, fresh run
-python legacy/TD3_lru.py --resume          # resume from model_data/td3_lru_checkpoints/
+python td3/TD3.py                       # LSTM core, fresh run
+python td3/TD3.py --resume              # resume from model_data/td3_checkpoints/
+python td3/TD3_lru.py                   # diagonal-LRU core, fresh run
+python td3/TD3_lru.py --resume          # resume from model_data/td3_lru_checkpoints/
 
 # held-out validation (required before any mastery claim — see below)
 python experiments/bc_scaffold/scripts/td3_held_out_sweep.py \
     --actor-path model_data/td3_checkpoints_best/actor.pth --difficulty 2 --high-pop 12
 ```
 
-Key env vars (all default to the historically-validated behavior; see `legacy/TD3.py` for the
+Key env vars (all default to the historically-validated behavior; see `td3/TD3.py` for the
 full list): `TD3_BC_COEF` (behaviour-cloning anchor strength), `TD3_DEMO_FRACTION`,
 `TD3_HIDDEN_RESET_INTERVAL` (rollout/det-eval recurrent-state reset cadence, independent of the
 training window `SEQ_LEN`), `TD3_THREADS`.
@@ -115,7 +115,7 @@ fail (or narrowly miss) held-out validation. For TD3, use
 
 ## Tooling
 
-**`legacy/actor_io.py`** — loads a TD3 actor/critic checkpoint and detects its recurrent core
+**`td3/actor_io.py`** — loads a TD3 actor/critic checkpoint and detects its recurrent core
 (LSTM vs LRU) from the parameter names, so the same downstream script (held-out sweep,
 diagnostics) scores either without a flag.
 

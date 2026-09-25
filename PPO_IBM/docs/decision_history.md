@@ -6982,3 +6982,32 @@ stitching saved the next episode's fresh population; `difficulty_min` was ignore
 progress postfix never displayed. `recurrent_ppo.py` crashed on resume without a state file and
 let the first post-resume det pass overwrite a better best-det checkpoint.
 
+## --thermal-phi-2026-09-25
+
+Both v58 (LRU) and v59 (LSTM) failed the same way on the audited PBRS code: v59 was demoted
+D1->D0 after det crash climbed 33->56->78%, and v58's D2 det crash climbed 0->22->56%. Traces
+of crashing det-eval episodes showed the cause. Between harvests the actor held light at
+~2000 umol, the tank heated to the 45C clip (equilibrium T = 25 + 0.01*I), the growth
+temperature factor fell to ~0.2, and the stalled culture was harvested down to extinction.
+
+Why the actor drifts there: light barely moves short-horizon growth (scripted expert
+od@600 is identical at 950/1400/2000 umol), so the critic's light gradient is mostly noise and
+the action walks to a bound. The cost, heat, arrives ~1000 steps later. This predates PBRS:
+v49/v56 (LSTM, old reward) sit at ~2000 umol/45C and crash on the D2 det seeds, v55 (LRU)
+held ~1000 umol/35C, and v57 drifted to the low bound (~200 umol) instead. The audit did not
+cause it either: the pre-audit env shows the same light/heat trade-off.
+
+PBRS made it worse. Phi scored a cooked culture parked at OD target at its maximum (2.91 at
+45C), so shaping carried no signal at all while the culture died.
+
+Fix: multiply Phi by the growth model's own temperature factor,
+exp(-0.5((T - T_opt)/5)^2). Phi is still a function of state alone, so the discounted
+ranking is unchanged by construction (expert discounted return: 950 umol -1.6 vs 2000 umol
+-2.1, identical before and after). What changes is when the cost arrives: Phi now falls
+2.65 -> 1.05 -> 0.65 while the tank heats (steps ~1000-2000) instead of staying flat.
+Undiscounted episode return is NOT a valid check here: with gamma < 1 each step pays
+-(1-gamma)*Phi, so a low-Phi (cooked) culture pays less and full light "wins" undiscounted
+(-4.1 vs -4.7). TD3 optimises the discounted return, where that term telescopes away.
+
+Regression check added to experiments/env_diagnosis/core_audit_check.py. Relaunched as the
+matched pair v60 (LRU) / v61 (LSTM). Reward values are not comparable with v57-v59.

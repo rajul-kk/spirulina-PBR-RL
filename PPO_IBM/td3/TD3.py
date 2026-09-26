@@ -70,6 +70,12 @@ EXPLORATION_NOISE_ANNEAL_FRAC = 0.3  # fraction of TOTAL_TRAINING_STEPS to annea
 
 N_DEMO_EPISODES = 24                 # matches bc/bc_pretrain.py's default episode count
 DEMO_FRACTION = float(os.environ.get("TD3_DEMO_FRACTION", "0.25"))  # share of each batch from demos
+# Quadratic penalty on actor pre-tanh outputs past +/-PREACT_BOUND. Without it the actor can
+# drift to |pre| ~ 4-20, where tanh's slope is 1e-3..1e-17 and the critic can no longer move
+# it: v60 locked all three actions at -1 (dark, unstirred, unharvested) from every start.
+# tanh(2) = 0.964, so the full action range stays reachable.
+PREACT_COEF = float(os.environ.get("TD3_PREACT_COEF", "0.1"))
+PREACT_BOUND = 2.0
 DEMO_DIFFICULTY_WEIGHTS = {0: 0.4, 1: 0.4, 2: 0.2}  # matches bc/bc_pretrain.py
 
 # Scripted-expert control law, numerically identical to bc/bc_pretrain.py (not imported,
@@ -131,7 +137,8 @@ class RecurrentActor(nn.Module):
             hidden = self.initial_hidden(B)
         x = self.input_fc(obs.reshape(B * T, -1)).reshape(B, T, -1)
         out, hidden = self.lstm(x, hidden)
-        action = torch.tanh(self.mean_fc(out))
+        self.last_preact = self.mean_fc(out)   # read by preact_penalty in the actor update
+        action = torch.tanh(self.last_preact)
         return action, hidden
 
 
@@ -428,6 +435,11 @@ def actor_q_weight(q_pred):
     return 1.0   # vanilla TD3 actor loss when the BC anchor is off
 
 
+def preact_penalty(preact):
+    """Keeps the actor out of tanh's flat tails; see PREACT_COEF."""
+    return PREACT_COEF * F.relu(preact.abs() - PREACT_BOUND).pow(2).mean()
+
+
 def actor_step(actor, actor_target, critic, critic_target, actor_opt, actor_loss):
     """Apply the delayed actor update and the Polyak target updates. Returns the actor loss."""
     actor_opt.zero_grad()
@@ -451,6 +463,7 @@ def td3_update(actor, actor_target, critic, critic_target, actor_opt, critic_opt
     if update_idx % POLICY_DELAY == 0:
         obs = batch["obs"]
         pred_action, _ = actor(obs)
+        sat_term = preact_penalty(actor.last_preact)
         q_pred = critic.q1_only(obs, pred_action)
         q_term = -actor_q_weight(q_pred) * q_pred.mean()
 
@@ -462,7 +475,8 @@ def td3_update(actor, actor_target, critic, critic_target, actor_opt, critic_opt
             bc_pred, _ = actor(bc_obs_t)
             bc_term = BC_COEF * F.mse_loss(bc_pred, bc_act_t)
 
-        actor_loss = actor_step(actor, actor_target, critic, critic_target, actor_opt, q_term + bc_term)
+        actor_loss = actor_step(actor, actor_target, critic, critic_target, actor_opt,
+                                q_term + bc_term + sat_term)
 
     return critic_loss, actor_loss
 

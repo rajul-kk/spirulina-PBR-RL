@@ -294,6 +294,24 @@ def _():
     assert abs(env.temp - env.T_SETPOINT) < 0.5, f"T {env.temp:.1f}C at 1400 umol"
 
 
+@check("TD3 actor updates penalise tanh saturation (pre-activations past +/-2 keep a gradient)")
+def _():
+    import torch
+    import TD3
+    import TD3_lru
+    for mod, cls in ((TD3, TD3.RecurrentActor), (TD3_lru, TD3_lru.LRUActor)):
+        assert "preact_penalty" in inspect.getsource(mod.td3_update), f"{mod.__name__}.td3_update has no saturation penalty"
+        actor = cls(TD3.OBS_DIM, TD3.ACTION_DIM)
+        with torch.no_grad():
+            actor.mean_fc.bias.fill_(-5.0)       # v60's dark-corner trap sat at pre-tanh ~ -4
+        action, _ = actor(torch.zeros(4, 3, TD3.OBS_DIM))
+        tanh_grad = float((1.0 - action.detach() ** 2).mean())
+        TD3.preact_penalty(actor.last_preact).backward()
+        g = float(actor.mean_fc.bias.grad.abs().min())
+        assert g > 100.0 * tanh_grad, f"{cls.__name__}: penalty grad {g:.2e} vs tanh grad {tanh_grad:.2e}"
+        assert float(actor.mean_fc.bias.grad.min()) < 0.0, "penalty does not push pre-activations back toward 0"
+
+
 if __name__ == "__main__":
     print("=" * 78)
     for name, ok, msg in RESULTS:

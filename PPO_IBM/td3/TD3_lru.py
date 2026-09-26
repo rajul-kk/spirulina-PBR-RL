@@ -84,15 +84,17 @@ def td3_update(actor, actor_target, critic, critic_target, actor_opt, critic_opt
             bc_obs_t = torch.tensor(np.array(bc_obs), dtype=torch.float32, device=DEVICE)
             bc_act_t = torch.tensor(np.array(bc_act), dtype=torch.float32, device=DEVICE)
             fused, _ = actor(torch.cat([obs, bc_obs_t], dim=0))
+            sat_term = base.preact_penalty(actor.last_preact)
             pred_action, bc_pred = fused[:obs.shape[0]], fused[obs.shape[0]:]
             bc_term = base.BC_COEF * F.mse_loss(bc_pred, bc_act_t)
         else:
             pred_action, _ = actor(obs)
+            sat_term = base.preact_penalty(actor.last_preact)
             bc_term = torch.tensor(0.0, device=DEVICE)
 
         q_pred = critic.q1_only(obs, pred_action)
         actor_loss = base.actor_step(actor, actor_target, critic, critic_target, actor_opt,
-                                     -base.actor_q_weight(q_pred) * q_pred.mean() + bc_term)
+                                     -base.actor_q_weight(q_pred) * q_pred.mean() + bc_term + sat_term)
 
     return critic_loss, actor_loss
 

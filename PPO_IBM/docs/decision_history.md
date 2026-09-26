@@ -7061,3 +7061,29 @@ Not done (still in O16): raw, unscaled observations into the TD3 networks (condu
 ~32,000 next to pH ~10); pigment still affects only sensor readings.
 
 Runs: v60 (LRU) and v61 (LSTM), relaunched on this physics.
+
+## --tanh-saturation-penalty-2026-09-26
+
+v60 (LRU, physics v2) sat at D0 with det-eval harvest 24 mg and time-avg od ~1.35. Probing its
+actor showed all three actions pinned at -1: minimum stir, lights off, no harvest. The culture
+starves slowly in the dark without crashing, so crash rate stayed low and the run never aborted.
+
+Mechanism, confirmed by probes (scratchpad `lux_trap.py`, `preact.py`):
+- Pre-tanh outputs in that state were about -3.7 / -4.0 / -4.9, where tanh's slope is
+  1e-3..2e-4, so the critic's gradient could not pull the actor back. v61's LSTM actor also
+  sat at |pre| up to 21, in good corners, which is the same fragility.
+- The BH1750 channel echoes the actor's own light action, and reset reports lux 0. For a thin
+  culture, "dark in, dark out" is self-sustaining. Forcing the lights on for 20 steps from 250
+  or 700 cells took harvest from 0 to 3.4 g and 9.4 g, and the actor then kept them on.
+- With a 600-step hidden reset (the run's setting), the LRU drifted into the dark corner from
+  every start. With a 60-step reset (its training window length) the same weights harvested
+  18.5 g from 1500 cells and 40.8 g from 4000. The LRU's slow channels (decay up to 0.999)
+  reach magnitudes at step 600 that training windows never produce.
+
+Fix: `preact_penalty` in both actor updates, `TD3_PREACT_COEF` (default 0.1) times the mean
+squared excess of |pre-tanh| over 2 (tanh(2) = 0.964, so the whole action range stays
+reachable). Regression check added to `core_audit_check.py`. The LRU's horizon mismatch is a
+separate issue; relaunch the LRU with `TD3_HIDDEN_RESET_INTERVAL=60`.
+
+LRU harvest freezes in v48, v50, v52, v53 (LSTM), v57 and v60 were not re-probed; saturation is
+the likely shared cause but is only confirmed for v60.

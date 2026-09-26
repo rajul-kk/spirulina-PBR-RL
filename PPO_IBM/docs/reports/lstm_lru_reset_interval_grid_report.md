@@ -39,6 +39,16 @@ linking it to a concrete operational requirement (reset cadence) and failure sig
 v50 is the weakest row: no CI, and its training run itself collapsed late (the best checkpoint is
 pre-collapse).
 
+> **Caveat added 2026-09-26.** Every row here is on the pre-physics-v2 simulator, and none of
+> these runs had the actor tanh-saturation penalty. On physics v2, v60 (LRU, reset 600) locked
+> into a lights-off corner from every start while the same weights harvested normally at reset
+> 60, so "a bounded core doesn't need resets" did not hold there: bounded is not the same as
+> within the training distribution (60-step windows build the slow LRU channels to ~2.6x their
+> input level; by step 600 they approach ~45x). v61's LSTM actor also runs saturated (|pre-tanh|
+> up to 21), so part of the LSTM's high-population loss below may be saturation rather than
+> cell-state growth. Treat Finding 1 as unconfirmed until the matched rerun (v62 LRU/600 vs v63
+> LSTM/600, both with the penalty) is in. See `docs/decision_history.md#--tanh-saturation-penalty-2026-09-26`.
+
 ## Findings
 
 1. **Cross-core at matched reset=600 (the robust result):** the LRU retains 153-219% at high

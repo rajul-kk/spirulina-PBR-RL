@@ -30,7 +30,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from harness import SENSOR_DOC, evaluate  # noqa: E402
 
-RUNS = os.path.join(HERE, "results", "evolve")
+RUNS = os.environ.get("EVOLVE_RUNS_DIR", os.path.join(HERE, "results", "evolve"))
+WORKERS = int(os.environ.get("EVOLVE_WORKERS", "2"))   # parallel scoring episodes
 SEED_PROGRAM = os.path.join(HERE, "controllers", "sensor_expert.py")
 ALLOWED_IMPORTS = {"numpy", "math", "collections", "process_state"}
 BANNED_NAMES = {"open", "exec", "eval", "compile", "__import__", "globals", "locals", "getattr",
@@ -131,7 +132,7 @@ def score_file(run, path, note="", writer_seconds=None):
         print(f"  {entry['file']}: REJECTED ({problem})")
         return entry
     t0 = time.time()
-    s, results = evaluate(path, "search", 2, workers=2, trace_every=600)
+    s, results = evaluate(path, "search", 2, workers=WORKERS, trace_every=600)
     entry.update(fitness=s["fitness"], summary=s, eval_seconds=round(time.time() - t0),
                  episodes=[{k: v for k, v in r.items() if k != "trace"} for r in results])
     with open(path + ".traces.json", "w") as f:
@@ -205,9 +206,11 @@ def build_prompt(run, top_k=2):
 # ─── writers ──────────────────────────────────────────────────────────────────
 
 def ollama_generate(model, prompt, timeout=3600):
-    body = {"model": model, "stream": False, "think": False,
+    body = {"model": model, "stream": False,
             "messages": [{"role": "user", "content": prompt}],
-            "options": {"temperature": 0.7, "num_ctx": 16384, "num_thread": 4}}
+            "options": {"temperature": 0.7, "num_ctx": 16384}}
+    if model.startswith("qwen3"):
+        body["think"] = False     # qwen3 thinks by default; other models may reject the flag
     req = urllib.request.Request("http://localhost:11434/api/chat", data=json.dumps(body).encode(),
                                  headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=timeout) as r:

@@ -84,13 +84,17 @@ def run_episode(job):
     """job: (controller_path, params, difficulty, init_cells, seed, privileged, trace_every)."""
     from genetic_env import GeneticPhotobioreactorEnv
     path, params, difficulty, init_cells, seed, privileged, trace_every = job
-    Controller = load_controller_class(path)
     np.random.seed(seed)   # env.reset(seed) alone doesn't seed strain randomisation
     env = GeneticPhotobioreactorEnv(max_cells=MAX_CELLS, initial_cells=init_cells, difficulty=difficulty)
     obs, _ = env.reset(seed=seed)
     f_max = float(env.F_MAX)
-    ctrl = Controller(params) if params is not None else Controller()
     trace, done, t, info, err = [], False, 0, {}, None
+    try:   # a program that fails to load or construct forfeits the episode, like one failing in act()
+        Controller = load_controller_class(path)
+        ctrl = Controller(params) if params is not None else Controller()
+    except Exception as e:
+        err = f"{type(e).__name__} at load: {e}"
+        done = True
     t_start = time.time()
     while not done:
         if t % 500 == 0 and time.time() - t_start > EPISODE_WALL_S:

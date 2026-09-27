@@ -132,7 +132,13 @@ def score_file(run, path, note="", writer_seconds=None):
         print(f"  {entry['file']}: REJECTED ({problem})")
         return entry
     t0 = time.time()
-    s, results = evaluate(path, "search", 2, workers=WORKERS, trace_every=600)
+    try:
+        s, results = evaluate(path, "search", 2, workers=WORKERS, trace_every=600)
+    except Exception as e:   # never let one candidate end the whole track
+        entry.update(fitness=-1e9, rejected=f"harness failure: {type(e).__name__}: {e}"[:300])
+        record(run, entry)
+        print(f"  {entry['file']}: REJECTED ({entry['rejected']})", flush=True)
+        return entry
     entry.update(fitness=s["fitness"], summary=s, eval_seconds=round(time.time() - t0),
                  episodes=[{k: v for k, v in r.items() if k != "trace"} for r in results])
     with open(path + ".traces.json", "w") as f:

@@ -1,1 +1,33 @@
   cand_000.py: fitness 9186 | median 10387 mg, p25 7985 mg, crash 0%, errors 0 [125s]
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "C:\Users\rajul\AppData\Local\Programs\Python\Python310\lib\multiprocessing\pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+  File "C:\Users\rajul\AppData\Local\Programs\Python\Python310\lib\multiprocessing\pool.py", line 48, in mapstar
+    return list(map(*args))
+  File "E:\SEGP\PPO_IBM\experiments\program_control\harness.py", line 92, in run_episode
+    ctrl = Controller(params) if params is not None else Controller()
+  File "E:\SEGP\PPO_IBM\experiments\program_control\results\evolve\llama3_2_3b\cand_001.py", line 3, in __init__
+    self.p = dict(DEFAULTS, **(params or {}))
+NameError: name 'DEFAULTS' is not defined
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "E:\SEGP\PPO_IBM\experiments\program_control\evolve.py", line 303, in <module>
+    
+  File "E:\SEGP\PPO_IBM\experiments\program_control\evolve.py", line 299, in main
+    s.add_argument("--note", default="")
+  File "E:\SEGP\PPO_IBM\experiments\program_control\evolve.py", line 258, in cmd_auto
+    with open(path, "w", encoding="utf-8") as f:
+  File "E:\SEGP\PPO_IBM\experiments\program_control\evolve.py", line 134, in score_file
+    t0 = time.time()
+  File "E:\SEGP\PPO_IBM\experiments\program_control\harness.py", line 170, in evaluate
+    results = pool.map(run_episode, jobs)
+  File "C:\Users\rajul\AppData\Local\Programs\Python\Python310\lib\multiprocessing\pool.py", line 364, in map
+    return self._map_async(func, iterable, mapstar, chunksize).get()
+  File "C:\Users\rajul\AppData\Local\Programs\Python\Python310\lib\multiprocessing\pool.py", line 771, in get
+    raise self._value
+NameError: name 'DEFAULTS' is not defined

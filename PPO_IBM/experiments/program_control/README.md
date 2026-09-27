@@ -11,6 +11,7 @@ OD; that version is kept only as the `oracle_expert` reference).
 | `controllers/` | `oracle_expert.py` (privileged reference), `sensor_expert.py` (hand-tuned seed; CMA-ES tunes its knobs), `td3_actor.py` (runs a TD3 checkpoint in the harness; reproduces `run_td3_eval_episode` exactly). |
 | `cmaes_tune.py` | Classical baseline: CMA-ES over the sensor expert's 6 knobs, on the search split. |
 | `evolve.py` | LLM program evolution. Same prompt packet, seed program, candidate budget and scoring for every writer. `auto` drives a local model through Ollama; `prompt`/`score` let an outside writer (e.g. Claude in an agent session) take part. Generated code is statically checked (whitelisted imports, no file/OS/exec access) before it runs. |
+| `kaggle/` | `run_llm_tracks.py` runs the LLM-writer tracks on Kaggle's machines (Ollama, GPU or CPU-only; resumable from an earlier session's output; stops starting candidates at 10.5 h). `sessions/<name>/` holds one private kernel per session: `kaggle kernels push -p kaggle/sessions/<name>`. |
 | `results/` | Archives (`evolve/<writer>/archive.jsonl`, candidate files, traces), CMA-ES log and best params. |
 
 ```

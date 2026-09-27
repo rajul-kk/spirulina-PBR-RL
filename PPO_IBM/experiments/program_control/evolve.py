@@ -231,9 +231,13 @@ def next_cand_path(run):
 
 def cmd_auto(args):
     ensure_seed(args.run)
+    deadline = float(os.environ.get("EVOLVE_DEADLINE_EPOCH", "inf"))   # set by batch jobs
     while True:
         n_done = len(load_archive(args.run)) - 1        # the seed doesn't count toward the budget
         if n_done >= args.budget:
+            break
+        if time.time() > deadline:
+            print(f"  deadline reached after {n_done} candidates; resume in a new session", flush=True)
             break
         prompt = build_prompt(args.run)
         t0 = time.time()

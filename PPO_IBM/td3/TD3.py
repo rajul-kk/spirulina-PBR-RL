@@ -66,7 +66,9 @@ TD3BC_ALPHA = 2.5    # paper default
 BC_COEF = float(os.environ.get("TD3_BC_COEF", "1.0"))
 EXPLORATION_NOISE_START = 0.25
 EXPLORATION_NOISE_END = 0.03
-EXPLORATION_NOISE_ANNEAL_FRAC = 0.3  # fraction of TOTAL_TRAINING_STEPS to anneal over
+# Anneal length in steps: 0.3 x the original 2M budget. Fixed rather than a fraction of
+# TD3_STEPS so that extending a run's budget cannot re-raise its exploration noise.
+EXPLORATION_NOISE_ANNEAL_STEPS = int(os.environ.get("TD3_NOISE_ANNEAL_STEPS", "600000"))
 
 N_DEMO_EPISODES = 24                 # matches bc/bc_pretrain.py's default episode count
 DEMO_FRACTION = float(os.environ.get("TD3_DEMO_FRACTION", "0.25"))  # share of each batch from demos
@@ -89,6 +91,9 @@ EXPERT_FRAC_CAP = 0.30
 # Default budget is smaller than PPO/TD-MPC2's 8M-step convention: this file's per-step
 # (full rationale: docs/decision_history.md#--legacy-TD3-py-92)
 TOTAL_TRAINING_STEPS = int(os.environ.get("TD3_STEPS", "2000000"))
+# Stop once the curriculum reaches this tier (e.g. 2 = "run until the agent reaches D2"); the
+# checkpoint is saved first, so training can be resumed at that tier later. Unset = never.
+STOP_AT_DIFFICULTY = int(os.environ.get("TD3_STOP_AT_DIFFICULTY", "99"))
 CHUNK_STEPS = 100_000
 DET_EVAL_EPISODES_PER_CHUNK = 3
 # Derived from the fixed det-eval set (yield-scored instances only), so the gate can
@@ -465,18 +470,23 @@ def td3_update(actor, actor_target, critic, critic_target, actor_opt, critic_opt
     actor_loss = None
     if update_idx % POLICY_DELAY == 0:
         obs = batch["obs"]
-        pred_action, _ = actor(obs)
-        sat_term = preact_penalty(actor.last_preact)
-        q_pred = critic.q1_only(obs, pred_action)
-        q_term = -actor_q_weight(q_pred) * q_pred.mean()
-
         bc_obs, bc_act, _, _, _ = demo_buffer._sample_raw(BATCH_SIZE)
         bc_term = torch.tensor(0.0, device=DEVICE)
         if bc_obs:
+            # One actor pass over [policy batch; BC batch]: rows are independent given a zero
+            # initial state, so this equals two passes (to float rounding) at ~one pass's cost.
             bc_obs_t = torch.tensor(np.array(bc_obs), dtype=torch.float32, device=DEVICE)
             bc_act_t = torch.tensor(np.array(bc_act), dtype=torch.float32, device=DEVICE)
-            bc_pred, _ = actor(bc_obs_t)
+            fused, _ = actor(torch.cat([obs, bc_obs_t], dim=0))
+            pred_action, bc_pred = fused[:obs.shape[0]], fused[obs.shape[0]:]
             bc_term = BC_COEF * F.mse_loss(bc_pred, bc_act_t)
+        else:
+            pred_action, _ = actor(obs)
+        # Policy rows only, as before the fusion. (TD3_lru's fused update penalises the BC rows
+        # too; the matched LSTM/LRU runs v62-v65 were launched with that difference.)
+        sat_term = preact_penalty(actor.last_preact[:obs.shape[0]])
+        q_pred = critic.q1_only(obs, pred_action)
+        q_term = -actor_q_weight(q_pred) * q_pred.mean()
 
         actor_loss = actor_step(actor, actor_target, critic, critic_target, actor_opt,
                                 q_term + bc_term + sat_term)
@@ -655,7 +665,7 @@ def train(resume=False):
         pbar = tqdm(range(chunk_steps), desc=f"D{train_diff}", file=sys.stdout, mininterval=2.0)
 
         for _ in pbar:
-            noise_frac = min(1.0, global_step / max(1, TOTAL_TRAINING_STEPS * EXPLORATION_NOISE_ANNEAL_FRAC))
+            noise_frac = min(1.0, global_step / max(1, EXPLORATION_NOISE_ANNEAL_STEPS))
             noise_scale = EXPLORATION_NOISE_START + noise_frac * (EXPLORATION_NOISE_END - EXPLORATION_NOISE_START)
 
             if steps_since_hidden_reset >= HIDDEN_RESET_INTERVAL:
@@ -803,6 +813,9 @@ def train(resume=False):
                   f"dem={demotion_streak}/{DEMOTION_STREAK_REQUIRED} "
                   f"capfail={capability_fail_streak}/{CAPABILITY_DEMOTION_CHUNKS}")
         current_difficulty = next_difficulty
+        if current_difficulty >= STOP_AT_DIFFICULTY:
+            print(f"\n  [STOP] reached D{current_difficulty} (TD3_STOP_AT_DIFFICULTY) at step {global_step:,}")
+            break
 
     if d0_capability_abort:
         print("\n  [EARLY STOP] D0 capability-abort triggered — see log above.")

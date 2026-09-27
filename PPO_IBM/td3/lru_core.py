@@ -32,9 +32,12 @@ class LRUCore(nn.Module):
     def forward(self, x, hidden=None):
         """x: [B, T, D] -> out [B, T, D], h_last [B, D]. Matches step() to ~1e-7."""
         B, T, _ = x.shape
-        a, lam, gamma = self._decay()
         if hidden is None:
             hidden = self.initial_hidden(B, device=x.device)
+        if T == 1:   # rollout/eval step: the O(1) recurrence, same result as the matrix form below
+            y, h = self.step(x[:, 0], hidden)
+            return y.unsqueeze(1), h
+        a, lam, gamma = self._decay()
 
         # Materialise the causal decay matrix K[d,t,i] = lam_d^(t-i) for t>=i and contract
         # in one einsum. Costs (D,T,T) = 460k floats at our shapes, vs (B,T,D,N) for an

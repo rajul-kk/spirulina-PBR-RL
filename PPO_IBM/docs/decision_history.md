@@ -7087,3 +7087,23 @@ separate issue; relaunch the LRU with `TD3_HIDDEN_RESET_INTERVAL=60`.
 
 LRU harvest freezes in v48, v50, v52, v53 (LSTM), v57 and v60 were not re-probed; saturation is
 the likely shared cause but is only confirmed for v60.
+
+## --td3-speed-and-budget-2026-09-28
+
+Where a TD3 step's time goes (profiled on this i7-1355U: 2 performance + 8 efficiency cores,
+15 W): the recurrent forward/backward passes inside td3_update are ~90%; env.step ~2.6 ms and
+the batch-1 actor forward 1-2 ms are minor; Python overhead and replay sampling are negligible.
+oneDNN is already on. More threads barely help on a power-limited chip running three jobs.
+
+Behaviour-preserving changes (verified numerically):
+- LSTM td3_update fuses the policy and BC actor passes into one forward, as TD3_lru already
+  did (loss identical, gradients within 1.5e-8 with the saturation penalty active). The penalty
+  is still taken over the policy rows only, as before. TD3_lru's fused update penalises the BC
+  rows too; v62-v65 were launched with that difference.
+- LRUCore.forward takes the O(1) step() path when T == 1 (matches the matrix form to 3e-7).
+- Runs restarted with TD3_THREADS=2.
+
+Budget: runs now go until they reach D2 (TD3_STOP_AT_DIFFICULTY=2) or D0-abort, with a 10M
+cap. Exploration noise used to anneal over 0.3 x TD3_STEPS; it is now a fixed 600,000 steps
+(TD3_NOISE_ANNEAL_STEPS), identical under the old 2M budget, so extending a budget can't
+re-raise a run's noise.

@@ -17,7 +17,15 @@ from genetic_env import GeneticPhotobioreactorEnv
 from TD3 import OBS_DIM, ACTION_DIM, MAX_CELLS, DEVICE, HIDDEN_RESET_INTERVAL
 from actor_io import load_actor
 
-GATE = {"harvest": 90.0, "p25": 50.0, "crash": 0.08, "time_od": 0.011}
+from curriculum_schedule import ADVANCE_TARGETS
+
+
+def gate_for(difficulty):
+    """The curriculum's own thresholds for leaving this tier (D2: the mastery gate). Hard-coded
+    at the pre-physics-v2 scale (90 mg / 50 mg) until 2026-09-27."""
+    t = ADVANCE_TARGETS[difficulty]
+    return {"harvest": t["min_median_harvested_mg"], "p25": t["min_p25_harvested_mg"],
+            "crash": t["max_crash_rate"], "time_od": t["min_median_time_avg_od"]}
 
 
 def sample_init_cells(rng, adversarial_frac=0.10):
@@ -140,12 +148,12 @@ def main():
         print(f"    {lab:<18} n={len(v):2d}  median={np.median(hv):7.1f}  "
               f"min={min(hv):6.1f}  max={max(hv):7.1f}  crash={cv:.0f}%")
 
-    print(f"\n  vs D2 curriculum gate: harvest>={GATE['harvest']} p25>={GATE['p25']} "
+    GATE = gate_for(args.difficulty)
+    print(f"\n  vs D{args.difficulty} curriculum gate: harvest>={GATE['harvest']} p25>={GATE['p25']} "
           f"crash<={GATE['crash']*100:.0f}% time_od>={GATE['time_od']}")
     ok = (med_h >= GATE["harvest"] and p25_h >= GATE["p25"]
           and crash_rate <= GATE["crash"] and med_od >= GATE["time_od"])
-    print(f"  holds on held-out sample: {'YES' if ok else 'NO'}"
-          f"   [legacy 4-criterion gate, comparable to every historical run]")
+    print(f"  holds on held-out sample: {'YES' if ok else 'NO'}")
     if args.high_pop > 0:
         hp_rng = np.random.RandomState(args.base_seed + 500_000)
         hp = []

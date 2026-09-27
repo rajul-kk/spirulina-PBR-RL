@@ -1,0 +1,122 @@
+{
+ "summary": {
+  "n": 12,
+  "median_mg": 10983.774758399999,
+  "p25_mg": 8738.2373872,
+  "mean_mg": 16558.08754464,
+  "crash_rate": 0.0,
+  "median_time_avg_od": 0.7420159578323364,
+  "errors": 0,
+  "fitness": 9861.006072799999
+ },
+ "episodes": [
+  {
+   "seed": 3000000,
+   "init_cells": 214,
+   "steps": 7200,
+   "crashed": false,
+   "error": null,
+   "harvested_mg": 11161.990041599998,
+   "time_avg_od": 0.7523036599159241
+  },
+  {
+   "seed": 3000001,
+   "init_cells": 144,
+   "steps": 7200,
+   "crashed": false,
+   "error": null,
+   "harvested_mg": 8163.276256,
+   "time_avg_od": 0.7151992917060852
+  },
+  {
+   "seed": 3000002,
+   "init_cells": 101,
+   "steps": 7200,
+   "crashed": false,
+   "error": null,
+   "harvested_mg": 6258.776729599999,
+   "time_avg_od": 0.7131544947624207
+  },
+  {
+   "seed": 3000003,
+   "init_cells": 163,
+   "steps": 7200,
+   "crashed": false,
+   "error": null,
+   "harvested_mg": 10463.1207808,
+   "time_avg_od": 0.7481266856193542
+  },
+  {
+   "seed": 3000004,
+   "init_cells": 164,
+   "steps": 7200,
+   "crashed": false,
+   "error": null,
+   "harvested_mg": 6875.3914208,
+   "time_avg_od": 0.7040094137191772
+  },
+  {
+   "seed": 3000005,
+   "init_cells": 66,
+   "steps": 7200,
+   "crashed": false,
+   "error": null,
+   "harvested_mg": 5350.3360768,
+   "time_avg_od": 0.7273474335670471
+  },
+  {
+   "seed": 3000006,
+   "init_cells": 39,
+   "steps": 7200,
+   "crashed": false,
+   "error": null,
+   "harvested_mg": 3829.6500224,
+   "time_avg_od": 0.695114016532898
+  },
+  {
+   "seed": 3000007,
+   "init_cells": 230,
+   "steps": 7200,
+   "crashed": false,
+   "error": null,
+   "harvested_mg": 17307.4810496,
+   "time_avg_od": 0.8677881360054016
+  },
+  {
+   "seed": 3000008,
+   "init_cells": 242,
+   "steps": 7200,
+   "crashed": false,
+   "error": null,
+   "harvested_mg": 10805.559475199998,
+   "time_avg_od": 0.7249430418014526
+  },
+  {
+   "seed": 3500000,
+   "init_cells": 2674,
+   "steps": 7200,
+   "crashed": false,
+   "error": null,
+   "harvested_mg": 38091.5064832,
+   "time_avg_od": 0.8037711381912231
+  },
+  {
+   "seed": 3500001,
+   "init_cells": 1646,
+   "steps": 7200,
+   "crashed": false,
+   "error": null,
+   "harvested_mg": 29340.843724800005,
+   "time_avg_od": 0.7956110835075378
+  },
+  {
+   "seed": 3500002,
+   "init_cells": 1678,
+   "steps": 7200,
+   "crashed": false,
+   "error": null,
+   "harvested_mg": 27112.9294848,
+   "time_avg_od": 0.7359052300453186
+  }
+ ]
+}

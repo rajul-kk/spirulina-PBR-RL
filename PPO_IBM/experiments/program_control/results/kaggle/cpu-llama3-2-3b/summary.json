@@ -1,0 +1,12 @@
+[
+ {
+  "run": "llama3_2_3b",
+  "model": "llama3.2:3b",
+  "candidates": 16,
+  "complete": true,
+  "best": "cand_000.py",
+  "search_fitness": 9186.2928512,
+  "hours": 1.93,
+  "vram_mib": 0
+ }
+]

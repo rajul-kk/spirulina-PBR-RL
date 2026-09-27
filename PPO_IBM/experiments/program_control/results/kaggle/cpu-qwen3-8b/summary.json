@@ -1,0 +1,12 @@
+[
+ {
+  "run": "qwen3_8b",
+  "model": "qwen3:8b",
+  "candidates": 16,
+  "complete": true,
+  "best": "cand_000.py",
+  "search_fitness": 9186.2928512,
+  "hours": 6.36,
+  "vram_mib": 0
+ }
+]

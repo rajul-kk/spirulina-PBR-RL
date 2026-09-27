@@ -1,0 +1,27 @@
+  cand_000.py: fitness 9186 | median 10387 mg, p25 7985 mg, crash 0%, errors 0 [83s]
+  cand_001.py: fitness 2339 | median 4760 mg, p25 1585 mg, crash 8%, errors 0 [99s]
+    (writer qwen3:8b: 1330s, 596 out / 4451 in tokens)
+  cand_002.py: fitness 4005 | median 5413 mg, p25 4263 mg, crash 8%, errors 0 [78s]
+    (writer qwen3:8b: 2328s, 887 out / 6901 in tokens)
+  cand_003.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [1s]
+    (writer qwen3:8b: 3147s, 1000 out / 8739 in tokens)
+  cand_004.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [1s]
+    (writer qwen3:8b: 2897s, 920 out / 8813 in tokens)
+  cand_005.py: fitness 3084 | median 5111 mg, p25 4391 mg, crash 17%, errors 0 [83s]
+    (writer qwen3:8b: 2649s, 892 out / 8887 in tokens)
+  cand_006.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [1s]
+    (writer qwen3:8b: 2757s, 977 out / 8926 in tokens)
+  cand_007.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [1s]
+    (writer qwen3:8b: 2848s, 1047 out / 9008 in tokens)
+  cand_008.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [1s]
+    (writer qwen3:8b: 2684s, 928 out / 9087 in tokens)
+  cand_009.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [2s]
+    (writer qwen3:8b: 2738s, 1003 out / 9122 in tokens)
+  cand_010.py: fitness 4078 | median 5298 mg, p25 4524 mg, crash 8%, errors 0 [85s]
+    (writer qwen3:8b: 2900s, 1063 out / 9201 in tokens)
+  cand_011.py: fitness 2890 | median 6278 mg, p25 4503 mg, crash 25%, errors 0 [88s]
+    (writer qwen3:8b: 3591s, 1427 out / 9340 in tokens)
+  cand_012.py: fitness 2890 | median 6278 mg, p25 4503 mg, crash 25%, errors 0 [72s]
+    (writer qwen3:8b: 3504s, 1379 out / 9387 in tokens)
+  cand_013.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [2s]
+    (writer qwen3:8b: 3533s, 1456 out / 9395 in tokens)

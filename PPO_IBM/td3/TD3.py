@@ -100,9 +100,12 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # this, TD3_THREADS was silently ignored for the LSTM core and it grabbed every CPU core.
 if DEVICE.type == "cpu" and "TD3_THREADS" in os.environ:
     torch.set_num_threads(int(os.environ["TD3_THREADS"]))
-CHECKPOINT_DIR = "model_data/td3_checkpoints"
-STATE_PATH = "model_data/td3_training_state.pkl"
-BUFFER_PATH = "model_data/td3_checkpoints/online_buffer.pkl"
+# TD3_RUN_SUFFIX gives a run its own checkpoint/state paths, so two runs of the same core can
+# train side by side (e.g. "_s2" -> model_data/td3_checkpoints_s2/). Empty = the usual paths.
+RUN_SUFFIX = os.environ.get("TD3_RUN_SUFFIX", "")
+CHECKPOINT_DIR = f"model_data/td3_checkpoints{RUN_SUFFIX}"
+STATE_PATH = f"model_data/td3_training_state{RUN_SUFFIX}.pkl"
+BUFFER_PATH = f"model_data/td3_checkpoints{RUN_SUFFIX}/online_buffer.pkl"
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -497,7 +500,7 @@ def save_checkpoint(actor, actor_target, critic, critic_target, actor_opt, criti
     save_state(STATE_PATH, state)
 
 
-BEST_CHECKPOINT_DIR = "model_data/td3_checkpoints_best"
+BEST_CHECKPOINT_DIR = f"model_data/td3_checkpoints_best{RUN_SUFFIX}"
 
 
 def save_best_checkpoint(actor, critic, det_harvest, global_step, difficulty=0):

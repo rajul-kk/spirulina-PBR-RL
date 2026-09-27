@@ -1,3 +1,0 @@
-  cand_000.py: fitness 9186 | median 10387 mg, p25 7985 mg, crash 0%, errors 0 [83s]
-  cand_001.py: fitness 2339 | median 4760 mg, p25 1585 mg, crash 8%, errors 0 [99s]
-    (writer qwen3:8b: 1330s, 596 out / 4451 in tokens)

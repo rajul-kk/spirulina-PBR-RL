@@ -108,10 +108,11 @@ def install():
     base.RecurrentCritic = LRUCritic
     base.soft_update = soft_update
     base.td3_update = td3_update
-    base.CHECKPOINT_DIR = "model_data/td3_lru_checkpoints"
-    base.STATE_PATH = "model_data/td3_lru_training_state.pkl"
-    base.BUFFER_PATH = "model_data/td3_lru_checkpoints/online_buffer.pkl"
-    base.BEST_CHECKPOINT_DIR = "model_data/td3_lru_checkpoints_best"
+    sfx = base.RUN_SUFFIX
+    base.CHECKPOINT_DIR = f"model_data/td3_lru_checkpoints{sfx}"
+    base.STATE_PATH = f"model_data/td3_lru_training_state{sfx}.pkl"
+    base.BUFFER_PATH = f"model_data/td3_lru_checkpoints{sfx}/online_buffer.pkl"
+    base.BEST_CHECKPOINT_DIR = f"model_data/td3_lru_checkpoints_best{sfx}"
 
 
 if __name__ == "__main__":

@@ -7139,3 +7139,43 @@ culture because lysis is booked as instant O2 demand and kLa is cut 14x by clump
 viscosity; lysed N is not recycled; thermostat has a 0.5 C proportional offset; the Gaussian
 temperature response is too harsh when cold and too lenient above 40 C (unreachable behind the
 thermostat); stirring has no light/dark-cycling benefit.
+
+## --physics-v3-2026-09-29
+
+Follow-up to the fidelity audit (#--fidelity-audit-2026-09-29), with literature checked by web
+search this time. Kept to the simplest change each finding supports.
+
+**Productivity.** The audit's "3-6x too low photon use" compared continuous 1400 umol (about
+121 mol photons/m2/day, 2-3x a sunny day, so heavily saturating) with outdoor yields of
+0.3-0.5 g/mol. The model's intrinsic low-light yield is about 0.46 g/mol (mass-specific absorption
+~0.19 m2/g, saturation ~125 umol, mu_max ~0.96/day), low-middle of the range Cornet-type
+Arthrospira models give (~0.5-0.8 g/mol). All three constants sit inside published ranges, so they
+were not retuned. What was missing was mixing: growth averaged the instantaneous light response
+over the path, so the saturated surface layer was wasted however hard the tank was mixed. Growth
+now blends the response to the path-mean light (flashing-light effect) with the old response
+average, weighted by stirring (LIGHT_INTEGRATION_MIN 0.5 at 50 rpm, 1.0 at 200 rpm). Mixing now
+raises light use 13-44% in dense cultures and trades against shear, as in Hu & Richmond's
+flat-plate studies. Expert productivity rose ~15-47% (e.g. 0.13 -> 0.15-0.21 g/L/day at 1400 umol).
+
+**Temperature.** Cardinal temperature model (Rosso et al. 1993) with Tmin 10 C and Tmax 44.5 C
+from the compiled A. platensis values (Tmin 10.3 +- 8.7, Topt 34.2 +- 1.8, Tmax 44.6 +- 4.6 C;
+Rossi et al. 2023), replacing a symmetric Gaussian (25 C: 13% -> 53%, literature ~30-50%). Used
+for growth and the reward potential's thermal factor.
+
+**O2 and carbon.** They now follow living-cell metabolism. Lysed cells were booked as instantly
+respired, driving a dense lit culture's DO to ~0.6 mg/L; closed Arthrospira reactors reach 20-70
+mg/L. Now ~10 mg/L under air sparging. The clump term in broth viscosity was removed.
+
+**Smaller fixes.** Lysed cells return N and P to the medium. Stress lysis uses the N/P-capped
+growth rate. PI thermostat with anti-windup, so the dark tank holds 35 C, not 33.7-34.5.
+Doubled dark respiration whenever the lights are off, not only under the night schedule.
+
+**Not changed.** Clump size limit (no literature value), heating magnitudes (documented), and
+a separate mixing benefit (covered by the integration term).
+
+**Gates.** Expert low-start yield rose ~1.25x (median x1.26, p25 x1.23, time-avg od x1.15);
+ADVANCE_TARGETS, validate.py GATES and TARGET_MG_PER_EVENT (850 -> 1070) were rescaled by those
+ratios. The expert's best stirring is still 55-75 rpm and light 1400-1700 is flat, so the expert
+settings are unchanged. core_audit_check: 26/26, with five new checks that fail on v2.
+
+Runs trained on v2 (v62, v64, v65) are not comparable with runs on v3.

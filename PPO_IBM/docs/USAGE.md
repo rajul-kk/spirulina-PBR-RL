@@ -72,9 +72,9 @@ fixed 9-episode evaluation set. Thresholds (`ADVANCE_TARGETS`, physics v2 scale)
 
 | to leave | median harvest | p25 harvest | median time-avg od | max crash rate |
 |---|---|---|---|---|
-| D0 | 2060 mg | 1310 mg | 0.16 | 15% |
-| D1 | 4030 mg | 2620 mg | 0.32 | 10% |
-| D2 (mastery) | 5410 mg | 4780 mg | 0.45 | 8% |
+| D0 | 2600 mg | 1610 mg | 0.18 | 15% |
+| D1 | 5080 mg | 3220 mg | 0.37 | 10% |
+| D2 (mastery) | 6820 mg | 5880 mg | 0.52 | 8% |
 
 Demotion: training crash rate ≥ 35% for 2 chunks, or the deterministic gate failing 12
 consecutive chunks. At D0 the latter aborts the run.

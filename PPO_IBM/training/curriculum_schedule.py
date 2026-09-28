@@ -48,13 +48,15 @@ CAPABILITY_DEMOTION_CHUNKS = 12
 # Physics v2 (2026-09-26) rescaled biomass ~60-100x. Each threshold was multiplied by the
 # scripted expert's new/old ratio for that statistic on TD3's cold-start distribution, so the
 # gates sit at the same fraction of expert performance as before.
+# Physics v3 (2026-09-29) raised the expert's low-start yield ~1.25x (median x1.26, p25 x1.23,
+# time-avg od x1.15); the thresholds were rescaled the same way.
 ADVANCE_TARGETS = {
-    0: {"min_median_harvested_mg": 2060.0, "min_p25_harvested_mg": 1310.0, "max_crash_rate": 0.15,
-        "min_median_time_avg_od": 0.16},
-    1: {"min_median_harvested_mg": 4030.0, "min_p25_harvested_mg": 2620.0, "max_crash_rate": 0.10,
-        "min_median_time_avg_od": 0.32},
-    2: {"min_median_harvested_mg": 5410.0, "min_p25_harvested_mg": 4780.0, "max_crash_rate": 0.08,
-        "min_median_time_avg_od": 0.45},
+    0: {"min_median_harvested_mg": 2600.0, "min_p25_harvested_mg": 1610.0, "max_crash_rate": 0.15,
+        "min_median_time_avg_od": 0.18},
+    1: {"min_median_harvested_mg": 5080.0, "min_p25_harvested_mg": 3220.0, "max_crash_rate": 0.10,
+        "min_median_time_avg_od": 0.37},
+    2: {"min_median_harvested_mg": 6820.0, "min_p25_harvested_mg": 5880.0, "max_crash_rate": 0.08,
+        "min_median_time_avg_od": 0.52},
 }
 
 MIXING_PROBS = {

@@ -469,7 +469,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
     # Per-event harvest target for reward_harvest (mg per event; events fire every
     # HARVEST_INTERVAL_STEPS, 12 per episode), from a harvest-fraction grid sweep.
     # (full rationale: docs/decision_history.md#--environments-genetic_env-py-496)
-    TARGET_MG_PER_EVENT = 850.0     # scripted expert's cold-start median / 12 events (D0/D1)
+    TARGET_MG_PER_EVENT = 1070.0    # scripted expert's cold-start median / 12 events (D0/D1); x1.26 for physics v3
 
     # Target standing OD: the peak of the PBRS OD-health term and the reference for the
     # harvest-collapse penalty.

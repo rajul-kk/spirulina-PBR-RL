@@ -1,0 +1,34 @@
+  cand_000.py: fitness 9186 | median 10387 mg, p25 7985 mg, crash 0%, errors 0 [51s]
+  cand_001.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer qwen2.5-coder:7b: 943s, 382 out / 4464 in tokens)
+  cand_002.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer qwen2.5-coder:7b: 998s, 400 out / 5402 in tokens)
+  cand_003.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer qwen2.5-coder:7b: 1038s, 467 out / 5486 in tokens)
+  cand_004.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer qwen2.5-coder:7b: 1160s, 586 out / 5569 in tokens)
+  cand_005.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer qwen2.5-coder:7b: 1075s, 445 out / 5652 in tokens)
+  cand_006.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer qwen2.5-coder:7b: 1088s, 487 out / 5736 in tokens)
+  cand_007.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer qwen2.5-coder:7b: 1072s, 471 out / 5811 in tokens)
+  cand_008.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer qwen2.5-coder:7b: 1084s, 470 out / 5886 in tokens)
+  cand_009.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer qwen2.5-coder:7b: 1057s, 421 out / 5969 in tokens)
+  cand_010.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer qwen2.5-coder:7b: 1147s, 548 out / 6045 in tokens)
+  cand_011.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer qwen2.5-coder:7b: 270s, 423 out / 6045 in tokens)
+  cand_012.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer qwen2.5-coder:7b: 271s, 422 out / 6045 in tokens)
+  cand_013.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer qwen2.5-coder:7b: 399s, 610 out / 6045 in tokens)
+  cand_014.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer qwen2.5-coder:7b: 372s, 586 out / 6045 in tokens)
+  cand_015.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer qwen2.5-coder:7b: 411s, 644 out / 6045 in tokens)
+  cand_016.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer qwen2.5-coder:7b: 286s, 429 out / 6045 in tokens)
+cand_000.py split=test D2 n=52: median 10792 mg, p25 7897 mg, crash 0%, time-avg od 1.01, errors 0, fitness 9345 [239s]

@@ -1,0 +1,12 @@
+[
+ {
+  "run": "qwen2_5_coder_7b",
+  "model": "qwen2.5-coder:7b",
+  "candidates": 16,
+  "complete": true,
+  "best": "cand_000.py",
+  "search_fitness": 9186.2928512,
+  "hours": 3.62,
+  "vram_mib": 0
+ }
+]

@@ -358,6 +358,76 @@ def _():
     assert abs((1 - m2) / (1 - m1) - 1.0) < 0.10, f"12 h membrane damage {1 - m1:.3f} at dt 0.02 vs {1 - m2:.3f} at dt 0.01"
 
 
+def _v3_env(init, seed, difficulty=2):
+    np.random.seed(seed)
+    env = GeneticPhotobioreactorEnv(max_cells=7500, initial_cells=init, difficulty=difficulty)
+    env.reset(seed=seed)
+    return env
+
+
+def _v3_act(stir, light, frac=0.0):
+    return np.array([np.interp(stir, [50, 200], [-1, 1]), np.interp(light, [0, 2000], [-1, 1]),
+                     np.interp(frac, [0, 0.5], [-1, 1])], dtype=np.float32)
+
+
+@check("mixing raises light use in a dense culture (flashing-light integration)")
+def _():
+    f = {}
+    for stir in (50.0, 200.0):
+        env = _v3_env(1500, 21)
+        for _ in range(101):                          # stirring settles (EMA)
+            env.step(_v3_act(stir, 1400.0))
+        f[stir] = float(env.debug_f_I)
+    assert f[200.0] > 1.20 * f[50.0], f"f_I at 200 rpm {f[200.0]:.3f} vs 50 rpm {f[50.0]:.3f}"
+
+
+@check("growth temperature response is the cardinal model: ~50% at 25 C, steeper above the optimum")
+def _():
+    env = _v3_env(300, 22)
+    env.strain_params["T_opt"] = 36.0
+    tf = env._temp_factor
+    assert 0.3 <= tf(25.0) <= 0.65, f"25 C gives {tf(25.0):.2f}"
+    assert tf(30.0) > tf(42.0) and tf(44.9) == 0.0, f"30 C {tf(30.0):.2f}, 42 C {tf(42.0):.2f}, 44.9 C {tf(44.9):.2f}"
+
+
+@check("a dense lit culture builds dissolved O2 above air saturation (lysis is not instant respiration)")
+def _():
+    env = _v3_env(7500, 23)
+    for _ in range(2400):                             # 48 h
+        env.step(_v3_act(65.0, 1400.0))
+    assert env.do2 > 5.0, f"DO {env.do2:.2f} mg/L after 48 h at 1400 umol (was ~0.6 before the fix)"
+
+
+@check("lysed cells return N to the medium; stress lysis follows the N-capped growth")
+def _():
+    env = _v3_env(700, 24)
+    env.N_DOSE_LOW = env.P_DOSE_LOW = -1.0          # dosing off
+    n0 = env.n_pool
+    for _ in range(1200):                             # 24 h dark: lysis, no growth drain
+        env.step(_v3_act(65.0, 0.0))
+    assert env.n_pool > n0 + 0.5, f"N pool {n0:.2f} -> {env.n_pool:.2f} mg/L over 24 h of lysis"
+    env = _v3_env(700, 25)
+    env.N_DOSE_LOW = env.P_DOSE_LOW = -1.0
+    env.n_pool = 0.0
+    for _ in range(100):
+        env.step(_v3_act(65.0, 1400.0))
+    assert env.debug_stress > 0.5, f"stress {env.debug_stress:.2f} in an N-starved lit culture"
+
+
+@check("PI thermostat holds the dark tank at its setpoint; darkness doubles respiration however it arises")
+def _():
+    env = _v3_env(300, 26)
+    for _ in range(1000):
+        env.step(_v3_act(65.0, 0.0))
+    assert abs(env.temp - env.T_SETPOINT) < 0.3, f"dark tank at {env.temp:.2f} C"
+    r = {}
+    for light in (0.0, 1400.0):
+        env = _v3_env(300, 27)
+        env.step(_v3_act(65.0, light))
+        r[light] = env.debug_respiration
+    assert abs(r[0.0] / r[1400.0] - 2.0) < 1e-6, f"respiration dark/light ratio {r[0.0] / r[1400.0]:.3f}"
+
+
 if __name__ == "__main__":
     print("=" * 78)
     for name, ok, msg in RESULTS:

@@ -326,6 +326,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         self.debug_shock = 0.0
         self.debug_clump = 1.0
         self.membrane_integrity = 1.0  # 1.0 = pristine membranes, 0.0 = fully fatigued
+        self._thermo_integral = 0.0    # PI thermostat state (C*h)
         self.max_historical_od = float(self.od)
         # Seed the PBRS potential from the true initial state, so the first scored step
         # measures a real transition rather than differencing against itself.
@@ -484,6 +485,13 @@ class GeneticPhotobioreactorEnv(gym.Env):
     # per LED channel. PAR-weighted mean ~0.19 m^2/g, the range reported for A. platensis.
     EXT_RED, EXT_BLUE, EXT_GREEN = 0.20, 0.25, 0.06
     RED_FRAC, BLUE_FRAC, GREEN_FRAC = 0.4, 0.4, 0.2
+    # Share of the light response that is integrated over the path (flashing-light effect) at
+    # the gentlest stirring; rises linearly to full integration at 200 rpm.
+    LIGHT_INTEGRATION_MIN = 0.5
+
+    # Cardinal temperatures for growth (CTMI, Rosso et al. 1993). Compiled A. platensis values:
+    # Tmin 10.3 +- 8.7 C, Tmax 44.6 +- 4.6 C (Rossi et al. 2023); T_opt stays per-strain.
+    T_MIN_GROWTH, T_MAX_GROWTH = 10.0, 44.5
 
     # Biomass composition (mass fraction of dry weight) that sets medium drawdown per mg grown.
     C_FRAC, N_FRAC, P_FRAC, EXT_FRAC = 0.50, 0.10, 0.012, 0.02
@@ -544,7 +552,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
 
         phi_pop = float(np.tanh(self.num_active / self.PHI_POP_REF))
 
-        phi_temp = float(np.exp(-0.5 * ((self.temp - self.strain_params['T_opt']) / 5.0) ** 2))
+        phi_temp = self._temp_factor(self.temp)
 
         phi = self.PHI_OD_W * phi_od + self.PHI_POP_W * phi_pop
         return self.PHI_SCALE * phi * phi_temp / (self.PHI_OD_W + self.PHI_POP_W)
@@ -783,8 +791,14 @@ class GeneticPhotobioreactorEnv(gym.Env):
         # Impeller heating, ~P = Np*rho*N^3*D^5 (~2 W at 200 RPM in 20 L, ~0.1 C/h).
         stir_heat = (stir_rpm / 200.0) ** 3 * 0.1 * self.dt * phys_scale
         self.temp += stir_heat
-        # Thermostat (proportional heater/chiller, capacity-limited).
-        u = _fclip(2.0 * (self.T_SETPOINT - self.temp), -self.COOL_MAX_C_PER_H, self.HEAT_MAX_C_PER_H)
+        # Thermostat: PI heater/chiller, capacity-limited. The integral removes the ~1 C
+        # steady offset of the old P-only loop; it is frozen while the output saturates
+        # (anti-windup), e.g. when full light overwhelms the chiller.
+        err = self.T_SETPOINT - self.temp
+        u_raw = 2.0 * err + 0.5 * self._thermo_integral
+        u = _fclip(u_raw, -self.COOL_MAX_C_PER_H, self.HEAT_MAX_C_PER_H)
+        if u == u_raw:
+            self._thermo_integral += err * self.dt
         self.temp += u * self.dt
 
         self.temp = np.clip(self.temp, 15.0, 45.0)
@@ -853,6 +867,26 @@ class GeneticPhotobioreactorEnv(gym.Env):
             self.cells_z[idx] = np.random.uniform(0.0, self.reactor_depth, self.num_active)
             self.cells_x[idx] = np.random.uniform(0.0, self.reactor_width, self.num_active)
 
+    def _recycle_lysed(self, idx):
+        """Lysed cells return their N and P to the medium (at the fixed biomass composition), so
+        the nutrient balance closes; the audit found ~7% of assimilated N vanishing per 6 days."""
+        mg = float(np.sum(self.cells_mass[idx])) * self.MG_PER_MASS_UNIT
+        self.n_pool += mg * self.N_FRAC / self.volume_L
+        self.p_pool += mg * self.P_FRAC / self.volume_L
+
+    def _temp_factor(self, T):
+        """Relative growth rate at temperature T (1 at the strain's T_opt, 0 outside
+        [T_MIN_GROWTH, T_MAX_GROWTH]): the cardinal temperature model with inflection (CTMI,
+        Rosso et al. 1993), steeper above the optimum than below as measured for Arthrospira."""
+        tmin, tmax = self.T_MIN_GROWTH, self.T_MAX_GROWTH
+        topt = min(max(float(self.strain_params['T_opt']), tmin + 1.0), tmax - 1.0)
+        T = float(T)
+        if T <= tmin or T >= tmax:
+            return 0.0
+        num = (T - tmax) * (T - tmin) ** 2
+        den = (topt - tmin) * ((topt - tmin) * (T - topt) - (topt - tmax) * (topt + tmin - 2.0 * T))
+        return float(min(max(num / den, 0.0), 1.0))
+
     def _update_biology(self, I_surface, stir_rpm, mix_intensity, nut_flow):
         """Light field, growth, lysis, nutrient uptake and division. Returns (dosed_mg, shock_factor)."""
         # --- BIOLOGY ---
@@ -905,8 +939,9 @@ class GeneticPhotobioreactorEnv(gym.Env):
             self.cells_acclimation[idx] += alpha_accum * (cells_I_total - self.cells_acclimation[idx])
             I_effective = self.cells_acclimation[idx]
 
-            # 2. Temperature Factor (Gaussian)
-            temp_factor = np.exp(-0.5 * ((self.temp - params['T_opt'])/5.0)**2)
+            # 2. Temperature factor: cardinal-temperature model (physics v3; was a symmetric
+            # Gaussian that gave 13% growth at 25 C and 53% at 41 C).
+            temp_factor = self._temp_factor(self.temp)
 
             # Photo-Inhibition / Shock (sustained light change vs the acclimated level)
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1168)
@@ -935,7 +970,18 @@ class GeneticPhotobioreactorEnv(gym.Env):
             # at ~0.70 and silently cut the effective mu_max by 30%.
             I_peak = np.sqrt(Ks_I * Ki_I)
             f_I_max = self.RED_FRAC * I_peak / (2.0 * Ks_I + self.RED_FRAC * I_peak)
-            f_I = np.clip(np.nan_to_num(f_I_raw).mean(axis=1) / (f_I_max + 1e-8), 0.0, 1.0)
+            # Flashing-light effect (physics v3). Mixing cycles cells through the light gradient
+            # faster than photosynthesis responds, so they partly integrate the light: the
+            # response to the path-MEAN light, not the mean of the instantaneous responses.
+            # Averaging responses alone wastes the saturated surface layer and left photon use
+            # ~3-6x below real flat panels (fidelity audit 2026-09-29; Hu & Richmond 1996:
+            # productivity rises with mixing at high density). w grows with stirring.
+            f_resp = np.nan_to_num(f_I_raw).mean(axis=1)
+            red_mean, tot_mean = cells_I_growth.mean(axis=1), cells_I_q.mean(axis=1)
+            f_int = red_mean / (Ks_I + red_mean + tot_mean ** 2 / Ki_I)
+            w_int = self.LIGHT_INTEGRATION_MIN + (1.0 - self.LIGHT_INTEGRATION_MIN) * _fclip(
+                (stir_rpm - 50.0) / 150.0, 0.0, 1.0)
+            f_I = np.clip((w_int * f_int + (1.0 - w_int) * f_resp) / (f_I_max + 1e-8), 0.0, 1.0)
 
             self.rgb_ratio = float(np.mean(q_red)) / max(float(np.mean(I_s_blue * np.exp(-k_blue * zq))), 1e-3)
 
@@ -1006,8 +1052,12 @@ class GeneticPhotobioreactorEnv(gym.Env):
             
             # --- Maintenance Respiration ---
             # Night: 2.0× elevated dark respiration (Tomaselli et al. 1987: ~2×; Tomaselli et al. 1995: 79/39=2.03×)
-            dark_factor   = 2.0 if self.is_night else 1.0
+            # Tied to actual darkness (lights off by schedule OR by the controller); it used to
+            # apply only under the schedule, so a controller switching the LEDs off got the
+            # daytime rate (fidelity audit 2026-09-29).
+            dark_factor   = 2.0 if I_surface <= 1.0 else 1.0
             m_respiration = 0.010 * params['mu_max'] * dark_factor
+            self.debug_respiration = m_respiration
             
             # Net Growth Rate = Photosynthesis - Respiration
             # This can be negative (mass loss) if light/nutrients are insufficient!
@@ -1026,6 +1076,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             dosed_mg = nut_flow * self.dt
             V = self.volume_L
             need_mg = float(np.sum(self.cells_mass[idx] * np.maximum(growth_mult - 1.0, 0.0))) * self.MG_PER_MASS_UNIT
+            s = 1.0   # share of the requested growth the N/P supply allows (used by lysis below)
             if need_mg > 0.0:
                 avail_mg = min((self.n_pool * V + dosed_mg * self.DOSE_N_FRAC) / self.N_FRAC,
                                (self.p_pool * V + dosed_mg * self.DOSE_P_FRAC) / self.P_FRAC)
@@ -1035,6 +1086,10 @@ class GeneticPhotobioreactorEnv(gym.Env):
 
             # Dry biomass built this step (mg); sets the medium drawdown below.
             grown_mg = float(np.sum(self.cells_mass[idx] * np.maximum(growth_mult - 1.0, 0.0))) * self.MG_PER_MASS_UNIT
+            # Signed metabolic change of living cells (photosynthesis minus respiration). The O2
+            # and DIC balances use this, not the net tank change, which also counted lysed cells
+            # as if oxidised instantly and drove a dense lit culture's O2 to zero.
+            self._metabolic_mg = float(np.sum(self.cells_mass[idx] * (growth_mult - 1.0))) * self.MG_PER_MASS_UNIT
             self.cells_mass[idx] *= growth_mult
 
             # Droop quota dilution: as cells grow, intracellular quota (N/biomass) is diluted.
@@ -1045,7 +1100,8 @@ class GeneticPhotobioreactorEnv(gym.Env):
 
             # --- PROBABILISTIC LYSIS DEATH (replaces dead-code hard starvation check) ---
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1308)
-            mean_mu       = float(np.mean(current_mu))
+            # Stress follows the growth actually achieved, after the N/P supply cap.
+            mean_mu       = float(np.mean(current_mu)) * s
             stress_factor = np.clip(
                 (m_respiration - mean_mu) / (m_respiration + 1e-9), 0.0, 1.0
             )
@@ -1059,6 +1115,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             dying_indices = curr_active_indices[~survival_mask]
 
             if len(dying_indices) > 0:
+                self._recycle_lysed(dying_indices)
                 self._remove_cells(dying_indices)
 
             # Cap mass at upper bound; no lower floor — let starving cells lose mass naturally
@@ -1068,6 +1125,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1336)
             starving_mask = self.active_mask & (self.cells_mass < 1e7)
             if np.any(starving_mask):
+                self._recycle_lysed(np.where(starving_mask)[0])
                 self._remove_cells(np.where(starving_mask)[0])
                 
             # Nutrient Uptake (O3: Monod saturation on nitrogen pool)
@@ -1145,7 +1203,9 @@ class GeneticPhotobioreactorEnv(gym.Env):
         
         # Resistance starts at 1.0 (water-like broth) and rises with density/clumping. Spirulina
         # broth stays near water viscosity below a few g/L; od 10 is ~3 g/L here.
-        flow_resistance = 1.0 + ((od / 10.0)**2) * (avg_clump ** 0.5)
+        # Density only: aggregates don't raise bulk viscosity the way the old clump term did
+        # (it cut O2 transfer ~14x in dense, clumped cultures; fidelity audit 2026-09-29).
+        flow_resistance = 1.0 + (od / 10.0) ** 2
 
         # pH-stat CO2 feed: proportional above PH_SETPOINT, full flow 0.3 pH units over.
         co2_flow_lpm = _fclip(self.CO2_MAX_LPM * (self.ph - self.PH_SETPOINT) / 0.3, 0.0, self.CO2_MAX_LPM)
@@ -1229,8 +1289,11 @@ class GeneticPhotobioreactorEnv(gym.Env):
         w_s = getattr(self, '_f_surface_cells', LAYER_DEPTH / self.reactor_depth)
         w_b = 1.0 - w_s
 
-        # Net O2 yield ~1.5 mg O2 per mg DW gained (2.67 gross, less growth respiration).
-        o2_production = delta_mass_mg * 1.5
+        # Net O2 yield ~1.5 mg O2 per mg DW gained (2.67 gross, less growth respiration), from
+        # living-cell metabolism only (see _metabolic_mg in _update_biology).
+        metabolic_mg = getattr(self, "_metabolic_mg", 0.0)
+        self._metabolic_mg = 0.0
+        o2_production = metabolic_mg * 1.5
 
         # Per-layer gas-atmosphere exchange; surface gets slight headspace bonus (+20%)
         kLa_s = k_La * 1.20
@@ -1251,7 +1314,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
         # (C_FRAC of dry weight), plus carbon returned by net biomass loss.
         co2_sat = _fclip(1276.0 * co2_frac, 0.3, 160.0)          # mg/L, Henry at ~30C
         co2_flux_mM = k_La * (co2_sat - self.dissolved_co2) * self.dt / 44.0
-        bio_mM = delta_mass_mg * self.C_FRAC / 12.0 / self.volume_L
+        bio_mM = metabolic_mg * self.C_FRAC / 12.0 / self.volume_L
         self.dic = max(1e-3, self.dic + co2_flux_mM - bio_mM)
         self._update_carbonate_speciation()
 

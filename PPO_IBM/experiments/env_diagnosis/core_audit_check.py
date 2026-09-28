@@ -312,6 +312,52 @@ def _():
         assert float(actor.mean_fc.bias.grad.min()) < 0.0, "penalty does not push pre-activations back toward 0"
 
 
+@check("photo-shock is one-sided: turning light down below the acclimated level is not inhibitory")
+def _():
+    env = GeneticPhotobioreactorEnv(max_cells=7500, initial_cells=700, difficulty=0)
+    env.reset(seed=22)
+    env.cells_acclimation[env.active_mask] = 3000.0     # acclimated far above anything reachable
+    env.step(np.array([-0.8, np.interp(500, [0, 2000], [-1, 1]), -1.0], dtype=np.float32))
+    assert env.debug_shock > 0.999, f"shock factor {env.debug_shock:.3f} after a light DECREASE"
+    env.cells_acclimation[env.active_mask] = 0.0        # dark-acclimated cells hit by full light
+    env.step(np.array([-0.8, 1.0, -1.0], dtype=np.float32))
+    assert env.debug_shock < 0.9, f"shock factor {env.debug_shock:.3f}: upward photo-shock lost"
+
+
+@check("a starved culture cannot build more biomass than its N supply allows")
+def _():
+    np.random.seed(23)
+    env = GeneticPhotobioreactorEnv(max_cells=7500, initial_cells=700, difficulty=0)
+    env.reset(seed=23)
+    env.N_DOSE_RATE = 0.0
+    env.n_pool = 1.0
+    B0 = float(np.sum(env.cells_mass[env.active_mask])) * env.MG_PER_MASS_UNIT
+    for _ in range(1200):
+        env.step(np.array([-0.8, 0.4, -1.0], dtype=np.float32))
+    gain = float(np.sum(env.cells_mass[env.active_mask])) * env.MG_PER_MASS_UNIT - B0
+    allowed = 1.0 * env.volume_L / env.N_FRAC
+    assert gain <= 1.05 * allowed + 1.0, f"biomass rose {gain:.0f} mg on {1.0 * env.volume_L:.0f} mg N (max {allowed:.0f} mg)"
+
+
+@check("flocculation and membrane-fatigue rates do not depend on dt")
+def _():
+    def run(dt, rpm):
+        np.random.seed(24)
+        env = GeneticPhotobioreactorEnv(max_cells=7500, initial_cells=700, difficulty=0)
+        env.dt = dt
+        env.reset(seed=24)
+        a = np.array([np.interp(rpm, [50, 200], [-1, 1]), 0.4, -1.0], dtype=np.float32)
+        for _ in range(int(round(12.0 / dt))):
+            env.step(a)
+        return float(np.mean(env.clump_mass[env.active_mask])), env.membrane_integrity
+    c1, _ = run(0.02, 50)
+    c2, _ = run(0.01, 50)
+    assert abs((c2 - 1.0) / (c1 - 1.0) - 1.0) < 0.15, f"12 h clump excess {c1 - 1:.2f} at dt 0.02 vs {c2 - 1:.2f} at dt 0.01"
+    _, m1 = run(0.02, 150)
+    _, m2 = run(0.01, 150)
+    assert abs((1 - m2) / (1 - m1) - 1.0) < 0.10, f"12 h membrane damage {1 - m1:.3f} at dt 0.02 vs {1 - m2:.3f} at dt 0.01"
+
+
 if __name__ == "__main__":
     print("=" * 78)
     for name, ok, msg in RESULTS:

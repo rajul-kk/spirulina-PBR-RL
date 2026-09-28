@@ -817,7 +817,9 @@ class GeneticPhotobioreactorEnv(gym.Env):
             # --- New Physics: 
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-972)
             rpm_factor = max(0.1, 1.0 - (stir_rpm / 250.0))
-            prob_stick = (od_approx * 1e-3) * rpm_factor
+            # Per-hour rate (0.05/h per od unit), so the aggregation rate does not depend on dt.
+            # Identical to the old per-step 1e-3 at dt = 0.02 h (fidelity audit 2026-09-29).
+            prob_stick = (od_approx * 0.05 * self.dt) * rpm_factor
             
             # Apply sticking to active cells only — O(num_active) not O(max_cells)
             # Generating 300k random numbers every step with 3k active cells was 25% of step time.
@@ -908,7 +910,11 @@ class GeneticPhotobioreactorEnv(gym.Env):
 
             # Photo-Inhibition / Shock (sustained light change vs the acclimated level)
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1168)
-            diff = (cells_I_total - I_effective)
+            # One-sided (fidelity audit 2026-09-29): only light ABOVE the acclimated level is
+            # photoinhibitory. Cells acclimated to high light that are moved to lower light are
+            # just light-limited, which f_I already models; the symmetric form cut growth up to
+            # 40% for hours after every light DECREASE (the heat-trap escape action).
+            diff = np.maximum(cells_I_total - I_effective, 0.0)
             shock_factor = np.exp(-0.000003 * (diff**2))  # 24% penalty at diff=300
 
             # --- Oxygen inhibition (D1+). Spirulina productivity falls noticeably above
@@ -969,8 +975,10 @@ class GeneticPhotobioreactorEnv(gym.Env):
             # --- Cell Wall Fatigue (Accumulative Membrane Integrity) ---
             # (full rationale: docs/decision_history.md#--environments-genetic_env-py-1253)
             shear_stress = _fclip((stir_rpm - 80.0) / 100.0, 0.0, 1.0)
-            self.membrane_integrity -= shear_stress * 0.001          # slow degradation at high RPM
-            self.membrane_integrity += (1.0 - self.membrane_integrity) * 0.002  # ~5h to recover
+            # Per-hour rates (0.05/h damage, 0.1/h recovery), identical to the old per-step
+            # 0.001 / 0.002 at dt = 0.02 h but independent of dt (fidelity audit 2026-09-29).
+            self.membrane_integrity -= shear_stress * 0.05 * self.dt     # slow degradation at high RPM
+            self.membrane_integrity += (1.0 - self.membrane_integrity) * 0.1 * self.dt  # ~10h to recover
             self.membrane_integrity = _fclip(self.membrane_integrity, 0.0, 1.0)
             fatigue_tax = 1.0 - (0.15 * (1.0 - self.membrane_integrity))  # max 15% penalty
 
@@ -1009,6 +1017,21 @@ class GeneticPhotobioreactorEnv(gym.Env):
             growth_mult = np.exp(net_mu * self.dt)
             # Clip multiplier to avoid single-step explosion (both up and down)
             growth_mult = np.clip(growth_mult, 0.5, 2.0)
+
+            # Growth cannot build more biomass than the medium's N and P (plus this step's
+            # dose) can supply at the fixed N_FRAC/P_FRAC composition. Without this cap the pools
+            # clamped at 0 while growth ran on, creating ~70% of the N in a starved culture's
+            # new biomass from nothing (fidelity audit 2026-09-29). Inert while dosing keeps the
+            # pools up, which is every normal episode.
+            dosed_mg = nut_flow * self.dt
+            V = self.volume_L
+            need_mg = float(np.sum(self.cells_mass[idx] * np.maximum(growth_mult - 1.0, 0.0))) * self.MG_PER_MASS_UNIT
+            if need_mg > 0.0:
+                avail_mg = min((self.n_pool * V + dosed_mg * self.DOSE_N_FRAC) / self.N_FRAC,
+                               (self.p_pool * V + dosed_mg * self.DOSE_P_FRAC) / self.P_FRAC)
+                if need_mg > avail_mg:
+                    s = max(avail_mg, 0.0) / need_mg
+                    growth_mult = np.where(growth_mult > 1.0, 1.0 + (growth_mult - 1.0) * s, growth_mult)
 
             # Dry biomass built this step (mg); sets the medium drawdown below.
             grown_mg = float(np.sum(self.cells_mass[idx] * np.maximum(growth_mult - 1.0, 0.0))) * self.MG_PER_MASS_UNIT
@@ -1058,9 +1081,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
 
             # Medium drawdown follows the biomass actually built (N_FRAC etc. of dry weight).
             # It used to scale with agent count, ran on at Q_max, and took mg from mg/L pools:
-            # ~600x the N the biomass needed. Dosing enters as mg into the whole tank.
-            dosed_mg = nut_flow * self.dt
-            V = self.volume_L
+            # ~600x the N the biomass needed. Dosing (dosed_mg, above) enters as mg into the whole tank.
             n_drain = grown_mg * self.N_FRAC / V
             self.n_pool = max(0.0, self.n_pool - n_drain + dosed_mg * self.DOSE_N_FRAC / V)
             self.p_pool = max(0.0, self.p_pool - grown_mg * self.P_FRAC / V + dosed_mg * self.DOSE_P_FRAC / V)

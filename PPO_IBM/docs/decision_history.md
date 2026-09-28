@@ -7107,3 +7107,35 @@ Budget: runs now go until they reach D2 (TD3_STOP_AT_DIFFICULTY=2) or D0-abort, 
 cap. Exploration noise used to anneal over 0.3 x TD3_STEPS; it is now a fixed 600,000 steps
 (TD3_NOISE_ANNEAL_STEPS), identical under the old 2M budget, so extending a budget can't
 re-raise a run's noise.
+
+## --fidelity-audit-2026-09-29
+
+Extreme-case and literature audit of physics v2. Scripts in
+`experiments/env_diagnosis/fidelity/` (extremes, balance, kinetics, dt_sensitivity, starvation,
+clumping, photoshock, expert_impact). There were no NaN/inf or negative states in any of the 20 extreme
+regimes, the biomass ledger closes to <0.01 mg, a fixed seed is bit-reproducible, and the
+trajectories are insensitive to dt (od within 3% at dt/2) except for the per-step rates below.
+
+Fixed (each with a check in core_audit_check.py that failed before the fix):
+- **Photo-shock was symmetric.** Any drop of path-mean light below the acclimated level cut growth
+  as hard as the same rise above it: 2000 -> 500 umol lost ~25% of growth for ~4 h (shock factor
+  down to 0.60), larger than the upward 1000 -> 2000 case (0.85). Light below the acclimated level
+  is not photoinhibitory; f_I already covers the lower light. It also made the heat-trap escape
+  (turning light down) look costly. Now one-sided.
+- **N was created from nothing in a starved culture.** The pools clamp at 0 while growth ran on
+  (Droop quota Q_max/Q_min = 10), so with dosing off and 20 mg N/L, biomass rose 430 -> 1073 mg/L
+  on 400 mg N that supports 4 g. Growth is now capped at what the N and P pools (+ dose) can
+  supply. This is inert in normal episodes, where dosing keeps N >= ~300 mg/L.
+- **Flocculation and membrane fatigue were per-step rates.** At dt/2 the clump excess doubled
+  (6.5 vs 12.2 after 72 h at 50 rpm). They are now per-hour rates, identical at dt = 0.02 h.
+
+Scripted-expert yields are unchanged (D2, light 1000/1400/2000 x inits 60-2500 x 2 seeds: medians
+within 1%, 0 crashes either way), so ADVANCE_TARGETS and the expert settings stay as they are.
+
+Found, not changed (see known_limitations O17): photon-use efficiency ~3-6x below real PBRs
+(0.19 g/L/day at 1400 umol continuous); clumps grow without bound in dense, slowly stirred
+cultures (64 after 6 days at 3.7 g/L) and halve the turbidity reading; DO falls to ~0 in a lit dense
+culture because lysis is booked as instant O2 demand and kLa is cut 14x by clump-weighted
+viscosity; lysed N is not recycled; thermostat has a 0.5 C proportional offset; the Gaussian
+temperature response is too harsh when cold and too lenient above 40 C (unreachable behind the
+thermostat); stirring has no light/dark-cycling benefit.

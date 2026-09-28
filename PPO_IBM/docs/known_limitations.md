@@ -187,3 +187,36 @@ lysis and gas-transfer step sizes are stable at dt = 0.02 h.
 **Fixed now:** reset() started bicarbonate at 200 mM while step 1 clips it to 5 mM, so the first
 observation read ~21,960 uS/cm and every later one ~11,900 (a jump the 2026-09-24 conductivity
 fix introduced). reset() now starts at `BICARB_CEILING_MM`; regression check added.
+
+## O17 — Fidelity audit 2026-09-29: open items (see decision_history #--fidelity-audit-2026-09-29)
+
+Three items were fixed: one-sided photo-shock, the N/P supply cap on growth, and per-hour
+flocculation and fatigue rates. The rest are open, with the evidence from `experiments/env_diagnosis/fidelity/`:
+- **Photon-use efficiency ~3-6x low (major, needs an owner decision).** The expert makes ~0.19 g/L/day
+  = ~13 g/m2/day of lit face under 121 mol photons/m2/day (1400 umol continuous), ~0.1 g per mol photons.
+  Outdoor ponds reach ~0.3-0.5 g/mol and good flat panels more. The model's own constants imply ~65
+  photons per C fixed at low light, against a physiological minimum of ~8-10 and 10-20 measured.
+  Fixing it means a
+  recalibration (Ks_light/specific absorption/mu_max) and rebuilt gates, like physics v2.
+- **Unbounded clumping.** Below 80 rpm there is no shear breakup, and sticking scales with od, so a
+  3.7 g/L culture reaches mean clump 28 in 72 h and 64 in 144 h (11.8 at 120 rpm). Growth cost is
+  small (~5%), but turbidity reads ~c^(-1/3), i.e. 2.5-4x low. No literature bound was used.
+- **DO -> 0 in a lit dense culture** (7500 agents, 3.7 g/L): lysis mass is booked as immediate O2
+  demand (1.5 mg/mg) and kLa is divided by 1 + (od/10)^2 * sqrt(clump) (~14x). No growth effect
+  (hypoxia is not modelled).
+- **Lysed/respired biomass N is not recycled** to the pool (7% of assimilated N in a 6-day
+  no-harvest run; 320 mg over 6 dark days). Harmless while dosing is automatic.
+- Stress lysis keys on pre-cap mu, so an N-capped culture neither grows nor suffers stress lysis.
+- Thermostat is proportional only: dark tank sits at 33.7-34.5 C, not 35.
+- Light heating 2 C/h at 2000 umol (D2) is ~3x below the absorbed LED power (~130 W into 20 L,
+  ~5.8 C/h); ambient loss 0.1/h is ~3x low too. The equilibrium without a chiller comes out about
+  the same (45 vs ~46 C). The 0.6 C/h chiller is ~14 W. These are design choices, and D0/D1 scale
+  the heating down.
+- Temperature response is a symmetric Gaussian (sigma 5 C): 13% of max at 25 C (literature ~30-50%),
+  53% at 41 C and 30% at 43 C (literature: near-lethal above ~42-44 C). The thermostat keeps T within
+  33.7-39 C, so the tails are not reached.
+- Stirring has only costs above 80 rpm (shear tax, fatigue) and benefits via clump breakup and
+  kLa. The light/dark-cycling gain of mixing reported for flat panels is not modelled.
+- Dark respiration is 2x only under the lights_off schedule, not when the agent chooses light 0.
+- Harvest totals from high-pop starts are dominated by the inoculum (7500 agents = 77 g; expert
+  harvests 84 g). This is a metric property, not a physics property.

@@ -5,10 +5,12 @@ plant would record: the sensor log, the actions taken, the biomass weighed at ea
 and an offline lab dry-weight assay taken just before each harvest (+-5% assay error). The
 simulator itself is not exposed.
 
-  python plant_trial.py <controller.py> [--n 4] [--inoculum CELLS] [--label name]
+  python plant_trial.py --run <name> <controller.py> [--n 4] [--inoculum CELLS] [--label name]
 
-Prints a per-batch summary; writes an hourly CSV log per batch to trials/<batch_id>.csv.
-Budget: 300 batches in total (trials/budget.json).
+Prints a per-batch summary; writes an hourly CSV log per batch to runs/<name>/trials/<batch_id>.csv.
+Budget: 300 batches per run (runs/<name>/trials/budget.json). Each run draws its own batches
+(seed block per run name), so repeats never share data. --privileged adds the simulator's true
+state (OD, temperature, cells) to the logs, for white-box writers only.
 """
 import argparse
 import csv
@@ -25,7 +27,7 @@ import numpy as np  # noqa: E402
 from harness import MAX_CELLS, _ctrl_obs, load_controller_class, to_env_action  # noqa: E402
 
 BUDGET = 300
-TRIALS = os.path.join(HERE, "trials")
+TRIALS = os.path.join(HERE, "trials")    # the original single run; --run uses runs/<name>/trials
 SEED_BASE = 5_000_000          # disjoint from the search (3M), test (1000) and calibration (7M) seeds
 ASSAY_ERR = 0.05
 DIFFICULTY = 2                 # plant conditions: noisy, drifting, lagging sensors; actuator error
@@ -42,7 +44,7 @@ def sample_inoculum(rng):
 
 def run_batch(job):
     from genetic_env import GeneticPhotobioreactorEnv
-    path, batch_id, seed, inoculum = job
+    path, batch_id, seed, inoculum, privileged, trials = job
     np.random.seed(seed)
     env = GeneticPhotobioreactorEnv(max_cells=MAX_CELLS, initial_cells=inoculum, difficulty=DIFFICULTY)
     obs, _ = env.reset(seed=seed)
@@ -73,13 +75,15 @@ def run_batch(job):
                            "harvested_mg": round(float(env.cumulative_harvested_mg) - before, 1)})
         if t % 50 == 0:
             rows.append([round(t * 0.02, 2)] + [round(float(v), 3) for v in obs[:6]]
-                        + [round(float(stir), 2), round(float(light), 1), round(float(frac), 4)])
+                        + [round(float(stir), 2), round(float(light), 1), round(float(frac), 4)]
+                        + ([round(float(env.od), 4), round(float(env.temp), 2), int(env.num_active)] if privileged else []))
         t += 1
         done = terminated or truncated
-    with open(os.path.join(TRIALS, f"{batch_id}.csv"), "w", newline="") as f:
+    with open(os.path.join(trials, f"{batch_id}.csv"), "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["hour", "turbidity_ntu", "ph", "pump_L", "conductivity", "temp_c", "lux",
-                    "stir_rpm", "light_umol", "harvest_frac"])
+                    "stir_rpm", "light_umol", "harvest_frac"]
+                   + (["true_od", "true_temp_c", "true_cells"] if privileged else []))
         w.writerows(rows)
     return {"batch": batch_id, "inoculum": inoculum, "hours_run": round(t * 0.02, 1),
             "culture_lost": t < 7200, "error": err,
@@ -89,29 +93,33 @@ def run_batch(job):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("controller")
+    ap.add_argument("--run", default=None, help="isolated run name (own budget, seeds and logs)")
+    ap.add_argument("--privileged", action="store_true", help="white-box runs: log true state too")
     ap.add_argument("--n", type=int, default=4)
     ap.add_argument("--inoculum", type=int, default=None, help="fix the starting culture size (cells)")
     ap.add_argument("--label", default="")
     args = ap.parse_args()
-    os.makedirs(TRIALS, exist_ok=True)
-    bpath = os.path.join(TRIALS, "budget.json")
+    trials = os.path.join(HERE, "runs", args.run, "trials") if args.run else TRIALS
+    seed_base = SEED_BASE + (100_000 * (1 + sum(map(ord, args.run)) % 97) if args.run else 0)
+    os.makedirs(trials, exist_ok=True)
+    bpath = os.path.join(trials, "budget.json")
     used = json.load(open(bpath))["used"] if os.path.exists(bpath) else 0
     n = min(args.n, BUDGET - used)
     if n <= 0:
         print(f"budget exhausted ({used}/{BUDGET} batches used)")
         return
-    rng = np.random.RandomState(SEED_BASE + used)
+    rng = np.random.RandomState(seed_base + used)
     jobs = []
     for i in range(n):
         k = used + i
         inoc = args.inoculum if args.inoculum else sample_inoculum(rng)
         inoc = int(np.clip(inoc, 30, MAX_CELLS))
         jobs.append((os.path.abspath(args.controller), f"b{k:03d}{('_' + args.label) if args.label else ''}",
-                     SEED_BASE + k, inoc))
+                     seed_base + k, inoc, args.privileged, trials))
     json.dump({"used": used + n}, open(bpath, "w"))
     with Pool(2) as pool:
         res = pool.map(run_batch, jobs)
-    with open(os.path.join(TRIALS, "results.jsonl"), "a") as f:
+    with open(os.path.join(trials, "results.jsonl"), "a") as f:
         for r in res:
             f.write(json.dumps({**r, "controller": os.path.basename(args.controller)}) + "\n")
     for r in res:
@@ -119,7 +127,7 @@ def main():
         print(f"{r['batch']}: inoculum {r['inoculum']}, harvested {r['total_harvested_mg']:.0f} mg"
               f"{', CULTURE LOST at %.1f h' % r['hours_run'] if r['culture_lost'] else ''}"
               f"{', ERROR ' + r['error'] if r['error'] else ''} | per-harvest mg: {h}")
-    print(f"budget: {used + n}/{BUDGET} batches used; logs in trials/")
+    print(f"budget: {used + n}/{BUDGET} batches used; logs in {os.path.relpath(trials, HERE)}/")
 
 
 if __name__ == "__main__":

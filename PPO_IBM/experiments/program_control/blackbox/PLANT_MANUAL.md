@@ -46,14 +46,14 @@ times per batch, so keep it well under 1 ms. Keep any state you need on `self`.
 
 ## Pilot plant
 ```
-python plant_trial.py <your_controller.py> [--n 4] [--inoculum CELLS] [--label name]
+python plant_trial.py --run <your run name> <your_controller.py> [--n 4] [--inoculum CELLS] [--label name]
 ```
 Each call runs NEW batches (never the same batch twice) under your controller and prints, per
 batch: the inoculum, total biomass harvested, whether the culture was lost, and the weighed
-biomass at each harvest. `trials/<batch>.csv` has the hourly sensor log and your actions, and
-`trials/results.jsonl` also holds the **lab dry-weight assay** taken just before each harvest
+biomass at each harvest. `runs/<run>/trials/<batch>.csv` has the hourly sensor log and your actions, and
+`runs/<run>/trials/results.jsonl` also holds the **lab dry-weight assay** taken just before each harvest
 (mg/L, +-5% assay error): the only ground truth on biomass you get, as in a real plant.
-Budget: **300 batches in total**. Pilot batches are expensive, so plan experiments.
+Budget: **300 batches per run**. Pilot batches are expensive, so plan experiments.
 
 ## How you will be judged
 The final program is run by the project owner on held-out batches: median and 25th-percentile

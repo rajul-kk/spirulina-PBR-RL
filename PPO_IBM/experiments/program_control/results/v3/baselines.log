@@ -1,0 +1,7 @@
+sensor_expert.py split=test D2 n=52: median 13132 mg, p25 10314 mg, crash 0%, time-avg od 1.04, errors 0, fitness 11723 [459s]
+oracle_expert.py split=test D2 n=52: median 13082 mg, p25 10367 mg, crash 0%, time-avg od 0.77, errors 0, fitness 11725 [462s]
+sensor_expert.py split=test D2 n=52: median 12267 mg, p25 9753 mg, crash 0%, time-avg od 0.71, errors 0, fitness 11010 [486s]
+cand_004.py split=test D2 n=52: median 14339 mg, p25 11778 mg, crash 0%, time-avg od 0.52, errors 0, fitness 13059 [464s]
+controller.py split=test D2 n=52: median 17588 mg, p25 13768 mg, crash 0%, time-avg od 0.92, errors 0, fitness 15678 [500s]
+start: fitness 11305 median 12783 crash 0%
+gen  1: best-of-gen 12017 (median 13739, crash 0%) | best-so-far 12017 | sigma 0.134 [1003s]

@@ -1,0 +1,16 @@
+{
+  "id": "rajulkabir/pbr-rl-v3-lstm-linear",
+  "title": "pbr-rl-v3-lstm-linear",
+  "code_file": "run.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "keywords": [],
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "competition_sources": [],
+  "model_sources": []
+}

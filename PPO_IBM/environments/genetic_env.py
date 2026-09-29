@@ -469,6 +469,7 @@ class GeneticPhotobioreactorEnv(gym.Env):
     # Per-event harvest target for reward_harvest (mg per event; events fire every
     # HARVEST_INTERVAL_STEPS, 12 per episode), from a harvest-fraction grid sweep.
     # (full rationale: docs/decision_history.md#--environments-genetic_env-py-496)
+    HARVEST_REWARD = os.environ.get("PBR_HARVEST_REWARD", "tanh")   # "tanh" | "linear"
     TARGET_MG_PER_EVENT = 1070.0    # scripted expert's cold-start median / 12 events (D0/D1); x1.26 for physics v3
 
     # Target standing OD: the peak of the PBRS OD-health term and the reference for the
@@ -564,7 +565,14 @@ class GeneticPhotobioreactorEnv(gym.Env):
         docs/decision_history.md#--environments-genetic_env-reward-pre-pbrs-archive."""
         # Periodic harvest yield: nonzero only on harvest-event steps.
         # (full rationale: docs/decision_history.md#--environments-genetic_env-py-706)
-        reward_harvest = 0.5 * float(np.tanh(harvested_this_step_mg / self.TARGET_MG_PER_EVENT))
+        # tanh (default) flattens past ~TARGET_MG_PER_EVENT: 1070 -> 2000 mg per event only lifts
+        # reward 0.38 -> 0.48, so a learner gains little from harvesting as hard as the best
+        # controllers do (~1300 mg/event). PBR_HARVEST_REWARD=linear makes reward proportional
+        # to the harvest objective itself (RL tuning arm, physics v3).
+        if self.HARVEST_REWARD == "linear":
+            reward_harvest = 0.5 * float(harvested_this_step_mg / self.TARGET_MG_PER_EVENT)
+        else:
+            reward_harvest = 0.5 * float(np.tanh(harvested_this_step_mg / self.TARGET_MG_PER_EVENT))
 
         # Fix #28: harvest-event OD-collapse penalty. reward_harvest saturates just past the
         # optimal harvest fraction, so over-harvesting that crashes OD would otherwise be free.

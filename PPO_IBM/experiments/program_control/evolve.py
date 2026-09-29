@@ -121,14 +121,15 @@ def record(run, entry):
         f.write(json.dumps(entry) + "\n")
 
 
-def score_file(run, path, note="", writer_seconds=None):
+def score_file(run, path, note="", writer_seconds=None, record_entry=True):
     src = open(path, encoding="utf-8").read()
     problem = check_program(src)
     entry = {"file": os.path.relpath(path, run_dir(run)), "time": time.strftime("%Y-%m-%d %H:%M"),
              "note": note, "writer_seconds": writer_seconds}
     if problem:
         entry.update(fitness=-1e9, rejected=problem)
-        record(run, entry)
+        if record_entry:
+            record(run, entry)
         print(f"  {entry['file']}: REJECTED ({problem})")
         return entry
     t0 = time.time()
@@ -136,14 +137,16 @@ def score_file(run, path, note="", writer_seconds=None):
         s, results = evaluate(path, "search", 2, workers=WORKERS, trace_every=600)
     except Exception as e:   # never let one candidate end the whole track
         entry.update(fitness=-1e9, rejected=f"harness failure: {type(e).__name__}: {e}"[:300])
-        record(run, entry)
+        if record_entry:
+            record(run, entry)
         print(f"  {entry['file']}: REJECTED ({entry['rejected']})", flush=True)
         return entry
     entry.update(fitness=s["fitness"], summary=s, eval_seconds=round(time.time() - t0),
                  episodes=[{k: v for k, v in r.items() if k != "trace"} for r in results])
     with open(path + ".traces.json", "w") as f:
         json.dump([{"init_cells": r["init_cells"], "seed": r["seed"], "trace": r["trace"]} for r in results], f)
-    record(run, entry)
+    if record_entry:
+        record(run, entry)
     print(f"  {entry['file']}: fitness {s['fitness']:.0f} | median {s['median_mg']:.0f} mg, "
           f"p25 {s['p25_mg']:.0f} mg, crash {s['crash_rate']:.0%}, errors {s['errors']} "
           f"[{entry['eval_seconds']}s]", flush=True)
@@ -212,8 +215,10 @@ def build_prompt(run, top_k=2):
 # ─── writers ──────────────────────────────────────────────────────────────────
 
 def ollama_generate(model, prompt, timeout=3600):
+    """prompt: a string, or a full messages list (for a repair turn)."""
+    messages = prompt if isinstance(prompt, list) else [{"role": "user", "content": prompt}]
     body = {"model": model, "stream": False,
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": messages,
             "options": {"temperature": 0.7, "num_ctx": 16384}}
     if model.startswith("qwen3"):
         body["think"] = False     # qwen3 thinks by default; other models may reject the flag
@@ -268,9 +273,39 @@ def cmd_auto(args):
         with open(path, "w", encoding="utf-8") as f:
             f.write(code)
         tail = text.split("```")[-1].strip().splitlines()
-        score_file(args.run, path, note=" ".join(tail[:3])[:200],
-                   writer_seconds=dt)
+        note = " ".join(tail[:3])[:200]
+        entry = score_file(args.run, path, note=note, writer_seconds=dt, record_entry=False)
+        err = load_failure(entry)
+        if err:
+            # One repair turn with the error, as a person fixing their own crash would get. It
+            # counts toward the same candidate; the failed version is kept as .failed.py.
+            fix_msgs = [{"role": "user", "content": prompt}, {"role": "assistant", "content": text},
+                        {"role": "user", "content": f"That program failed before it could run: {err}\n"
+                         "Reply with the complete corrected file in one ```python block."}]
+            try:
+                text2, _, _ = ollama_generate(args.model, fix_msgs)
+                code2 = extract_code(text2)
+            except Exception:
+                code2 = None
+            if code2:
+                os.replace(path, path + ".failed.py")
+                with open(path, "w", encoding="utf-8") as f:
+                    f.write(code2)
+                entry = score_file(args.run, path, note=f"repaired after: {err[:80]}",
+                                   writer_seconds=round(time.time() - t0), record_entry=False)
+        record(args.run, entry)
         print(f"    (writer {args.model}: {dt}s, {out_tok} out / {in_tok} in tokens)", flush=True)
+
+
+def load_failure(entry):
+    """The error if a candidate failed the static check or every episode failed at load."""
+    if entry.get("rejected"):
+        return entry["rejected"]
+    eps = entry.get("episodes", [])
+    errs = [e["error"] for e in eps if e.get("error")]
+    if eps and len(errs) == len(eps) and all(e["steps"] == 0 for e in eps):
+        return errs[0]
+    return None
 
 
 def cmd_prompt(args):

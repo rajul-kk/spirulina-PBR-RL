@@ -48,10 +48,12 @@ smi = subprocess.run("nvidia-smi --query-gpu=memory.total --format=csv,noheader,
 vram = sum(int(x) for x in smi.stdout.split()) if smi.returncode == 0 else 0
 workers = max(1, os.cpu_count() or 2)
 tracks = [t for t in os.environ.get("TRACKS", ",".join(MODELS)).split(",") if t]
+SUFFIX = os.environ.get("RUN_SUFFIX", "")          # e.g. "_v3r2": separate archive per repeat
+BRANCH = os.environ.get("REPO_BRANCH", "main")
 print(f"VRAM {vram} MiB, {workers} CPUs, tracks {tracks}", flush=True)
 
 if not os.path.isdir(REPO):
-    sh(f"git clone --depth 1 https://github.com/rajul-kk/spirulina-PBR-RL.git {REPO}")
+    sh(f"git clone --depth 1 -b {BRANCH} https://github.com/rajul-kk/spirulina-PBR-RL.git {REPO}")
 sh(f"git -C {REPO} log -1 --format='repo at %h %s'")
 sh("pip -q install gymnasium", check=False)
 sh("apt-get -qq update >/dev/null 2>&1; apt-get -qq install -y zstd >/dev/null 2>&1", check=False)
@@ -69,7 +71,7 @@ for _ in range(60):
 for prev in glob.glob("/kaggle/input/**/evolve/*/archive.jsonl", recursive=True):
     run = os.path.basename(os.path.dirname(prev))
     dst = f"{OUT}/evolve/{run}"
-    if run in tracks and not os.path.exists(dst):
+    if run in [t + SUFFIX for t in tracks] and not os.path.exists(dst):
         shutil.copytree(os.path.dirname(prev), dst)
         print(f"resumed {run} from {os.path.dirname(prev)}", flush=True)
 
@@ -78,8 +80,9 @@ env = (f"EVOLVE_RUNS_DIR={OUT}/evolve EVOLVE_WORKERS={workers} "
        f"EVOLVE_DEADLINE_EPOCH={deadline} PYTHONUNBUFFERED=1")
 os.makedirs(f"{OUT}/test", exist_ok=True)
 summary = []
-for run in tracks:
-    tag, need_vram = MODELS[run]
+for track in tracks:
+    tag, need_vram = MODELS[track]
+    run = track + SUFFIX
     if time.time() > deadline:
         print(f"skip {run}: past the {DEADLINE_H} h deadline", flush=True)
         continue

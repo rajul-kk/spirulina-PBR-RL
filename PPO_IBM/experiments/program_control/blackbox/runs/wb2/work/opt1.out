@@ -1,0 +1,4 @@
+40 ['7666 sp2.0 kf3 rpm60', '7666 sp1.5 kf3 rpm60', '7666 sp1.0 kf3 rpm60', '7575 sp1.0 kf2 rpm60', '7553 sp2.0 kf3 rpm75', '7553 sp1.5 kf3 rpm75'] worst 4761
+200 ['17246 sp2.0 kf3 rpm75', '17094 sp2.0 kf4 rpm75', '16939 sp1.5 kf3 rpm75', '16903 sp2.0 kf3 rpm60', '16806 sp2.0 kf4 rpm60', '16669 sp1.5 kf3 rpm60'] worst 12856
+1500 ['36079 sp2.0 kf3 rpm75', '35967 sp2.0 kf4 rpm75', '35620 sp2.0 kf3 rpm90', '35466 sp2.0 kf4 rpm90', '35419 sp1.5 kf3 rpm75', '35382 sp2.0 kf3 rpm60'] worst 31067
+5000 ['70890 sp2.0 kf3 rpm75', '70821 sp2.0 kf4 rpm75', '70528 sp1.5 kf3 rpm75', '70504 sp2.0 kf3 rpm90', '70396 sp2.0 kf4 rpm90', '70258 sp2.0 kf3 rpm60'] worst 67262

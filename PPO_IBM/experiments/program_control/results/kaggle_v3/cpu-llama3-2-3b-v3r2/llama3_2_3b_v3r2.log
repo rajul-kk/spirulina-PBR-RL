@@ -1,0 +1,50 @@
+  cand_000.py: fitness 11305 | median 12783 mg, p25 9827 mg, crash 0%, errors 0 [54s]
+  cand_001.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_001.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer llama3.2:3b: 470s, 450 out / 3869 in tokens)
+  cand_002.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_002.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer llama3.2:3b: 591s, 535 out / 4845 in tokens)
+  cand_003.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_003.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [4s]
+    (writer llama3.2:3b: 537s, 445 out / 4889 in tokens)
+  cand_004.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_004.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer llama3.2:3b: 523s, 416 out / 4933 in tokens)
+  cand_005.py: REJECTED (SyntaxError: invalid syntax (<unknown>, line 9))
+  cand_005.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer llama3.2:3b: 518s, 382 out / 4977 in tokens)
+  cand_006.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_006.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer llama3.2:3b: 620s, 564 out / 5019 in tokens)
+  cand_007.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_007.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [4s]
+    (writer llama3.2:3b: 574s, 498 out / 5059 in tokens)
+  cand_008.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_008.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [4s]
+    (writer llama3.2:3b: 728s, 727 out / 5103 in tokens)
+  cand_009.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_009.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer llama3.2:3b: 614s, 539 out / 5147 in tokens)
+  cand_010.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_010.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [4s]
+    (writer llama3.2:3b: 542s, 409 out / 5191 in tokens)
+  cand_011.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_011.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer llama3.2:3b: 292s, 486 out / 5191 in tokens)
+  cand_012.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_012.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer llama3.2:3b: 288s, 479 out / 5191 in tokens)
+  cand_013.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_013.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer llama3.2:3b: 277s, 471 out / 5191 in tokens)
+  cand_014.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_014.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [4s]
+    (writer llama3.2:3b: 301s, 498 out / 5191 in tokens)
+  cand_015.py: REJECTED (SyntaxError: invalid syntax. Perhaps you forgot a comma? (<unknown>, line 4))
+  cand_015.py: REJECTED (SyntaxError: invalid syntax. Perhaps you forgot a comma? (<unknown>, line 19))
+    (writer llama3.2:3b: 370s, 609 out / 5191 in tokens)
+  cand_016.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_016.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer llama3.2:3b: 676s, 627 out / 5217 in tokens)
+cand_000.py split=test D2 n=52: median 13132 mg, p25 10314 mg, crash 0%, time-avg od 1.04, errors 0, fitness 11723 [244s]

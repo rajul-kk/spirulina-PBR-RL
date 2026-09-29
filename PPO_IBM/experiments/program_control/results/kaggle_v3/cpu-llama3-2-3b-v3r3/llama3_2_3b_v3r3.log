@@ -1,0 +1,50 @@
+  cand_000.py: fitness 11305 | median 12783 mg, p25 9827 mg, crash 0%, errors 0 [49s]
+  cand_001.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_001.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer llama3.2:3b: 611s, 629 out / 3869 in tokens)
+  cand_002.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_002.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer llama3.2:3b: 627s, 596 out / 4967 in tokens)
+  cand_003.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_003.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer llama3.2:3b: 708s, 564 out / 5011 in tokens)
+  cand_004.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_004.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer llama3.2:3b: 947s, 779 out / 5055 in tokens)
+  cand_005.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_005.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [5s]
+    (writer llama3.2:3b: 674s, 627 out / 5099 in tokens)
+  cand_006.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_006.py: fitness 0 | median 0 mg, p25 0 mg, crash 0%, errors 0 [66s]
+    (writer llama3.2:3b: 542s, 394 out / 5143 in tokens)
+  cand_007.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_007.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer llama3.2:3b: 830s, 331 out / 7228 in tokens)
+  cand_008.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_008.py: fitness 9824 | median 11907 mg, p25 7740 mg, crash 0%, errors 0 [56s]
+    (writer llama3.2:3b: 925s, 595 out / 7272 in tokens)
+  cand_009.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_009.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer llama3.2:3b: 1231s, 655 out / 7521 in tokens)
+  cand_010.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_010.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer llama3.2:3b: 1187s, 586 out / 7565 in tokens)
+  cand_011.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_011.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer llama3.2:3b: 792s, 657 out / 7565 in tokens)
+  cand_012.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_012.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer llama3.2:3b: 467s, 587 out / 7565 in tokens)
+  cand_013.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_013.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer llama3.2:3b: 625s, 765 out / 7565 in tokens)
+  cand_014.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_014.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer llama3.2:3b: 639s, 807 out / 7565 in tokens)
+  cand_015.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_015.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer llama3.2:3b: 523s, 647 out / 7565 in tokens)
+  cand_016.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_016.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer llama3.2:3b: 599s, 724 out / 7565 in tokens)
+cand_000.py split=test D2 n=52: median 13132 mg, p25 10314 mg, crash 0%, time-avg od 1.04, errors 0, fitness 11723 [229s]

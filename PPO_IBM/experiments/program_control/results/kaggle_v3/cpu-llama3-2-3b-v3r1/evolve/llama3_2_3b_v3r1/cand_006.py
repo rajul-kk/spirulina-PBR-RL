@@ -1,0 +1,34 @@
+import numpy as np
+from process_state import ProcessState
+
+class Controller:
+    def __init__(self, params=None):
+        self.p = dict(DEFAULTS, **(params or {}))
+        self.ps = ProcessState(turb_per_od=self.p["turb_per_od"])
+
+    def act(self, obs):
+        p = self.p
+        card = self.ps.update(obs)
+
+        # Use more sophisticated light control based on light umol and temperature
+        light_control = np.clip(p["light_umol_threshold"] - (card["lux"] / 30) * (card["temp_c"] - 35) / 5, 0, p["light_umol_threshold"])
+        light_control = np.clip(light_control, 0, p["light_umol"])
+
+        # Use more sophisticated stir control based on conductivity and stir rpm
+        stir_control = np.clip(p["conductivity_threshold"] * p["conductivity"] / 50, 0, p["conductivity_threshold"])
+        stir_control = stir_control / (p["conductivity"] / 50 + 1)
+        stir_control = stir_control * p["stir"]
+
+        # Use more sophisticated harvest control based on pump_L and harvest_frac
+        harvest_control = np.clip(p["pump_frac"] * (card["pump_L"] / p["batch_volume"]) - p["harvest_frac"], 0, p["harvest_frac"])
+
+        frac = np.clip(p["gain"] * (card["od_est"] / p["setpoint"] - 1.0), 0.0, p["cap"])
+        frac = frac * stir_control * light_control * harvest_control
+
+        return p["stir"], light_control, frac
+
+
+DEFAULTS = {"stir": 65.0, "light": 1400.0, "setpoint": 0.6, "gain": 1.0, "cap": 0.30,
+            "turb_per_od": 250.0, "conductivity_threshold": 150, "light_umol_threshold": 1200,
+            "stir_threshold": 150, "pump_frac": 0.2, "harvest_frac": 0.4, "batch_volume": 150}
+

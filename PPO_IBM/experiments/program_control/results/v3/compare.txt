@@ -1,0 +1,9 @@
+black-box: per-run medians [17.39, 16.53, 18.11] g
+white-box: per-run medians [19.45, 19.54, 19.26] g
+white-box minus black-box: +2.07 g per episode [95% CI +1.88, +2.26], better in 100% of 48 episodes
+black-box minus hand-tuned expert: +4.23 g per episode [95% CI +3.98, +4.48], better in 100% of 48 episodes
+white-box minus hand-tuned expert: +6.29 g per episode [95% CI +5.94, +6.65], better in 100% of 48 episodes
+black-box minus CMA-ES (v3): +3.64 g per episode [95% CI +3.40, +3.88], better in 100% of 48 episodes
+white-box minus CMA-ES (v3): +5.71 g per episode [95% CI +5.48, +5.94], better in 100% of 48 episodes
+black-box minus oracle expert: +3.79 g per episode [95% CI +3.56, +4.02], better in 100% of 48 episodes
+white-box minus oracle expert: +5.86 g per episode [95% CI +5.54, +6.17], better in 100% of 48 episodes

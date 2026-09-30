@@ -105,6 +105,15 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # this, TD3_THREADS was silently ignored for the LSTM core and it grabbed every CPU core.
 if DEVICE.type == "cpu" and "TD3_THREADS" in os.environ:
     torch.set_num_threads(int(os.environ["TD3_THREADS"]))
+# TD3_SEED fixes network init, exploration noise and training-episode draws, so a seed sweep is
+# reproducible (unset = unseeded, as before). A --resume does not restore RNG state, so a resumed
+# run is seeded again from the same value rather than continuing its stream.
+SEED = os.environ.get("TD3_SEED")
+if SEED is not None:
+    import random
+    random.seed(int(SEED))
+    np.random.seed(int(SEED))
+    torch.manual_seed(int(SEED))
 # TD3_RUN_SUFFIX gives a run its own checkpoint/state paths, so two runs of the same core can
 # train side by side (e.g. "_s2" -> model_data/td3_checkpoints_s2/). Empty = the usual paths.
 RUN_SUFFIX = os.environ.get("TD3_RUN_SUFFIX", "")

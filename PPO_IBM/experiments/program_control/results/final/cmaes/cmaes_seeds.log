@@ -48,3 +48,5 @@ gen  7: best-of-gen 11399 (median 12756, crash 0%) | best-so-far 11966 | sigma 0
 gen  8: best-of-gen 11520 (median 13106, crash 0%) | best-so-far 11966 | sigma 0.093 [1010s]
 gen  9: best-of-gen 11604 (median 13282, crash 0%) | best-so-far 11966 | sigma 0.081 [994s]
 gen 10: best-of-gen 11677 (median 13060, crash 0%) | best-so-far 11966 | sigma 0.076 [1040s]
+gen 11: best-of-gen 11794 (median 13618, crash 0%) | best-so-far 11966 | sigma 0.073 [1016s]
+gen 12: best-of-gen 11637 (median 13039, crash 0%) | best-so-far 11966 | sigma 0.070 [1032s]

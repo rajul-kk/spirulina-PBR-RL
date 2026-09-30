@@ -14,3 +14,4 @@ sensor_expert.py split=final D2 n=200: median 13393 mg, p25 11312 mg, crash 0%, 
 sensor_expert.py split=final D2 n=200: median 13418 mg, p25 11316 mg, crash 0%, time-avg od 0.96, errors 0, fitness 12367 [1969s]
 sensor_expert.py split=final D2 n=200: median 13357 mg, p25 11588 mg, crash 0%, time-avg od 1.00, errors 0, fitness 12472 [2031s]
 sensor_expert.py split=final D2 n=200: median 13871 mg, p25 11506 mg, crash 0%, time-avg od 1.12, errors 0, fitness 12689 [1970s]
+sensor_expert.py split=final D2 n=200: median 13258 mg, p25 11291 mg, crash 0%, time-avg od 0.94, errors 0, fitness 12274 [2137s]

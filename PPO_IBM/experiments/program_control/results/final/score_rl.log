@@ -1,0 +1,3 @@
+td3_actor.py split=final D2 n=200: median 3072 mg, p25 2084 mg, crash 80%, time-avg od 0.01, errors 0, fitness -5422 [1321s]
+td3_actor.py split=final D2 n=200: median 5442 mg, p25 3533 mg, crash 2%, time-avg od 0.66, errors 0, fitness 4337 [2079s]
+td3_actor.py split=final D2 n=200: median 9763 mg, p25 7465 mg, crash 0%, time-avg od 0.62, errors 0, fitness 8614 [1836s]

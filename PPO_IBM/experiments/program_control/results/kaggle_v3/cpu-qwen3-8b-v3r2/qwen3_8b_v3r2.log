@@ -1,0 +1,22 @@
+  cand_000.py: fitness 11305 | median 12783 mg, p25 9827 mg, crash 0%, errors 0 [54s]
+  cand_001.py: fitness 6737 | median 8240 mg, p25 5234 mg, crash 0%, errors 0 [54s]
+    (writer qwen3:8b: 1747s, 1051 out / 4451 in tokens)
+  cand_002.py: fitness 11054 | median 11911 mg, p25 10197 mg, crash 0%, errors 0 [57s]
+    (writer qwen3:8b: 3570s, 1150 out / 8793 in tokens)
+  generation failed: timed out
+  cand_003.py: fitness 3031 | median 3555 mg, p25 2508 mg, crash 0%, errors 0 [72s]
+    (writer qwen3:8b: 2495s, 1394 out / 8992 in tokens)
+  generation failed: timed out
+  cand_004.py: fitness 11054 | median 11911 mg, p25 10197 mg, crash 0%, errors 0 [58s]
+    (writer qwen3:8b: 2578s, 1435 out / 9074 in tokens)
+  generation failed: timed out
+  cand_005.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_005.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer qwen3:8b: 2431s, 1339 out / 9159 in tokens)
+  generation failed: timed out
+  cand_006.py: fitness 10560 | median 11809 mg, p25 9311 mg, crash 0%, errors 0 [58s]
+    (writer qwen3:8b: 2224s, 1232 out / 9202 in tokens)
+  generation failed: timed out
+  cand_007.py: fitness 11054 | median 11911 mg, p25 10197 mg, crash 0%, errors 0 [59s]
+    (writer qwen3:8b: 2273s, 1222 out / 9287 in tokens)
+  deadline reached after 7 candidates; resume in a new session

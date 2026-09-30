@@ -1,0 +1,661 @@
+[{"stream_name":"stderr","time":1.09750452,"data":"Cloning into '/kaggle/working/repo'...\n"}
+,{"stream_name":"stdout","time":2.406611021,"data":"VRAM 0 MiB, 4 CPUs, tracks ['qwen3_8b']\n"}
+,{"stream_name":"stdout","time":2.40666721,"data":"$ git -C /kaggle/working/repo log -1 --format='repo at %h %s'\n"}
+,{"stream_name":"stdout","time":2.411436402,"data":"repo at af4cbd4 v3 head-to-head: white-box writer wb2 (held-out 19.5 g median / 15.5 g p25)\n"}
+,{"stream_name":"stdout","time":2.412204379,"data":"$ pip -q install gymnasium\n"}
+,{"stream_name":"stdout","time":8.604225581,"data":"$ apt-get -qq update \u003e/dev/null 2\u003e\u00261; apt-get -qq install -y zstd \u003e/dev/null 2\u003e\u00261\n"}
+,{"stream_name":"stdout","time":23.911860791,"data":"$ curl -fsSL https://ollama.com/install.sh | sh\n"}
+,{"stream_name":"stderr","time":24.492751785,"data":"\u003e\u003e\u003e Installing ollama to /usr/local\n"}
+,{"stream_name":"stderr","time":24.998715641,"data":"\u003e\u003e\u003e Downloading ollama-linux-amd64.tar.zst\n"}
+,{"stream_name":"stderr","time":35.949226911,"data":"#=#=#                                                                         \r##O#-#                                                                        \r##O=#  #                                                                      \r\r                                                                           0.0%\r                                                                           0.2%\r                                                                           0.3%\r                                                                           0.6%\r                                                                           1.0%\r#                                                                          1.5%\r#                                                                          2.2%\r##                                                                         3.4%\r###                                                                        4.4%\r####                                                                       6.1%\r#####                                                                      7.9%\r#######                                                                    9.8%\r########                                                                  11.5%\r#########                                                                 13.3%\r##########                                                                15.0%\r############                                                              16.7%\r############                                                              18.0%\r##############                                                            19.7%\r###############                                                           21.3%\r################                                                          22.9%\r#################                                                         24.5%\r##################                                                        25.6%\r###################                                                       26.5%\r###################                                                       27.3%\r####################                                                      28.2%\r#####################                                                     29.2%\r#####################                                                     30.2%\r#####################                                                     30.5%\r######################                                                    30.8%\r######################                                                    31.5%\r#######################                                                   32.2%\r#######################                                                   32.7%\r########################                                                  33.5%\r########################                                                  34.3%\r#########################                                                 35.2%\r##########################                                                36.2%\r##########################                                                37.2%\r###########################                                               38.3%\r############################                                              39.1%\r############################                                              39.6%\r############################                                              40.2%\r#############################                                             40.8%\r#############################                                             41.3%\r##############################                                            41.9%\r##############################                                            42.4%\r##############################                                            43.0%\r################################                                          44.7%\r#################################                                         46.2%\r##################################                                        47.8%\r###################################                                       49.3%\r####################################                                      50.9%\r#####################################                                     51.4%\r#####################################                                     52.0%\r######################################                                    53.6%\r#######################################                                   55.4%\r#########################################                                 57.0%\r#########################################                                 58.3%\r##########################################                                58.5%\r##########################################                                58.8%\r##########################################                                59.5%\r###########################################                               59.9%\r###########################################                               60.4%\r###########################################                               60.9%\r#############################################                             62.9%\r##############################################                            64.7%\r###############################################                           66.2%\r################################################                          67.5%\r#################################################                         68.9%\r##################################################                        69.7%\r###################################################                       70.9%\r####################################################                      72.5%\r#####################################################                     74.0%\r######################################################                    75.5%\r######################################################                    76.1%\r#######################################################                   76.9%\r########################################################                  78.6%\r#########################################################                 80.3%\r###########################################################               82.0%\r############################################################              83.4%\r#############################################################             85.2%\r#############################################################             86.0%\r##############################################################            87.1%\r###############################################################           88.3%\r################################################################          89.3%\r#################################################################         90.9%\r##################################################################        92.4%\r###################################################################       93.8%\r####################################################################      95.2%\r#####################################################################     96.7%\r######################################################################    98.2%\r#######################################################################   99.3%\r#######################################################################   99.7%\r#######################################################################   99.9%\r######################################################################## 100.0%\n"}
+,{"stream_name":"stderr","time":35.956153657,"data":"\u003e\u003e\u003e Creating ollama user...\n"}
+,{"stream_name":"stderr","time":36.156230537,"data":"\u003e\u003e\u003e Adding ollama user to video group...\n"}
+,{"stream_name":"stderr","time":36.196792351,"data":"\u003e\u003e\u003e Adding current user to ollama group...\n"}
+,{"stream_name":"stderr","time":36.247818097,"data":"\u003e\u003e\u003e Creating ollama systemd service...\n"}
+,{"stream_name":"stdout","time":36.279913762,"data":"WARNING: systemd is not running\n"}
+,{"stream_name":"stderr","time":36.280279355,"data":"\u003e\u003e\u003e The Ollama API is now available at 127.0.0.1:11434.\n"}
+,{"stream_name":"stderr","time":36.28029982,"data":"\u003e\u003e\u003e Install complete. Run \"ollama\" from the command line.\n"}
+,{"stream_name":"stdout","time":36.280300016,"data":"WARNING: Unable to detect NVIDIA/AMD GPU. Install lspci or lshw to automatically detect and install GPU dependencies.\n"}
+,{"stream_name":"stdout","time":38.289591014,"data":"$ ollama pull qwen3:8b\n"}
+,{"stream_name":"stderr","time":39.810859315,"data":"\u001b[?2026h\u001b[?25l\u001b[1Gpulling manifest ⠋ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[1Gpulling manifest ⠙ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[1Gpulling manifest ⠹ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[1Gpulling manifest ⠸ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[1Gpulling manifest ⠼ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[1Gpulling manifest ⠴ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[1Gpulling manifest ⠦ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[1Gpulling manifest ⠧ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[1Gpulling manifest ⠇ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[1Gpulling manifest ⠏ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[1Gpulling manifest ⠋ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[1Gpulling manifest ⠙ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[1Gpulling manifest ⠹ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[1Gpulling manifest ⠸ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":39.911422127,"data":"pulling a3de86cd1c13:   0% ▕                  ▏ 117 KB/5.2 GB                  \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":40.011091928,"data":"pulling a3de86cd1c13:   0% ▕                  ▏  24 MB/5.2 GB                  \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":40.111048449,"data":"pulling a3de86cd1c13:   1% ▕                  ▏  55 MB/5.2 GB                  \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":40.211374246,"data":"pulling a3de86cd1c13:   2% ▕                  ▏ 120 MB/5.2 GB                  \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":40.311098134,"data":"pulling a3de86cd1c13:   4% ▕                  ▏ 192 MB/5.2 GB                  \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":40.411265627,"data":"pulling a3de86cd1c13:   4% ▕                  ▏ 227 MB/5.2 GB                  \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":40.511243715,"data":"pulling a3de86cd1c13:   6% ▕█                 ▏ 295 MB/5.2 GB                  \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":40.612582152,"data":"pulling a3de86cd1c13:   7% ▕█                 ▏ 366 MB/5.2 GB                  \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":40.714199663,"data":"pulling a3de86cd1c13:   8% ▕█                 ▏ 401 MB/5.2 GB                  \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":40.812068875,"data":"pulling a3de86cd1c13:   9% ▕█                 ▏ 469 MB/5.2 GB                  \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":40.911454138,"data":"pulling a3de86cd1c13:  10% ▕█                 ▏ 544 MB/5.2 GB  544 MB/s      8s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":41.011235802,"data":"pulling a3de86cd1c13:  11% ▕██                ▏ 583 MB/5.2 GB  544 MB/s      8s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":41.112099905,"data":"pulling a3de86cd1c13:  12% ▕██                ▏ 650 MB/5.2 GB  544 MB/s      8s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":41.213011288,"data":"pulling a3de86cd1c13:  14% ▕██                ▏ 706 MB/5.2 GB  544 MB/s      8s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":41.311570195,"data":"pulling a3de86cd1c13:  14% ▕██                ▏ 738 MB/5.2 GB  544 MB/s      8s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":41.411302831,"data":"pulling a3de86cd1c13:  15% ▕██                ▏ 796 MB/5.2 GB  544 MB/s      8s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":41.511985514,"data":"pulling a3de86cd1c13:  16% ▕██                ▏ 853 MB/5.2 GB  544 MB/s      8s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":41.611957897,"data":"pulling a3de86cd1c13:  17% ▕███               ▏ 885 MB/5.2 GB  544 MB/s      7s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":41.712141596,"data":"pulling a3de86cd1c13:  18% ▕███               ▏ 951 MB/5.2 GB  544 MB/s      7s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":41.811989423,"data":"pulling a3de86cd1c13:  20% ▕███               ▏ 1.0 GB/5.2 GB  544 MB/s      7s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":41.911925424,"data":"pulling a3de86cd1c13:  20% ▕███               ▏ 1.1 GB/5.2 GB  544 MB/s      7s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":42.01257209,"data":"pulling a3de86cd1c13:  22% ▕███               ▏ 1.1 GB/5.2 GB  550 MB/s      7s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":42.113346917,"data":"pulling a3de86cd1c13:  23% ▕████              ▏ 1.2 GB/5.2 GB  550 MB/s      7s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":42.211892143,"data":"pulling a3de86cd1c13:  24% ▕████              ▏ 1.2 GB/5.2 GB  550 MB/s      7s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":42.311720919,"data":"pulling a3de86cd1c13:  25% ▕████              ▏ 1.3 GB/5.2 GB  550 MB/s      7s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":42.412542864,"data":"pulling a3de86cd1c13:  26% ▕████              ▏ 1.4 GB/5.2 GB  550 MB/s      6s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":42.512103184,"data":"pulling a3de86cd1c13:  27% ▕████              ▏ 1.4 GB/5.2 GB  550 MB/s      6s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":42.611410241,"data":"pulling a3de86cd1c13:  28% ▕█████             ▏ 1.5 GB/5.2 GB  550 MB/s      6s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":42.711602731,"data":"pulling a3de86cd1c13:  29% ▕█████             ▏ 1.5 GB/5.2 GB  550 MB/s      6s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":42.811243973,"data":"pulling a3de86cd1c13:  30% ▕█████             ▏ 1.5 GB/5.2 GB  550 MB/s      6s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":42.911438041,"data":"pulling a3de86cd1c13:  31% ▕█████             ▏ 1.6 GB/5.2 GB  550 MB/s      6s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":43.011712028,"data":"pulling a3de86cd1c13:  32% ▕█████             ▏ 1.7 GB/5.2 GB  542 MB/s      6s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":43.111550059,"data":"pulling a3de86cd1c13:  32% ▕█████             ▏ 1.7 GB/5.2 GB  542 MB/s      6s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":43.211247826,"data":"pulling a3de86cd1c13:  33% ▕█████             ▏ 1.7 GB/5.2 GB  542 MB/s      6s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":43.314631315,"data":"pulling a3de86cd1c13:  34% ▕██████            ▏ 1.8 GB/5.2 GB  542 MB/s      6s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":43.411225082,"data":"pulling a3de86cd1c13:  34% ▕██████            ▏ 1.8 GB/5.2 GB  542 MB/s      6s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":43.511205609,"data":"pulling a3de86cd1c13:  35% ▕██████            ▏ 1.9 GB/5.2 GB  542 MB/s      6s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":43.612469595,"data":"pulling a3de86cd1c13:  36% ▕██████            ▏ 1.9 GB/5.2 GB  542 MB/s      6s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":43.71140042,"data":"pulling a3de86cd1c13:  37% ▕██████            ▏ 1.9 GB/5.2 GB  542 MB/s      6s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":43.812483679,"data":"pulling a3de86cd1c13:  38% ▕██████            ▏ 2.0 GB/5.2 GB  542 MB/s      5s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":43.912157887,"data":"pulling a3de86cd1c13:  39% ▕███████           ▏ 2.0 GB/5.2 GB  542 MB/s      5s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":44.013567824,"data":"pulling a3de86cd1c13:  40% ▕███████           ▏ 2.1 GB/5.2 GB  519 MB/s      6s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":44.112673926,"data":"pulling a3de86cd1c13:  41% ▕███████           ▏ 2.1 GB/5.2 GB  519 MB/s      5s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":44.211775472,"data":"pulling a3de86cd1c13:  42% ▕███████           ▏ 2.2 GB/5.2 GB  519 MB/s      5s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":44.31136501,"data":"pulling a3de86cd1c13:  42% ▕███████           ▏ 2.2 GB/5.2 GB  519 MB/s      5s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":44.410923297,"data":"pulling a3de86cd1c13:  43% ▕███████           ▏ 2.3 GB/5.2 GB  519 MB/s      5s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":44.512022852,"data":"pulling a3de86cd1c13:  45% ▕████████          ▏ 2.3 GB/5.2 GB  519 MB/s      5s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":44.611628406,"data":"pulling a3de86cd1c13:  45% ▕████████          ▏ 2.4 GB/5.2 GB  519 MB/s      5s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":44.711492664,"data":"pulling a3de86cd1c13:  46% ▕████████          ▏ 2.4 GB/5.2 GB  519 MB/s      5s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":44.814948749,"data":"pulling a3de86cd1c13:  48% ▕████████          ▏ 2.5 GB/5.2 GB  519 MB/s      5s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":44.911036388,"data":"pulling a3de86cd1c13:  49% ▕████████          ▏ 2.5 GB/5.2 GB  519 MB/s      5s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":45.011268772,"data":"pulling a3de86cd1c13:  50% ▕████████          ▏ 2.6 GB/5.2 GB  522 MB/s      5s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":45.111861593,"data":"pulling a3de86cd1c13:  51% ▕█████████         ▏ 2.7 GB/5.2 GB  522 MB/s      4s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":45.211704854,"data":"pulling a3de86cd1c13:  52% ▕█████████         ▏ 2.7 GB/5.2 GB  522 MB/s      4s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":45.311861791,"data":"pulling a3de86cd1c13:  53% ▕█████████         ▏ 2.8 GB/5.2 GB  522 MB/s      4s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":45.412193533,"data":"pulling a3de86cd1c13:  54% ▕█████████         ▏ 2.8 GB/5.2 GB  522 MB/s      4s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":45.511187485,"data":"pulling a3de86cd1c13:  55% ▕█████████         ▏ 2.9 GB/5.2 GB  522 MB/s      4s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":45.611288912,"data":"pulling a3de86cd1c13:  56% ▕██████████        ▏ 2.9 GB/5.2 GB  522 MB/s      4s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":45.711411381,"data":"pulling a3de86cd1c13:  57% ▕██████████        ▏ 3.0 GB/5.2 GB  522 MB/s      4s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":45.811959857,"data":"pulling a3de86cd1c13:  58% ▕██████████        ▏ 3.0 GB/5.2 GB  522 MB/s      4s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":45.914863558,"data":"pulling a3de86cd1c13:  59% ▕██████████        ▏ 3.1 GB/5.2 GB  522 MB/s      4s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":46.011639445,"data":"pulling a3de86cd1c13:  61% ▕██████████        ▏ 3.2 GB/5.2 GB  528 MB/s      3s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":46.11113568,"data":"pulling a3de86cd1c13:  61% ▕███████████       ▏ 3.2 GB/5.2 GB  528 MB/s      3s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":46.212002567,"data":"pulling a3de86cd1c13:  63% ▕███████████       ▏ 3.3 GB/5.2 GB  528 MB/s      3s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":46.313393604,"data":"pulling a3de86cd1c13:  64% ▕███████████       ▏ 3.3 GB/5.2 GB  528 MB/s      3s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":46.411875448,"data":"pulling a3de86cd1c13:  64% ▕███████████       ▏ 3.4 GB/5.2 GB  528 MB/s      3s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.073623382,"data":"pulling a3de86cd1c13:  66% ▕███████████       ▏ 3.4 GB/5.2 GB  528 MB/s      3s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.073648336,"data":"pulling a3de86cd1c13:  66% ▕███████████       ▏ 3.4 GB/5.2 GB  528 MB/s      3s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.073654379,"data":"pulling a3de86cd1c13:  66% ▕███████████       ▏ 3.4 GB/5.2 GB  528 MB/s      3s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.073659874,"data":"pulling a3de86cd1c13:  66% ▕███████████       ▏ 3.4 GB/5.2 GB  528 MB/s      3s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.07366517,"data":"pulling a3de86cd1c13:  66% ▕███████████       ▏ 3.4 GB/5.2 GB  528 MB/s      3s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.073670546,"data":"pulling a3de86cd1c13:  66% ▕███████████       ▏ 3.4 GB/5.2 GB  528 MB/s      3s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.073675837,"data":"pulling a3de86cd1c13:  66% ▕███████████       ▏ 3.4 GB/5.2 GB  490 MB/s      3s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.073680751,"data":"pulling a3de86cd1c13:  66% ▕███████████       ▏ 3.4 GB/5.2 GB  490 MB/s      3s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.073686315,"data":"pulling a3de86cd1c13:  66% ▕███████████       ▏ 3.4 GB/5.2 GB  490 MB/s      3s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.073691754,"data":"pulling a3de86cd1c13:  66% ▕███████████       ▏ 3.4 GB/5.2 GB  490 MB/s      3s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.073697009,"data":"pulling a3de86cd1c13:  66% ▕███████████       ▏ 3.4 GB/5.2 GB  490 MB/s      3s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.073702928,"data":"pulling a3de86cd1c13:  66% ▕███████████       ▏ 3.4 GB/5.2 GB  490 MB/s      3s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.073708118,"data":"pulling a3de86cd1c13:  66% ▕███████████       ▏ 3.4 GB/5.2 GB  490 MB/s      3s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.073717828,"data":"pulling a3de86cd1c13:  66% ▕███████████       ▏ 3.4 GB/5.2 GB  490 MB/s      3s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.07372342,"data":"pulling a3de86cd1c13:  66% ▕███████████       ▏ 3.4 GB/5.2 GB  490 MB/s      3s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.073733909,"data":"pulling a3de86cd1c13:  66% ▕███████████       ▏ 3.4 GB/5.2 GB  490 MB/s      3s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.073739431999996,"data":"pulling a3de86cd1c13:  66% ▕███████████       ▏ 3.4 GB/5.2 GB  428 MB/s      4s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.073744931,"data":"pulling a3de86cd1c13:  66% ▕███████████       ▏ 3.4 GB/5.2 GB  428 MB/s      4s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.073750196,"data":"pulling a3de86cd1c13:  66% ▕███████████       ▏ 3.4 GB/5.2 GB  428 MB/s      4s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.073755611,"data":"pulling a3de86cd1c13:  66% ▕███████████       ▏ 3.4 GB/5.2 GB  428 MB/s      4s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.073782869,"data":"pulling a3de86cd1c13:  66% ▕███████████       ▏ 3.4 GB/5.2 GB  428 MB/s      4s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.073803866,"data":"pulling a3de86cd1c13:  66% ▕███████████       ▏ 3.4 GB/5.2 GB  428 MB/s      4s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.073823814,"data":"pulling a3de86cd1c13:  66% ▕███████████       ▏ 3.4 GB/5.2 GB  428 MB/s      4s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.073847563,"data":"pulling a3de86cd1c13:  66% ▕███████████       ▏ 3.4 GB/5.2 GB  428 MB/s      4s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.073868208,"data":"pulling a3de86cd1c13:  66% ▕███████████       ▏ 3.4 GB/5.2 GB  428 MB/s      4s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.073897311,"data":"pulling a3de86cd1c13:  66% ▕███████████       ▏ 3.4 GB/5.2 GB  428 MB/s      4s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.111651095,"data":"pulling a3de86cd1c13:  66% ▕███████████       ▏ 3.4 GB/5.2 GB  381 MB/s      4s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.213450227,"data":"pulling a3de86cd1c13:  66% ▕███████████       ▏ 3.4 GB/5.2 GB  381 MB/s      4s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.312145263,"data":"pulling a3de86cd1c13:  67% ▕███████████       ▏ 3.5 GB/5.2 GB  381 MB/s      4s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.413387102,"data":"pulling a3de86cd1c13:  67% ▕████████████      ▏ 3.5 GB/5.2 GB  381 MB/s      4s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.511891299,"data":"pulling a3de86cd1c13:  68% ▕████████████      ▏ 3.5 GB/5.2 GB  381 MB/s      4s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.611778663,"data":"pulling a3de86cd1c13:  69% ▕████████████      ▏ 3.6 GB/5.2 GB  381 MB/s      4s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.710970511,"data":"pulling a3de86cd1c13:  69% ▕████████████      ▏ 3.6 GB/5.2 GB  381 MB/s      4s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.811796476,"data":"pulling a3de86cd1c13:  70% ▕████████████      ▏ 3.7 GB/5.2 GB  381 MB/s      4s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":49.912352716,"data":"pulling a3de86cd1c13:  72% ▕████████████      ▏ 3.7 GB/5.2 GB  381 MB/s      3s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":50.01272269,"data":"pulling a3de86cd1c13:  72% ▕████████████      ▏ 3.8 GB/5.2 GB  381 MB/s      3s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":50.11349304,"data":"pulling a3de86cd1c13:  73% ▕█████████████     ▏ 3.8 GB/5.2 GB  365 MB/s      3s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":50.211801129,"data":"pulling a3de86cd1c13:  75% ▕█████████████     ▏ 3.9 GB/5.2 GB  365 MB/s      3s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":50.3110428,"data":"pulling a3de86cd1c13:  75% ▕█████████████     ▏ 3.9 GB/5.2 GB  365 MB/s      3s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":50.411923304,"data":"pulling a3de86cd1c13:  77% ▕█████████████     ▏ 4.0 GB/5.2 GB  365 MB/s      3s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":50.511301916,"data":"pulling a3de86cd1c13:  78% ▕██████████████    ▏ 4.1 GB/5.2 GB  365 MB/s      3s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":50.611773706,"data":"pulling a3de86cd1c13:  78% ▕██████████████    ▏ 4.1 GB/5.2 GB  365 MB/s      3s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":50.712146736,"data":"pulling a3de86cd1c13:  80% ▕██████████████    ▏ 4.2 GB/5.2 GB  365 MB/s      2s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":50.811870333,"data":"pulling a3de86cd1c13:  81% ▕██████████████    ▏ 4.2 GB/5.2 GB  365 MB/s      2s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":50.913430978,"data":"pulling a3de86cd1c13:  82% ▕██████████████    ▏ 4.3 GB/5.2 GB  365 MB/s      2s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":51.013354929,"data":"pulling a3de86cd1c13:  83% ▕██████████████    ▏ 4.3 GB/5.2 GB  365 MB/s      2s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":51.111307522,"data":"pulling a3de86cd1c13:  84% ▕███████████████   ▏ 4.4 GB/5.2 GB  365 MB/s      2s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":51.211510754,"data":"pulling a3de86cd1c13:  85% ▕███████████████   ▏ 4.4 GB/5.2 GB  365 MB/s      2s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":51.311267738,"data":"pulling a3de86cd1c13:  86% ▕███████████████   ▏ 4.5 GB/5.2 GB  365 MB/s      1s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":51.412311051,"data":"pulling a3de86cd1c13:  87% ▕███████████████   ▏ 4.6 GB/5.2 GB  365 MB/s      1s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":51.511852243,"data":"pulling a3de86cd1c13:  88% ▕███████████████   ▏ 4.6 GB/5.2 GB  365 MB/s      1s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":51.613035714,"data":"pulling a3de86cd1c13:  89% ▕████████████████  ▏ 4.6 GB/5.2 GB  365 MB/s      1s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":51.711250643,"data":"pulling a3de86cd1c13:  90% ▕████████████████  ▏ 4.7 GB/5.2 GB  365 MB/s      1s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":51.811741289,"data":"pulling a3de86cd1c13:  91% ▕████████████████  ▏ 4.7 GB/5.2 GB  365 MB/s      1s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":51.913452908,"data":"pulling a3de86cd1c13:  92% ▕████████████████  ▏ 4.8 GB/5.2 GB  365 MB/s      1s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":52.011658027,"data":"pulling a3de86cd1c13:  93% ▕████████████████  ▏ 4.8 GB/5.2 GB  365 MB/s      1s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":52.111268221,"data":"pulling a3de86cd1c13:  93% ▕████████████████  ▏ 4.9 GB/5.2 GB  365 MB/s      1s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":52.211229819,"data":"pulling a3de86cd1c13:  94% ▕████████████████  ▏ 4.9 GB/5.2 GB  362 MB/s      0s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":52.311248409,"data":"pulling a3de86cd1c13:  95% ▕█████████████████ ▏ 5.0 GB/5.2 GB  362 MB/s      0s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":52.411124561,"data":"pulling a3de86cd1c13:  95% ▕█████████████████ ▏ 5.0 GB/5.2 GB  362 MB/s      0s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":52.511459056,"data":"pulling a3de86cd1c13:  96% ▕█████████████████ ▏ 5.0 GB/5.2 GB  362 MB/s      0s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":52.611591056,"data":"pulling a3de86cd1c13:  96% ▕█████████████████ ▏ 5.0 GB/5.2 GB  362 MB/s      0s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":52.711106568,"data":"pulling a3de86cd1c13:  97% ▕█████████████████ ▏ 5.0 GB/5.2 GB  362 MB/s      0s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":52.811184,"data":"pulling a3de86cd1c13:  97% ▕█████████████████ ▏ 5.1 GB/5.2 GB  362 MB/s      0s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":52.911868817,"data":"pulling a3de86cd1c13:  97% ▕█████████████████ ▏ 5.1 GB/5.2 GB  362 MB/s      0s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":53.011277667,"data":"pulling a3de86cd1c13:  97% ▕█████████████████ ▏ 5.1 GB/5.2 GB  362 MB/s      0s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":53.111538902,"data":"pulling a3de86cd1c13:  97% ▕█████████████████ ▏ 5.1 GB/5.2 GB  362 MB/s      0s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":53.211075771,"data":"pulling a3de86cd1c13:  98% ▕█████████████████ ▏ 5.1 GB/5.2 GB  334 MB/s      0s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":53.311210532,"data":"pulling a3de86cd1c13:  98% ▕█████████████████ ▏ 5.1 GB/5.2 GB  334 MB/s      0s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":53.411596563,"data":"pulling a3de86cd1c13:  98% ▕█████████████████ ▏ 5.1 GB/5.2 GB  334 MB/s      0s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":53.510912237,"data":"pulling a3de86cd1c13:  98% ▕█████████████████ ▏ 5.1 GB/5.2 GB  334 MB/s      0s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":53.61177465,"data":"pulling a3de86cd1c13:  98% ▕█████████████████ ▏ 5.1 GB/5.2 GB  334 MB/s      0s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":53.711226762,"data":"pulling a3de86cd1c13:  98% ▕█████████████████ ▏ 5.1 GB/5.2 GB  334 MB/s      0s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":53.811711976,"data":"pulling a3de86cd1c13:  99% ▕█████████████████ ▏ 5.2 GB/5.2 GB  334 MB/s      0s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":53.911405599,"data":"pulling a3de86cd1c13:  99% ▕█████████████████ ▏ 5.2 GB/5.2 GB  334 MB/s      0s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":54.012002474,"data":"pulling a3de86cd1c13:  99% ▕█████████████████ ▏ 5.2 GB/5.2 GB  334 MB/s      0s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":54.111661936,"data":"pulling a3de86cd1c13:  99% ▕█████████████████ ▏ 5.2 GB/5.2 GB  334 MB/s      0s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":54.211081044,"data":"pulling a3de86cd1c13:  99% ▕█████████████████ ▏ 5.2 GB/5.2 GB  285 MB/s      0s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":54.31151828,"data":"pulling a3de86cd1c13:  99% ▕█████████████████ ▏ 5.2 GB/5.2 GB  285 MB/s      0s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":54.411763917,"data":"pulling a3de86cd1c13:  99% ▕█████████████████ ▏ 5.2 GB/5.2 GB  285 MB/s      0s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":54.511292549,"data":"pulling a3de86cd1c13:  99% ▕█████████████████ ▏ 5.2 GB/5.2 GB  285 MB/s      0s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":54.611496134,"data":"pulling a3de86cd1c13: 100% ▕█████████████████ ▏ 5.2 GB/5.2 GB  285 MB/s      0s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":54.711169005,"data":"pulling a3de86cd1c13: 100% ▕█████████████████ ▏ 5.2 GB/5.2 GB  285 MB/s      0s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":54.811893935,"data":"pulling a3de86cd1c13: 100% ▕█████████████████ ▏ 5.2 GB/5.2 GB  285 MB/s      0s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":54.912249573,"data":"pulling a3de86cd1c13: 100% ▕█████████████████ ▏ 5.2 GB/5.2 GB  285 MB/s      0s\u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":55.011153921,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":55.111614081,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":55.211219807,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":55.311709812,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":55.411449891,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":55.511953923,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":55.611224271,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":55.711234862,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":55.811968725,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":55.911204556,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":56.011832574,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":56.111339897,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":56.21163843,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":56.311268394,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":56.411966231,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":56.511227272,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":56.6119213,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":56.711710842,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":56.811896722,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":56.911597801,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":57.011147117,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":57.111379006,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":57.211156904,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":57.311762539,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":57.411194606,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":57.511705492,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":57.611432645,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":57.711714458,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":57.811351946,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":57.911837032,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":58.011177036,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":58.111933242,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":58.211489889,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":58.31180196,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":58.411431352,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":58.51187152,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":58.611350063,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":58.711760865,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":58.811305361,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":58.911639493,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":59.011177705,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":59.111777239,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":59.210973294,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":59.311284329,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":59.411000011,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":59.510952733,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":59.611425992,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":59.711892539,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":59.81139188,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":59.911833538,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":60.011266956,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":60.111466088,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":60.211399923,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":60.310978948,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":60.41143663,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":60.511735709999996,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":60.61116819,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":60.711725552,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":60.81139311,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":60.811440085,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":60.910870638,"data":"verifying sha256 digest ⠋ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":60.910914448,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":61.011478662,"data":"verifying sha256 digest ⠙ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":61.011522103,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":61.111014554,"data":"verifying sha256 digest ⠹ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":61.1110733,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":61.21373495,"data":"verifying sha256 digest ⠸ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":61.213768711,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":61.311800572,"data":"verifying sha256 digest ⠼ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":61.311841046,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":61.411678582,"data":"verifying sha256 digest ⠴ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":61.411721099,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":61.511265452,"data":"verifying sha256 digest ⠦ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":61.511305545,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":61.611853855,"data":"verifying sha256 digest ⠧ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":61.611911322,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":61.71146848,"data":"verifying sha256 digest ⠇ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":61.711517926,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":61.811041273,"data":"verifying sha256 digest ⠏ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":61.813698461,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":61.911594316,"data":"verifying sha256 digest ⠋ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":61.911641936,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":62.011177903,"data":"verifying sha256 digest ⠙ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":62.011216259,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":62.111866055,"data":"verifying sha256 digest ⠹ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":62.111916184,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":62.211263648,"data":"verifying sha256 digest ⠸ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":62.211299937,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":62.311921206,"data":"verifying sha256 digest ⠼ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":62.311959797,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":62.411661948,"data":"verifying sha256 digest ⠴ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":62.411715254,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":62.511110131,"data":"verifying sha256 digest ⠦ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":62.511148845,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":62.61162447,"data":"verifying sha256 digest ⠧ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":62.611661601,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":62.711530713,"data":"verifying sha256 digest ⠇ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":62.711572006,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":62.81124711,"data":"verifying sha256 digest ⠏ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":62.811292489,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":62.911827762,"data":"verifying sha256 digest ⠋ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":62.911882388,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":63.011371652,"data":"verifying sha256 digest ⠙ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":63.011412858,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":63.110901494,"data":"verifying sha256 digest ⠹ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":63.110992334,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":63.21150952,"data":"verifying sha256 digest ⠸ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":63.211549541,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":63.313945924,"data":"verifying sha256 digest ⠼ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":63.313978526,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":63.411598625,"data":"verifying sha256 digest ⠴ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":63.411638313,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":63.511182513,"data":"verifying sha256 digest ⠦ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":63.511224058,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":63.611840046,"data":"verifying sha256 digest ⠧ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":63.611879137,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":63.711555577,"data":"verifying sha256 digest ⠇ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":63.711609091,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":63.811203076,"data":"verifying sha256 digest ⠏ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":63.811239855,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":63.91196098,"data":"verifying sha256 digest ⠋ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":63.912011858,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":64.011629671,"data":"verifying sha256 digest ⠙ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":64.01167255,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":64.111312153,"data":"verifying sha256 digest ⠹ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":64.111355399,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":64.211846586,"data":"verifying sha256 digest ⠸ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":64.211889083,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":64.311475068,"data":"verifying sha256 digest ⠼ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":64.311520744,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":64.4108795,"data":"verifying sha256 digest ⠴ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":64.410924053,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":64.511479394,"data":"verifying sha256 digest ⠦ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":64.511525024,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":64.610847504,"data":"verifying sha256 digest ⠧ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":64.610881576,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":64.71171206,"data":"verifying sha256 digest ⠇ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":64.711758368,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":64.811274742,"data":"verifying sha256 digest ⠏ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":64.811327901,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":64.911853293,"data":"verifying sha256 digest ⠋ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":64.911912109,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":65.012538684,"data":"verifying sha256 digest ⠙ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":65.012914276,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":65.111453665,"data":"verifying sha256 digest ⠹ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":65.111488353,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":65.210944808,"data":"verifying sha256 digest ⠸ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":65.21098694,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":65.311483047,"data":"verifying sha256 digest ⠼ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":65.311543858,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":65.410961474,"data":"verifying sha256 digest ⠴ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":65.411001989,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":65.511627458,"data":"verifying sha256 digest ⠦ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":65.511668009,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":65.611609013,"data":"verifying sha256 digest ⠧ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":65.611651691,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":65.711211484,"data":"verifying sha256 digest ⠇ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":65.711253156,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":65.811771919,"data":"verifying sha256 digest ⠏ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":65.811811036,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":65.911379117,"data":"verifying sha256 digest ⠋ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":65.91143904,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":66.011848265,"data":"verifying sha256 digest ⠙ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":66.011881266,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":66.111488322,"data":"verifying sha256 digest ⠹ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":66.111528934,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":66.211133999,"data":"verifying sha256 digest ⠸ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":66.211169029,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":66.311913044,"data":"verifying sha256 digest ⠼ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":66.311952507,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":66.4114481,"data":"verifying sha256 digest ⠴ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":66.411485608,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":66.51103497,"data":"verifying sha256 digest ⠦ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":66.511098927,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":66.611426675,"data":"verifying sha256 digest ⠧ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":66.61146372,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":66.710981101,"data":"verifying sha256 digest ⠇ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":66.711020446,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":66.811467217,"data":"verifying sha256 digest ⠏ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":66.811505328,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":66.911149159,"data":"verifying sha256 digest ⠋ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":66.911216306,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":67.011726176,"data":"verifying sha256 digest ⠙ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":67.011759884,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":67.111312027,"data":"verifying sha256 digest ⠹ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":67.111352269,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":67.211895465,"data":"verifying sha256 digest ⠸ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":67.21193935,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":67.311434474,"data":"verifying sha256 digest ⠼ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":67.311475277,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":67.41093437399999,"data":"verifying sha256 digest ⠴ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":67.41097237,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":67.51162726,"data":"verifying sha256 digest ⠦ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":67.511665701,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":67.611206438,"data":"verifying sha256 digest ⠧ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":67.611245369,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":67.710898498,"data":"verifying sha256 digest ⠇ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":67.710938954,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":67.811389901,"data":"verifying sha256 digest ⠏ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":67.811445217,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":67.911947587,"data":"verifying sha256 digest ⠋ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":67.912068337,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":68.011594248,"data":"verifying sha256 digest ⠙ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":68.01163175,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":68.111186918,"data":"verifying sha256 digest ⠹ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":68.111225613,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":68.211797035,"data":"verifying sha256 digest ⠸ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":68.211829482,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":68.311418355,"data":"verifying sha256 digest ⠼ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":68.311467344,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":68.411880402,"data":"verifying sha256 digest ⠴ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":68.411914615,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":68.511271105,"data":"verifying sha256 digest ⠦ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":68.511308724,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":68.611529838,"data":"verifying sha256 digest ⠧ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":68.611563879,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":68.711579249,"data":"verifying sha256 digest ⠇ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":68.711615703,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":68.811375619,"data":"verifying sha256 digest ⠏ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":68.811420248,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":68.91176667,"data":"verifying sha256 digest ⠋ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":68.911826202,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":69.011376784,"data":"verifying sha256 digest ⠙ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":69.01142702,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":69.11092725500001,"data":"verifying sha256 digest ⠹ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":69.110965605,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":69.211493126,"data":"verifying sha256 digest ⠸ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":69.21153258,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":69.311226606,"data":"verifying sha256 digest ⠼ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":69.311265588,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":69.411764398,"data":"verifying sha256 digest ⠴ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":69.411834403,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":69.511443823,"data":"verifying sha256 digest ⠦ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":69.511481315,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":69.610941188,"data":"verifying sha256 digest ⠧ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":69.610989345,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":69.711403252,"data":"verifying sha256 digest ⠇ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":69.711444624,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":69.811147157,"data":"verifying sha256 digest ⠏ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":69.811209185,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":69.911639105,"data":"verifying sha256 digest ⠋ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":69.911680428,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":70.011208312,"data":"verifying sha256 digest ⠙ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":70.011247042,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":70.111907413,"data":"verifying sha256 digest ⠹ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":70.111974008,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":70.211426835,"data":"verifying sha256 digest ⠸ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":70.211469983,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":70.311260774,"data":"verifying sha256 digest ⠼ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":70.311302165,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":70.411704573,"data":"verifying sha256 digest ⠴ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":70.411751015,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":70.511417006,"data":"verifying sha256 digest ⠦ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":70.51145661300001,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":70.610990819,"data":"verifying sha256 digest ⠧ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":70.611037371,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":70.711600245,"data":"verifying sha256 digest ⠇ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":70.711642178,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":70.811288838,"data":"verifying sha256 digest ⠏ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":70.811335245,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":70.911858528,"data":"verifying sha256 digest ⠋ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":70.911899702,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":71.011597247,"data":"verifying sha256 digest ⠙ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":71.011654832,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":71.111266594,"data":"verifying sha256 digest ⠹ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":71.111303604,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":71.211800251,"data":"verifying sha256 digest ⠸ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":71.211832343,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":71.311276619,"data":"verifying sha256 digest ⠼ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":71.311309572,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":71.410956454,"data":"verifying sha256 digest ⠴ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":71.411017035,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":71.511464944,"data":"verifying sha256 digest ⠦ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":71.511520844,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":71.61095745,"data":"verifying sha256 digest ⠧ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":71.611013246,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":71.711544774,"data":"verifying sha256 digest ⠇ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":71.711600243,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":71.811259007,"data":"verifying sha256 digest ⠏ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":71.81130185,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":71.911572284,"data":"verifying sha256 digest ⠋ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":71.911609758,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":72.011265734,"data":"verifying sha256 digest ⠙ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":72.011332313,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":72.111859134,"data":"verifying sha256 digest ⠹ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":72.111904672,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":72.211635453,"data":"verifying sha256 digest ⠸ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":72.211677331,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":72.311225038,"data":"verifying sha256 digest ⠼ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":72.31126094,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":72.411876311,"data":"verifying sha256 digest ⠴ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":72.411915762,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":72.511636611,"data":"verifying sha256 digest ⠦ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":72.511669849,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":72.61130214,"data":"verifying sha256 digest ⠧ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":72.611341432,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":72.711935302,"data":"verifying sha256 digest ⠇ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":72.711974883,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":72.811479581,"data":"verifying sha256 digest ⠏ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":72.811522169,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":72.911041332,"data":"verifying sha256 digest ⠋ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":72.911101715,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":73.011663847,"data":"verifying sha256 digest ⠙ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":73.011732899,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":73.111238759,"data":"verifying sha256 digest ⠹ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":73.111277671,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":73.211945032,"data":"verifying sha256 digest ⠸ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":73.21199887,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":73.311591719,"data":"verifying sha256 digest ⠼ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":73.311648823,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":73.411307814,"data":"verifying sha256 digest ⠴ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":73.411349839,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":73.511833339,"data":"verifying sha256 digest ⠦ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":73.511873295,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":73.611487746,"data":"verifying sha256 digest ⠧ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":73.6115301,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":73.710938683,"data":"verifying sha256 digest ⠇ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":73.710983863,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":73.81150437,"data":"verifying sha256 digest ⠏ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":73.811548675,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":73.911175019,"data":"verifying sha256 digest ⠋ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":73.91121734,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":74.011697392,"data":"verifying sha256 digest ⠙ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":74.01174088,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":74.111349421,"data":"verifying sha256 digest ⠹ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":74.111390697,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":74.211964031,"data":"verifying sha256 digest ⠸ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":74.212005736,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":74.311539705,"data":"verifying sha256 digest ⠼ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":74.311578456,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":74.411217897,"data":"verifying sha256 digest ⠴ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":74.411266605,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":74.511753686,"data":"verifying sha256 digest ⠦ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":74.511795196,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":74.611425993,"data":"verifying sha256 digest ⠧ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":74.611466469,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":74.710990679,"data":"verifying sha256 digest ⠇ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":74.711031431,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":74.811678038,"data":"verifying sha256 digest ⠏ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":74.811719213,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":74.911300728,"data":"verifying sha256 digest ⠋ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":74.9113396,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":75.011748929,"data":"verifying sha256 digest ⠙ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":75.011788131,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":75.111626656,"data":"verifying sha256 digest ⠹ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":75.111702872,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":75.211245804,"data":"verifying sha256 digest ⠸ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":75.211292532,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":75.311940191,"data":"verifying sha256 digest ⠼ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":75.311993986,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":75.411614539,"data":"verifying sha256 digest ⠴ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":75.411658872,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":75.511233766,"data":"verifying sha256 digest ⠦ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":75.511274333,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":75.610923509,"data":"verifying sha256 digest ⠧ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":75.610964779,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":75.71153231,"data":"verifying sha256 digest ⠇ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":75.711569169,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":75.811245926,"data":"verifying sha256 digest ⠏ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":75.811283049,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":75.911727443,"data":"verifying sha256 digest ⠋ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":75.911772806,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":76.011469125,"data":"verifying sha256 digest ⠙ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":76.011510903,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":76.110999838,"data":"verifying sha256 digest ⠹ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":76.111038123,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":76.211523947,"data":"verifying sha256 digest ⠸ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":76.211563152,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":76.311158766,"data":"verifying sha256 digest ⠼ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":76.311204065,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":76.411742986,"data":"verifying sha256 digest ⠴ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":76.411782577,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":76.511364223,"data":"verifying sha256 digest ⠦ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":76.51140416,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":76.610981486,"data":"verifying sha256 digest ⠧ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":76.611022947,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":76.71166345,"data":"verifying sha256 digest ⠇ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":76.711704607,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":76.811334403,"data":"verifying sha256 digest ⠏ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":76.811372552,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":76.91183895,"data":"verifying sha256 digest ⠋ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":76.91188045,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":77.011389565,"data":"verifying sha256 digest ⠙ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":77.011429101,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":77.110943087,"data":"verifying sha256 digest ⠹ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":77.111002972,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":77.211529885,"data":"verifying sha256 digest ⠸ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":77.211586313,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":77.311156733,"data":"verifying sha256 digest ⠼ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":77.311194269,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":77.41186606,"data":"verifying sha256 digest ⠴ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":77.411910109,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":77.511524568,"data":"verifying sha256 digest ⠦ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":77.511561998,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":77.611242637,"data":"verifying sha256 digest ⠧ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":77.611283601,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":77.711887965,"data":"verifying sha256 digest ⠇ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":77.711943823,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":77.811606346,"data":"verifying sha256 digest ⠏ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":77.811646717,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":77.911136857,"data":"verifying sha256 digest ⠋ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":77.911178419,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":78.011745196,"data":"verifying sha256 digest ⠙ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":78.011787603,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":78.111398177,"data":"verifying sha256 digest ⠹ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":78.111465669,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":78.210948926,"data":"verifying sha256 digest ⠸ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":78.210991974,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":78.311711945,"data":"verifying sha256 digest ⠼ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":78.311755992,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":78.411371537,"data":"verifying sha256 digest ⠴ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":78.411441353,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":78.511144838,"data":"verifying sha256 digest ⠦ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":78.511188803,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":78.611500331,"data":"verifying sha256 digest ⠧ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":78.611538153,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":78.71125726,"data":"verifying sha256 digest ⠇ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":78.711316321,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":78.811757695,"data":"verifying sha256 digest ⠏ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":78.811808325,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":78.911310623,"data":"verifying sha256 digest ⠋ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":78.91135895,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":79.011981549,"data":"verifying sha256 digest ⠙ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":79.0120232,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":79.111581157,"data":"verifying sha256 digest ⠹ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":79.111643991,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":79.211279434,"data":"verifying sha256 digest ⠸ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":79.211325045,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":79.311834263,"data":"verifying sha256 digest ⠼ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":79.311873934,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":79.411517622,"data":"verifying sha256 digest ⠴ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":79.411574427,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":79.511140468,"data":"verifying sha256 digest ⠦ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":79.511179994,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":79.611608382,"data":"verifying sha256 digest ⠧ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":79.611654242,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":79.711169662,"data":"verifying sha256 digest ⠇ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":79.711213463,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":79.811745854,"data":"verifying sha256 digest ⠏ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":79.811786242,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":79.850570008,"data":"verifying sha256 digest ⠋ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[A\u001b[A\u001b[1Gpulling manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":79.850603279,"data":"pulling a3de86cd1c13: 100% ▕██████████████████▏ 5.2 GB                         \u001b[K\n"}
+,{"stream_name":"stderr","time":79.850609079,"data":"verifying sha256 digest \u001b[K\n"}
+,{"stream_name":"stderr","time":79.850613131,"data":"writing manifest \u001b[K\n"}
+,{"stream_name":"stderr","time":79.850617387,"data":"success \u001b[K\u001b[?25h\u001b[?2026l\n"}
+,{"stream_name":"stdout","time":79.852882332,"data":"$ cd /kaggle/working/repo/PPO_IBM/experiments/program_control \u0026\u0026 EVOLVE_RUNS_DIR=/kaggle/working/evolve EVOLVE_WORKERS=4 EVOLVE_DEADLINE_EPOCH=1790733694.3482692 PYTHONUNBUFFERED=1 python evolve.py auto --run qwen3_8b_v3r2 --model qwen3:8b --budget 16 2\u003e\u00261 | tee -a /kaggle/working/qwen3_8b_v3r2.log\n"}
+,{"stream_name":"stdout","time":133.860317028,"data":"  cand_000.py: fitness 11305 | median 12783 mg, p25 9827 mg, crash 0%, errors 0 [54s]\n"}
+,{"stream_name":"stdout","time":1934.890714085,"data":"  cand_001.py: fitness 6737 | median 8240 mg, p25 5234 mg, crash 0%, errors 0 [54s]\n"}
+,{"stream_name":"stdout","time":1934.890992316,"data":"    (writer qwen3:8b: 1747s, 1051 out / 4451 in tokens)\n"}
+,{"stream_name":"stdout","time":5562.196096583,"data":"  cand_002.py: fitness 11054 | median 11911 mg, p25 10197 mg, crash 0%, errors 0 [57s]\n"}
+,{"stream_name":"stdout","time":5562.196671252,"data":"    (writer qwen3:8b: 3570s, 1150 out / 8793 in tokens)\n"}
+,{"stream_name":"stdout","time":9162.311479542,"data":"  generation failed: timed out\n"}
+,{"stream_name":"stdout","time":11758.937043552,"data":"  cand_003.py: fitness 3031 | median 3555 mg, p25 2508 mg, crash 0%, errors 0 [72s]\n"}
+,{"stream_name":"stdout","time":11758.937600646,"data":"    (writer qwen3:8b: 2495s, 1394 out / 8992 in tokens)\n"}
+,{"stream_name":"stdout","time":15359.052769289,"data":"  generation failed: timed out\n"}
+,{"stream_name":"stdout","time":18024.425411804,"data":"  cand_004.py: fitness 11054 | median 11911 mg, p25 10197 mg, crash 0%, errors 0 [58s]\n"}
+,{"stream_name":"stdout","time":18024.425826499,"data":"    (writer qwen3:8b: 2578s, 1435 out / 9074 in tokens)\n"}
+,{"stream_name":"stdout","time":21624.504543909,"data":"  generation failed: timed out\n"}
+,{"stream_name":"stdout","time":24085.686178086,"data":"  cand_005.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]\n"}
+,{"stream_name":"stdout","time":27142.613289615,"data":"  cand_005.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]\n"}
+,{"stream_name":"stdout","time":27142.614202635,"data":"    (writer qwen3:8b: 2431s, 1339 out / 9159 in tokens)\n"}
+,{"stream_name":"stdout","time":30742.729438435,"data":"  generation failed: timed out\n"}
+,{"stream_name":"stdout","time":33055.116968695,"data":"  cand_006.py: fitness 10560 | median 11809 mg, p25 9311 mg, crash 0%, errors 0 [58s]\n"}
+,{"stream_name":"stdout","time":33055.117606521,"data":"    (writer qwen3:8b: 2224s, 1232 out / 9202 in tokens)\n"}
+,{"stream_name":"stdout","time":36655.233407067,"data":"  generation failed: timed out\n"}
+,{"stream_name":"stdout","time":39017.149988084,"data":"  cand_007.py: fitness 11054 | median 11911 mg, p25 10197 mg, crash 0%, errors 0 [59s]\n"}
+,{"stream_name":"stdout","time":39017.151391906,"data":"    (writer qwen3:8b: 2273s, 1222 out / 9287 in tokens)\n"}
+,{"stream_name":"stdout","time":39017.152802814,"data":"  deadline reached after 7 candidates; resume in a new session\n"}
+,{"stream_name":"stdout","time":39017.291223454,"data":"$ ollama rm qwen3:8b\n"}
+,{"stream_name":"stdout","time":39019.591982749,"data":"deleted 'qwen3:8b'\n"}
+,{"stream_name":"stdout","time":39019.836341575,"data":"[\n"}
+,{"stream_name":"stdout","time":39019.836451768,"data":" {\n"}
+,{"stream_name":"stdout","time":39019.836636329,"data":"  \"run\": \"qwen3_8b_v3r2\",\n"}
+,{"stream_name":"stdout","time":39019.836681677,"data":"  \"model\": \"qwen3:8b\",\n"}
+,{"stream_name":"stdout","time":39019.836743886,"data":"  \"candidates\": 7,\n"}
+,{"stream_name":"stdout","time":39019.836766813,"data":"  \"complete\": false,\n"}
+,{"stream_name":"stdout","time":39019.836848492,"data":"  \"best\": \"cand_000.py\",\n"}
+,{"stream_name":"stdout","time":39019.836914301,"data":"  \"search_fitness\": 11305.039056799998,\n"}
+,{"stream_name":"stdout","time":39019.836952212,"data":"  \"hours\": 10.83,\n"}
+,{"stream_name":"stdout","time":39019.836960494,"data":"  \"vram_mib\": 0\n"}
+,{"stream_name":"stdout","time":39019.836999829,"data":" }\n"}
+,{"stream_name":"stdout","time":39019.837246978,"data":"]\n"}
+,{"stream_name":"stdout","time":39019.837282742,"data":"done in 10.84 h\n"}
+,{"stream_name":"stderr","time":39024.143903491,"data":"\u001b[?2026h\u001b[?25l\u001b[1G⠙ \u001b[K\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[?25l\u001b[1G\u001b[K\u001b[?25h\u001b[?2026l\u001b[?25l\u001b[2K\u001b[1G\u001b[?25h/usr/local/lib/python3.12/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":39024.1440103,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":39024.755263734,"data":"/usr/local/lib/python3.12/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":39024.755380757,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":39026.3698579,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":39028.777119913,"data":"[NbConvertApp] Writing 274410 bytes to __results__.html\n"}
+]

@@ -10,7 +10,7 @@
   "enable_internet": true,
   "keywords": [],
   "dataset_sources": [],
-  "kernel_sources": [],
+  "kernel_sources": ["rajulkabir/pbr-writers-cpu-qwen3-8b-v3r3"],
   "competition_sources": [],
   "model_sources": []
 }

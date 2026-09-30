@@ -1,22 +1,22 @@
-  cand_000.py: fitness 11305 | median 12783 mg, p25 9827 mg, crash 0%, errors 0 [54s]
-  cand_001.py: fitness 6737 | median 8240 mg, p25 5234 mg, crash 0%, errors 0 [54s]
-    (writer qwen3:8b: 1747s, 1051 out / 4451 in tokens)
-  cand_002.py: fitness 11054 | median 11911 mg, p25 10197 mg, crash 0%, errors 0 [57s]
-    (writer qwen3:8b: 3570s, 1150 out / 8793 in tokens)
-  generation failed: timed out
-  cand_003.py: fitness 3031 | median 3555 mg, p25 2508 mg, crash 0%, errors 0 [72s]
-    (writer qwen3:8b: 2495s, 1394 out / 8992 in tokens)
-  generation failed: timed out
-  cand_004.py: fitness 11054 | median 11911 mg, p25 10197 mg, crash 0%, errors 0 [58s]
-    (writer qwen3:8b: 2578s, 1435 out / 9074 in tokens)
-  generation failed: timed out
-  cand_005.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
-  cand_005.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
-    (writer qwen3:8b: 2431s, 1339 out / 9159 in tokens)
-  generation failed: timed out
-  cand_006.py: fitness 10560 | median 11809 mg, p25 9311 mg, crash 0%, errors 0 [58s]
-    (writer qwen3:8b: 2224s, 1232 out / 9202 in tokens)
-  generation failed: timed out
-  cand_007.py: fitness 11054 | median 11911 mg, p25 10197 mg, crash 0%, errors 0 [59s]
-    (writer qwen3:8b: 2273s, 1222 out / 9287 in tokens)
-  deadline reached after 7 candidates; resume in a new session
+  cand_008.py: fitness 629 | median 786 mg, p25 471 mg, crash 0%, errors 0 [80s]
+    (writer qwen3:8b: 3094s, 1270 out / 9375 in tokens)
+  cand_009.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_009.py: fitness 10784 | median 11940 mg, p25 9628 mg, crash 0%, errors 0 [58s]
+    (writer qwen3:8b: 3002s, 1333 out / 9455 in tokens)
+  cand_010.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_010.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer qwen3:8b: 2916s, 1292 out / 9514 in tokens)
+  cand_011.py: fitness 11054 | median 11911 mg, p25 10197 mg, crash 0%, errors 0 [59s]
+    (writer qwen3:8b: 1599s, 1228 out / 9514 in tokens)
+  cand_012.py: fitness 0 | median 0 mg, p25 0 mg, crash 0%, errors 0 [73s]
+    (writer qwen3:8b: 2990s, 1325 out / 9557 in tokens)
+  cand_013.py: fitness 0 | median 0 mg, p25 0 mg, crash 0%, errors 0 [78s]
+    (writer qwen3:8b: 1650s, 1247 out / 9557 in tokens)
+  cand_014.py: fitness 69 | median 82 mg, p25 56 mg, crash 0%, errors 0 [76s]
+    (writer qwen3:8b: 1853s, 1376 out / 9557 in tokens)
+  cand_015.py: fitness 11222 | median 12275 mg, p25 10170 mg, crash 0%, errors 0 [59s]
+    (writer qwen3:8b: 1705s, 1268 out / 9557 in tokens)
+  cand_016.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+  cand_016.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer qwen3:8b: 3360s, 1471 out / 9714 in tokens)
+cand_000.py split=test D2 n=52: median 13132 mg, p25 10314 mg, crash 0%, time-avg od 1.04, errors 0, fitness 11723 [239s]

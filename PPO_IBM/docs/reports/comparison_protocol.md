@@ -34,6 +34,9 @@ controller exists it is frozen; nothing is changed after its `final` result is s
   `ADVANCE_TARGETS`), with `TD3_SEED` set and no early stop at a tier. No hyperparameter tuning
   is done for either core; the planned GPU tuning grid is withdrawn so that tuning cannot favour
   one core. The best-det checkpoint is selected on the training det-eval set only.
+  The trainer's built-in D0 capability abort (12 consecutive failed D0 capability checks) stays
+  on for both cores, as in every earlier run; an aborted run is scored on its last checkpoint
+  like any other and counts as not reaching D1. (Clarified 2026-10-01, before any RL result.)
 - CMA-ES gets roughly four times the writers' episode budget, which favours the baseline.
 
 ## 4. Evaluation and statistics

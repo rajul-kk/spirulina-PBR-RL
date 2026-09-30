@@ -28,3 +28,7 @@ Root: `E:\SEGP\.claude\worktrees\agent-a87c1f2edcbd1556b\PPO_IBM\experiments\pro
 - Keep `runs/<own run>/work/LAB_NOTEBOOK.md`: every experiment (command, why, what was learned)
   and every file read.
 - Deliver `runs/<own run>/work/controller.py` (numpy, math, collections only; no file/OS/network).
+
+## Operational note (from bb5/wb5 on)
+After wb4 ran a machine-wide `taskkill` on python (it killed nothing), bb5 and wb5 were also told
+not to kill processes they did not start. The rule is operational only and carries no design information.

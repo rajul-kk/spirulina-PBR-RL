@@ -1,31 +1,9 @@
-  cand_000.py: fitness 11305 | median 12783 mg, p25 9827 mg, crash 0%, errors 0 [59s]
-  cand_001.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
-  cand_001.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
-    (writer qwen3:8b: 1563s, 927 out / 4451 in tokens)
-  cand_002.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
-  cand_002.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
-    (writer qwen3:8b: 1698s, 797 out / 5788 in tokens)
-  cand_003.py: fitness 10656 | median 11976 mg, p25 9337 mg, crash 0%, errors 0 [61s]
-    (writer qwen3:8b: 1865s, 841 out / 5833 in tokens)
-  cand_004.py: fitness 10690 | median 12393 mg, p25 8987 mg, crash 0%, errors 0 [61s]
-    (writer qwen3:8b: 3055s, 942 out / 8719 in tokens)
-  cand_005.py: fitness 526 | median 639 mg, p25 414 mg, crash 0%, errors 0 [82s]
-    (writer qwen3:8b: 3366s, 1071 out / 8895 in tokens)
-  cand_006.py: fitness 265 | median 300 mg, p25 231 mg, crash 0%, errors 0 [79s]
-    (writer qwen3:8b: 3307s, 1076 out / 8969 in tokens)
-  cand_007.py: fitness 111 | median 122 mg, p25 101 mg, crash 0%, errors 0 [78s]
-    (writer qwen3:8b: 3258s, 1048 out / 9043 in tokens)
-  cand_008.py: fitness 10690 | median 12393 mg, p25 8987 mg, crash 0%, errors 0 [60s]
-    (writer qwen3:8b: 3042s, 1005 out / 9117 in tokens)
-  cand_009.py: fitness 10461 | median 12075 mg, p25 8847 mg, crash 0%, errors 0 [61s]
-    (writer qwen3:8b: 3323s, 1098 out / 9196 in tokens)
-  cand_010.py: REJECTED (SyntaxError: invalid syntax (<unknown>, line 67))
-  cand_010.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
-    (writer qwen3:8b: 3267s, 1075 out / 9275 in tokens)
-  cand_011.py: fitness -9773 | median 394 mg, p25 60 mg, crash 100%, errors 12 [21s]
-    (writer qwen3:8b: 1720s, 1062 out / 9275 in tokens)
-  cand_012.py: fitness 10197 | median 11948 mg, p25 8446 mg, crash 0%, errors 0 [62s]
-    (writer qwen3:8b: 3268s, 1038 out / 9306 in tokens)
-  cand_013.py: fitness 10690 | median 12393 mg, p25 8987 mg, crash 0%, errors 0 [58s]
-    (writer qwen3:8b: 3346s, 1078 out / 9340 in tokens)
-  deadline reached after 13 candidates; resume in a new session
+  generation failed: timed out
+  cand_014.py: fitness 10690 | median 12393 mg, p25 8987 mg, crash 0%, errors 0 [58s]
+    (writer qwen3:8b: 1989s, 1038 out / 9350 in tokens)
+  generation failed: timed out
+  cand_015.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [0s]
+    (writer qwen3:8b: 1999s, 1024 out / 9366 in tokens)
+  cand_016.py: fitness -10000 | median 0 mg, p25 0 mg, crash 100%, errors 12 [16s]
+    (writer qwen3:8b: 2173s, 1076 out / 9366 in tokens)
+cand_000.py split=test D2 n=52: median 13132 mg, p25 10314 mg, crash 0%, time-avg od 1.04, errors 0, fitness 11723 [295s]

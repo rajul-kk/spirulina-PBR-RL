@@ -1,0 +1,4 @@
+{"jump":1,"q_ti":0.1,"q_caf":0.0012,"jump_h":3}                        mean 0.1775 med 0.1218 | start 0.0687 sp 0.0889 feed 0.0141 quiet 0.0059 | Tmax 329.5
+{"jump":1,"jump_h":3}                                                  mean 0.1784 med 0.1270 | start 0.0687 sp 0.0892 feed 0.0133 quiet 0.0072 | Tmax 329.3
+{"jump":1,"q_ti":0.07,"q_caf":0.0009,"jump_h":2.5,"jump_L":3}          mean 0.1788 med 0.1297 | start 0.0687 sp 0.0888 feed 0.0138 quiet 0.0074 | Tmax 329.3
+{"jump":1,"q_ti":0.1,"q_caf":0.0012,"jump_h":3,"jump_scale":0.3}       mean 0.1772 med 0.1212 | start 0.0686 sp 0.0889 feed 0.0142 quiet 0.0055 | Tmax 329.5

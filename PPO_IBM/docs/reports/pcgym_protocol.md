@@ -42,3 +42,12 @@ No hyperparameter tuning of SAC or of CMA-ES.
 One PC-Gym model and one scenario family; a single-loop problem that PID suits well, so the
 room above the baseline may be smaller than on the photobioreactor. The SAC baseline is
 memoryless apart from a 4-sample stack. No NMPC oracle (do-mpc is not installed).
+
+## 5. Caveat recorded 2026-10-01, after two writers had reported and before most were scored
+The black-box writers are not blind on this benchmark. bb1 and bb2 both recognised the plant as
+the standard textbook exothermic CSTR; bb1 adopted the published constants (which are PC-Gym's)
+after finding them indistinguishable from its own fit. A public textbook model is in the
+language model's training data, so "manual only" still carries the model. The white-box vs
+black-box comparison is therefore not a clean test of source access here (it is on the
+unpublished photobioreactor); the writers vs CMA-ES-PID and writers vs SAC comparisons are
+unaffected.

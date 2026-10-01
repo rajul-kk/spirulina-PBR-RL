@@ -39,7 +39,9 @@ import numpy as np
 
 MAX_CELLS = 7500      # TD3.MAX_CELLS; not imported so workers skip loading torch
 ADVERSARIAL_MAX = 80  # at/below this the episode is scored on survival, not yield
-EPISODE_WALL_S = 300  # a program slower than this per episode forfeits the rest of it
+# A program slower than this per episode forfeits the rest of it. PC_EPISODE_WALL_S raises the
+# limit when scoring on a loaded machine, where the wall clock says nothing about the controller.
+EPISODE_WALL_S = float(os.environ.get("PC_EPISODE_WALL_S", "300"))
 
 SENSOR_DOC = """\
 obs keys (all sensor readings carry noise; at D1+ also drift, lag and a pH bias):
@@ -100,7 +102,7 @@ def run_episode(job):
     t_start = time.time()
     while not done:
         if t % 500 == 0 and time.time() - t_start > EPISODE_WALL_S:
-            err = f"TimeoutError: episode exceeded {EPISODE_WALL_S}s"
+            err = f"TimeoutError: episode exceeded {EPISODE_WALL_S:.0f}s"
             break
         try:
             stir, light, frac = ctrl.act(_ctrl_obs(obs, t, env if privileged else None))

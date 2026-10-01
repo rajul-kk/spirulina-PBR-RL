@@ -44,6 +44,11 @@ controller exists it is frozen; nothing is changed after its `final` result is s
   disjoint from every seed used in training, search, pilot trials and the earlier `test` split.
   Each frozen controller is run on it once. The 52-episode `test` split, which has already been
   looked at during development, is kept for development only.
+- Re-scoring: a `final` run is repeated only when the harness itself invalidated episodes. This
+  happened once (2026-10-01, TD3 LRU seed 3): two of 200 episodes hit the harness's 300 s
+  per-episode wall-clock guard because the laptop was overloaded. The run was moved to
+  `results/final/invalid/` and repeated with the guard lifted (`PC_EPISODE_WALL_S`); episodes
+  are deterministic given the seed, so only the two cut-off episodes can differ.
 - Primary endpoint: mean paired per-episode harvest difference (g) over yield-scored episodes
   (initial culture > 80 cells). Secondary: median and 25th-percentile harvest, crash rate; for
   TD3 also steps to reach D1/D2 and the number of seeds reaching D2.

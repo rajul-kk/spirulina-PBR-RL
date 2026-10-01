@@ -1,0 +1,16 @@
+{
+  "id": "rajulkabir/pbr-rl-v3-gru-s4",
+  "title": "pbr-rl-v3-gru-s4",
+  "code_file": "run.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "keywords": [],
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "competition_sources": [],
+  "model_sources": []
+}

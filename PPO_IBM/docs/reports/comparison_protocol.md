@@ -66,3 +66,16 @@ controller exists it is frozen; nothing is changed after its `final` result is s
 - The physics-v2 LRU/LSTM pilot (v62-v65, two seeds per core): reported as a pilot, since two
   seeds per arm cannot support a test.
 - Compute per arm: simulated episodes, wall-clock hours, hardware.
+
+## 6. Exploratory arms added 2026-10-01 (after the first RL results; not in the family)
+Two more recurrent cores for TD3, same configuration and budget, seeds 1-5 each, pinned to tag
+`rl-protocol-v2` (which adds the cores and leaves the LSTM and LRU code paths unchanged):
+- GRU (`nn.GRU`), the usual alternative to the LSTM.
+- RTU, the Recurrent Trace Unit of Elelimy et al. (NeurIPS 2024): a complex-valued diagonal
+  recurrence with the nonlinearity after it (`td3/rtu_core.py`). Our "LRU" core is a real-valued
+  diagonal, i.e. the RTU with zero phase, so RTU vs LRU isolates the effect of oscillating
+  (complex-eigenvalue) memory. The paper trains RTUs with real-time recurrent learning; here
+  every core is trained by backpropagation through the 60-step replay window, so only the
+  architecture differs.
+They were chosen after seeing that the LSTM stalls at D0, so their comparisons with LRU and LSTM
+are reported as exploratory, with the same statistics but outside the Holm family.

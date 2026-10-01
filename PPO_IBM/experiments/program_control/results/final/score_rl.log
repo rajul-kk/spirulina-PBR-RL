@@ -6,3 +6,6 @@ td3_actor.py split=final D2 n=200: median 2975 mg, p25 2226 mg, crash 0%, time-a
 td3_actor.py split=final D2 n=200: median 11858 mg, p25 9800 mg, crash 0%, time-avg od 1.01, errors 0, fitness 10829 [1916s]
 td3_actor.py split=final D2 n=200: median 5146 mg, p25 3431 mg, crash 88%, time-avg od 0.03, errors 0, fitness -4462 [1248s]
 td3_actor.py split=final D2 n=200: median 12601 mg, p25 10759 mg, crash 0%, time-avg od 0.78, errors 0, fitness 11680 [1795s]
+td3_actor.py split=final D2 n=200: median 901 mg, p25 605 mg, crash 1%, time-avg od 2.03, errors 2, fitness 653 [7231s]
+td3_actor.py split=final D2 n=200: median 12336 mg, p25 9823 mg, crash 0%, time-avg od 1.41, errors 0, fitness 11079 [2067s]
+results/final/score_rl.sh: line 14: /final/td3_lru__s3.json: No such file or directory

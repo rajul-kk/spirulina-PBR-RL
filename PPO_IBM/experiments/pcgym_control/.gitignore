@@ -1,0 +1,3 @@
+runs/*/trials/*.csv
+results/sac/*/sac.zip
+__pycache__/

@@ -1,0 +1,44 @@
+# Protocol: controller-writing comparison on a public benchmark (PC-Gym CSTR)
+
+Written 2026-10-01, before any arm was run on the `final` split. Purpose: check whether the
+photobioreactor result (LLM-written controllers beat classical tuning and RL; source access
+helps) holds on a simulator we did not build. Same design as `comparison_protocol.md`.
+
+## 1. Task
+PC-Gym's exothermic CSTR model (`cstr_ode`, pcgym 0.1.6, dynamics unmodified), wrapped in
+`experiments/pcgym_control/tasks.py`:
+- 120 samples over 26 minutes (PC-Gym's standard horizon). Manipulated: jacket temperature
+  295-302 K. Measured: Ca (noise sd 0.002 mol/L), T (sd 0.2 K). Setpoint on Ca, two step
+  changes per batch within 0.86-0.90 mol/L.
+- Unmeasured step disturbances: feed temperature 348.5-351.5 K and feed concentration
+  0.98-1.02 mol/L, one or two changes each. Random start-up state.
+- Cost per batch = mean over samples of ((Ca - setpoint) / 0.01)^2 on the true state; lower is
+  better. A batch whose temperature exceeds 335 K is counted as a runaway (reported separately).
+
+## 2. Arms and budgets
+| Arm | Runs | Budget per run | Evaluated |
+|---|---|---|---|
+| White-box writer (Claude Opus: manual, task and model source, privileged pilot logs) | wb1-wb5 | 300 pilot batches | `runs/wbN/work/controller.py` |
+| Black-box writer (Claude Opus: manual and pilot logs only) | bb1-bb5 | 300 pilot batches | `runs/bbN/work/controller.py` |
+| CMA-ES over PID gains (`controllers/pid.py`: kp, ki, kd, bias) | seeds 0-4 | 97 evaluations x 12 search batches = 1,164 batches | `best.json` gains |
+| SAC (Stable-Baselines3 defaults, 4-sample observation stack) | seeds 1-5 | 100,000 steps = 833 batches | final policy |
+| Reference: untuned PID (default gains) | 1 | none | fixed |
+
+Writer briefs: `experiments/pcgym_control/WRITER_BRIEFS.md`; prompts identical across repeats
+except for the run name. CMA-ES and SAC each get about 3-4 times the writers' batch budget.
+No hyperparameter tuning of SAC or of CMA-ES.
+
+## 3. Evaluation and statistics
+- `final` split: 200 batches, seeds 20,000,000+, disjoint from search (3,000,000+), pilot
+  (5,000,000+ in a block per run) and SAC training (7,000,000+) seeds. Each frozen controller is
+  scored once.
+- Primary endpoint: mean paired per-batch cost difference. Secondary: median cost, runaway rate.
+- Hierarchical bootstrap over runs and batches (20,000 draws); exact seed-level permutation test
+  on per-run mean cost; Holm correction over the pre-registered family: white-box vs black-box;
+  black-box vs CMA-ES-PID; white-box vs CMA-ES-PID; black-box vs SAC; white-box vs SAC.
+- Script: `experiments/pcgym_control/results/final/compare.py`.
+
+## 4. Limits stated in advance
+One PC-Gym model and one scenario family; a single-loop problem that PID suits well, so the
+room above the baseline may be smaller than on the photobioreactor. The SAC baseline is
+memoryless apart from a 4-sample stack. No NMPC oracle (do-mpc is not installed).

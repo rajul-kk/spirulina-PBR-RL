@@ -1,4 +1,4 @@
-"""Core-agnostic loading for TD3 actor checkpoints (LSTM or diagonal LRU).
+"""Core-agnostic loading for TD3 actor checkpoints (LSTM, diagonal LRU, GRU or RTU).
 (full rationale: docs/decision_history.md#--legacy-actor_io-py-1)"""
 
 import torch
@@ -11,8 +11,12 @@ def detect_core(state_dict):
     written -- no format change and nothing to keep in sync.
     """
     keys = list(state_dict.keys())
+    if any(k.endswith("theta_log") for k in keys):
+        return "rtu"
     if any(k.endswith("nu_log") for k in keys):
         return "lru"
+    if any("gru.weight_ih_l0" in k for k in keys):
+        return "gru"
     if any("weight_ih_l0" in k for k in keys):
         return "lstm"
     raise ValueError(
@@ -32,6 +36,9 @@ def load_actor(path, obs_dim=None, action_dim=None, device=None):
 
     if core == "lru":
         from TD3_lru import LRUActor as Cls
+    elif core in ("gru", "rtu"):
+        from TD3_cores import make_classes
+        Cls = make_classes(core)[0]
     else:
         Cls = RecurrentActor
 
@@ -51,6 +58,9 @@ def load_critic(path, obs_dim=None, action_dim=None, device=None):
 
     if core == "lru":
         from TD3_lru import LRUCritic as Cls
+    elif core in ("gru", "rtu"):
+        from TD3_cores import make_classes
+        Cls = make_classes(core)[1]
     else:
         Cls = RecurrentCritic
 

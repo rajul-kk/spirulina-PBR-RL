@@ -1,7 +1,7 @@
 """Kaggle GPU job: one TD3 tuning run on physics v3, resumable across 12 h sessions.
 
 Env (set by the per-session wrapper in kaggle/rl_sessions/<name>/run.py):
-  RL_CORE      lstm | lru
+  RL_CORE      lstm | lru | gru | rtu
   RL_ENV       JSON dict of extra environment variables (TD3_BC_COEF, PBR_HARVEST_REWARD, ...)
   REPO_BRANCH  branch to clone
 Resume: attach the previous session's output as a kernel source; its model_data/ is copied in
@@ -46,8 +46,11 @@ os.makedirs(f"{PPO}/logs", exist_ok=True)
 
 env = dict(os.environ, PYTHONIOENCODING="utf-8", TD3_THREADS="4", TD3_HIDDEN_RESET_INTERVAL="600",
            TD3_STEPS="2000000", **{k: str(v) for k, v in EXTRA.items()})
-script = "td3/TD3_lru.py" if CORE == "lru" else "td3/TD3.py"
-cmd = ["python", "-u", script] + (["--resume"] if resume else [])
+if CORE in ("gru", "rtu"):
+    cmd = ["python", "-u", "td3/TD3_cores.py", "--core", CORE]
+else:
+    cmd = ["python", "-u", "td3/TD3_lru.py" if CORE == "lru" else "td3/TD3.py"]
+cmd += ["--resume"] if resume else []
 t0 = time.time()
 with open(f"{OUT}/train.log", "a") as log:
     proc = subprocess.Popen(cmd, cwd=PPO, env=env, stdout=log, stderr=subprocess.STDOUT)

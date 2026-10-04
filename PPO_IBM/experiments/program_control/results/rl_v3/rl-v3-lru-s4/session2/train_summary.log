@@ -1,0 +1,67 @@
+--- TD3+LRU | core=DiagonalLRU | threads=4 ---
+--- TD3 (Twin Delayed DDPG) for GeneticPhotobioreactorEnv ---
+Device: cpu | obs_dim=6 action_dim=3 | gamma=0.9995
+Budget: 2,000,000 steps | Gate: project dual (stochastic + deterministic)
+Hidden reset every 600 steps | SEQ_LEN=60
+Demo replay: 24 scripted-expert episodes, 25% of every training batch, never evicted
+
+  [RESUME] step=1,600,000 D0 online_buffer=242 episodes
+  Collecting 24 scripted-expert demonstration episodes (mix {0: 0.4, 1: 0.4, 2: 0.2})...
+    demo  1/24  D1  harvested=16472.0mg  time_avg_od=0.7819
+    demo  2/24  D0  harvested=14967.6mg  time_avg_od=0.7864
+    demo  3/24  D1  harvested= 9512.9mg  time_avg_od=0.7553
+    demo  4/24  D2  harvested=14604.8mg  time_avg_od=0.7570
+    demo  5/24  D2  harvested=11221.2mg  time_avg_od=0.7856
+    demo  6/24  D0  harvested= 8095.5mg  time_avg_od=0.7287
+    demo  7/24  D0  harvested=13141.0mg  time_avg_od=0.7440
+    demo  8/24  D0  harvested=11349.5mg  time_avg_od=0.7505
+    demo  9/24  D1  harvested=10279.9mg  time_avg_od=0.7492
+    demo 10/24  D2  harvested=10827.1mg  time_avg_od=0.7718
+    demo 11/24  D1  harvested= 7152.9mg  time_avg_od=0.7281
+    demo 12/24  D1  harvested=13293.8mg  time_avg_od=0.7818
+    demo 13/24  D1  harvested=13952.5mg  time_avg_od=0.8265
+    demo 14/24  D0  harvested= 8316.6mg  time_avg_od=0.7313
+    demo 15/24  D1  harvested=13704.1mg  time_avg_od=0.7669
+    demo 16/24  D2  harvested= 9602.2mg  time_avg_od=0.7217
+    demo 17/24  D0  harvested=13990.4mg  time_avg_od=0.7773
+    demo 18/24  D0  harvested=12074.7mg  time_avg_od=0.7931
+    demo 19/24  D0  harvested=11215.9mg  time_avg_od=0.7621
+    demo 20/24  D1  harvested=12993.9mg  time_avg_od=0.7592
+    demo 21/24  D1  harvested=10273.4mg  time_avg_od=0.7645
+    demo 22/24  D1  harvested=11451.0mg  time_avg_od=0.7313
+    demo 23/24  D0  harvested=13399.0mg  time_avg_od=0.7488
+    demo 24/24  D0  harvested=13973.0mg  time_avg_od=0.8555
+
+[Chunk] train_diff=D0 | mastery_diff=D0 | init=276 | steps=100,000
+
+  [Stoch] D0 cvar10_harvest=2063.7
+  [Det] eps=8 harvest_mg=15783.0 p25=6871.2 time_avg_od=1.6118 crash=44.4%
+  [Det/bucket] 120:2566*  250:5090*  380:7465*  700:16150  1100:15416  1500:17681  2500:19526  4000:24030  45:850*
+  [Det/window] full-episode median=15783.0  back-half median=8723.7  back-half share=55%
+  Curriculum hold D0 | chunk_eps=15 eps=38 harvest_mg=4221.9 p25=2716.3 time_avg_od=0.0552 crash=65.79% adv=0/2 dem=0/2 capfail=2/12
+
+[Chunk] train_diff=D0 | mastery_diff=D0 | init=358 | steps=100,000
+
+  [Stoch] D0 cvar10_harvest=2319.8
+  [Det] eps=8 harvest_mg=19257.8 p25=6714.7 time_avg_od=1.1847 crash=33.3%
+  [Det/bucket] 120:2617*  250:5083*  380:7259  700:16875  1100:21640  1500:24029  2500:31650  4000:41231  45:806*
+  [Det/window] full-episode median=19257.8  back-half median=10352.9  back-half share=54%
+  Curriculum hold D0 | chunk_eps=17 eps=40 harvest_mg=4986.4 p25=3074.1 time_avg_od=0.0541 crash=67.50% adv=0/2 dem=0/2 capfail=3/12
+
+[Chunk] train_diff=D0 | mastery_diff=D0 | init=216 | steps=100,000
+
+  [Stoch] D0 cvar10_harvest=2103.8
+  [Det] eps=8 harvest_mg=15126.3 p25=4854.5 time_avg_od=1.2767 crash=55.6%
+  [Det/bucket] 120:1717*  250:3448*  380:5323*  700:12927*  1100:17326  1500:27529  2500:23633  4000:29765  45:606*
+  [Det/window] full-episode median=15126.3  back-half median=6609.4  back-half share=44%
+  Curriculum hold D0 | chunk_eps=18 eps=40 harvest_mg=5124.0 p25=3536.1 time_avg_od=0.0406 crash=75.00% adv=0/2 dem=0/2 capfail=4/12
+
+[Chunk] train_diff=D0 | mastery_diff=D0 | init=330 | steps=100,000
+
+  [Stoch] D0 cvar10_harvest=1885.8
+  [Det] eps=8 harvest_mg=12516.4 p25=9525.8 time_avg_od=2.4473 crash=0.0%
+  [Det/bucket] 120:6473  250:8127  380:9992  700:11216  1100:13816  1500:15690  2500:21289  4000:27265  45:3433
+  [Det/window] full-episode median=12516.4  back-half median=7451.7  back-half share=60%
+  Curriculum hold D0 | chunk_eps=18 eps=40 harvest_mg=4878.3 p25=3767.6 time_avg_od=0.0380 crash=67.50% adv=0/2 dem=0/2 capfail=0/12
+
+--- Training Complete. Final model saved. ---

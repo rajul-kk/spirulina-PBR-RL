@@ -4,3 +4,5 @@ controller.py task=cstr split=final n=200: mean cost 0.187, median 0.143, p75 0.
 controller.py task=cstr split=final n=200: mean cost 0.183, median 0.139, p75 0.231, runaway 0%, errors 0 [293s]
 controller.py task=cstr split=final n=200: mean cost 0.172, median 0.126, p75 0.226, runaway 0%, errors 0 [87s]
 controller.py task=cstr split=final n=200: mean cost 0.186, median 0.144, p75 0.240, runaway 0%, errors 0 [67s]
+controller.py task=cstr split=final n=200: mean cost 0.198, median 0.149, p75 0.246, runaway 0%, errors 0 [158s]
+controller.py task=cstr split=final n=200: mean cost 0.178, median 0.130, p75 0.231, runaway 0%, errors 0 [94s]

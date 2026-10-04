@@ -1,0 +1,30 @@
+175 yield-scored episodes per run
+
+arm            runs  median g   p25 g  crash   per-run medians
+whitebox          5     19.00   16.68     0%   [18.93, 19.55, 19.0, 18.86, 19.36]
+blackbox          5     17.10   15.14     0%   [17.38, 16.25, 18.07, 17.25, 17.67]
+cmaes             5     13.23   11.41     0%   [13.39, 13.42, 13.36, 13.87, 13.26]
+ref-oracle        1     13.12   11.17     0%   [13.12]
+ref-expert        1     13.08   11.19     0%   [13.08]
+td3_lru           5      6.87    5.47     0%   [2.97, 9.76, 0.9, 8.4, 12.0]
+td3_lstm          5      3.00    2.11    40%   [3.07, 5.15, 5.17, 0.82, 0.54]
+
+Pre-registered comparisons (mean paired difference, hierarchical 95% CI, Holm-adjusted p)
+  whitebox - blackbox: +1.94 g [+1.46, +2.39]  p_holm=<5e-05  whitebox better in 100% of episodes
+  blackbox - cmaes: +3.60 g [+3.19, +4.04]  p_holm=<5e-05  blackbox better in 100% of episodes
+  whitebox - cmaes: +5.53 g [+5.22, +5.84]  p_holm=<5e-05  whitebox better in 100% of episodes
+  td3_lru - td3_lstm: +1.64 g [-3.56, +6.31]  p_holm=0.5101  td3_lru better in 83% of episodes
+  td3_lru - cmaes: -8.36 g [-13.24, -3.99]  p_holm=<5e-05  td3_lru better in 0% of episodes
+  td3_lstm - cmaes: -10.00 g [-11.92, -8.17]  p_holm=<5e-05  td3_lstm better in 0% of episodes
+
+  seed-level exact permutation test whitebox vs blackbox (5 v 5 runs, per-run medians): p=0.0079
+
+  seed-level exact permutation test blackbox vs cmaes (5 v 5 runs, per-run medians): p=0.0079
+
+  seed-level exact permutation test whitebox vs cmaes (5 v 5 runs, per-run medians): p=0.0079
+
+  seed-level exact permutation test td3_lru vs td3_lstm (5 v 5 runs, per-run medians): p=0.1349
+
+  seed-level exact permutation test td3_lru vs cmaes (5 v 5 runs, per-run medians): p=0.0079
+
+  seed-level exact permutation test td3_lstm vs cmaes (5 v 5 runs, per-run medians): p=0.0079

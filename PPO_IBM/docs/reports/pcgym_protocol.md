@@ -51,3 +51,17 @@ language model's training data, so "manual only" still carries the model. The wh
 black-box comparison is therefore not a clean test of source access here (it is on the
 unpublished photobioreactor); the writers vs CMA-ES-PID and writers vs SAC comparisons are
 unaffected.
+
+## 6. Access audit, 2026-10-05 (after all arms were scored)
+Every tool call in the ten writer transcripts was checked. The black-box writers read only
+`PLANT_MANUAL.md` and their own run directory: no repository source, no `pcgym` package, no web
+search. The prior knowledge came from the language model itself. All five assumed the textbook
+model structure. bb1 and bb5 ship the exact published constants (k0 7.2e10, E/R 8750, which are
+PC-Gym's), recalled from memory and confirmed on pilot data. bb2, bb3 and bb4 ship constants
+fitted to their own pilot batches (E/R 8604-9012). Final mean cost: recalled 0.187 and 0.204,
+fitted 0.185, 0.198 and 0.186, so recalled constants gave no visible edge. The control strategy
+the writers chose (an EKF that also estimates the feed disturbances, plus NMPC) is generic
+control-engineering knowledge, not specific to this benchmark. Writers vs CMA-ES-PID and SAC
+therefore compare an agent that knows chemical engineering with two methods that start from
+nothing, which is part of what is being measured. The photobioreactor study is the test without
+that prior.

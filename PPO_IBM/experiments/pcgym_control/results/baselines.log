@@ -50,3 +50,27 @@ gen  5: best-of-gen cost 0.235 | best-so-far 0.234 | sigma 0.183 [55s]
 gen  6: best-of-gen cost 0.226 | best-so-far 0.226 | sigma 0.176 [64s]
 gen  7: best-of-gen cost 0.213 | best-so-far 0.213 | sigma 0.175 [66s]
 gen  8: best-of-gen cost 0.208 | best-so-far 0.208 | sigma 0.177 [69s]
+gen  9: best-of-gen cost 0.208 | best-so-far 0.208 | sigma 0.171 [86s]
+gen 10: best-of-gen cost 0.209 | best-so-far 0.208 | sigma 0.173 [97s]
+gen 11: best-of-gen cost 0.206 | best-so-far 0.206 | sigma 0.154 [104s]
+gen 12: best-of-gen cost 0.210 | best-so-far 0.206 | sigma 0.126 [94s]
+pid.py task=cstr split=final n=200: mean cost 0.292, median 0.235, p75 0.381, runaway 0%, errors 0 [43s]
+start: mean cost 0.439 runaway 0%
+gen  1: best-of-gen cost 0.723 | best-so-far 0.382 | sigma 0.153 [65s]
+gen  2: best-of-gen cost 0.677 | best-so-far 0.382 | sigma 0.150 [88s]
+gen  3: best-of-gen cost 0.238 | best-so-far 0.238 | sigma 0.160 [86s]
+gen  4: best-of-gen cost 0.275 | best-so-far 0.238 | sigma 0.154 [101s]
+gen  5: best-of-gen cost 0.227 | best-so-far 0.227 | sigma 0.147 [81s]
+gen  6: best-of-gen cost 0.238 | best-so-far 0.227 | sigma 0.127 [48s]
+gen  7: best-of-gen cost 0.218 | best-so-far 0.218 | sigma 0.113 [52s]
+gen  8: best-of-gen cost 0.213 | best-so-far 0.213 | sigma 0.107 [50s]
+gen  9: best-of-gen cost 0.214 | best-so-far 0.213 | sigma 0.102 [50s]
+gen 10: best-of-gen cost 0.215 | best-so-far 0.213 | sigma 0.107 [49s]
+gen 11: best-of-gen cost 0.213 | best-so-far 0.213 | sigma 0.103 [43s]
+gen 12: best-of-gen cost 0.208 | best-so-far 0.208 | sigma 0.126 [37s]
+pid.py task=cstr split=final n=200: mean cost 0.294, median 0.238, p75 0.383, runaway 0%, errors 0 [24s]
+sac seed 1: final mean cost 0.237, median 0.200, runaway 0%
+sac seed 2: final mean cost 0.254, median 0.213, runaway 0%
+sac seed 3: final mean cost 0.240, median 0.194, runaway 0%
+sac seed 4: final mean cost 0.242, median 0.197, runaway 0%
+sac seed 5: final mean cost 0.237, median 0.191, runaway 0%

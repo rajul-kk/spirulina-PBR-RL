@@ -1,0 +1,6 @@
+c3_mht.py    {"n_hyp": 32}                            n=300 mean 0.1651 med 0.1245 max 0.845 sem 0.0080 | startup 0.0656 sp 0.0819 dist 0.0130 quiet 0.0045 | runaway 0 tmax 329.5
+c3_mht.py    {"q_T": 3e-4, "q_ca": 3e-6}              n=300 mean 0.1655 med 0.1254 max 0.846 sem 0.0080 | startup 0.0656 sp 0.0816 dist 0.0136 quiet 0.0046 | runaway 0 tmax 329.5
+c3_mht.py    {"q_T": 3e-3, "q_ca": 3e-5}              n=300 mean 0.1655 med 0.1256 max 0.846 sem 0.0080 | startup 0.0656 sp 0.0816 dist 0.0136 quiet 0.0046 | runaway 0 tmax 329.5
+c3_mht.py    {"haz_scale": 2.0}                       n=300 mean 0.1660 med 0.1253 max 0.848 sem 0.0080 | startup 0.0656 sp 0.0819 dist 0.0133 quiet 0.0053 | runaway 0 tmax 329.5
+c3_mht.py    {"haz_scale": 0.5}                       n=300 mean 0.1659 med 0.1268 max 0.840 sem 0.0080 | startup 0.0656 sp 0.0819 dist 0.0142 quiet 0.0041 | runaway 0 tmax 329.5
+c3_mht.py    {"gn_iters": 2}                          n=300 mean 0.1655 med 0.1251 max 0.846 sem 0.0080 | startup 0.0656 sp 0.0816 dist 0.0136 quiet 0.0046 | runaway 0 tmax 329.5

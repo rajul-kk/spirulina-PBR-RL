@@ -11,3 +11,5 @@ td3_actor.py split=final D2 n=200: median 12336 mg, p25 9823 mg, crash 0%, time-
 results/final/score_rl.sh: line 14: /final/td3_lru__s3.json: No such file or directory
 td3_actor.py split=final D2 n=200: median 901 mg, p25 605 mg, crash 0%, time-avg od 2.03, errors 0, fitness 753 [6888s]
 results/final/score_rl.sh: line 15: _s3.json: command not found
+td3_actor.py split=final D2 n=200: median 12003 mg, p25 9916 mg, crash 0%, time-avg od 1.32, errors 0, fitness 10960 [1584s]
+td3_actor.py split=final D2 n=200: median 12587 mg, p25 10990 mg, crash 0%, time-avg od 0.97, errors 0, fitness 11788 [1238s]

@@ -13,3 +13,6 @@ td3_actor.py split=final D2 n=200: median 901 mg, p25 605 mg, crash 0%, time-avg
 results/final/score_rl.sh: line 15: _s3.json: command not found
 td3_actor.py split=final D2 n=200: median 12003 mg, p25 9916 mg, crash 0%, time-avg od 1.32, errors 0, fitness 10960 [1584s]
 td3_actor.py split=final D2 n=200: median 12587 mg, p25 10990 mg, crash 0%, time-avg od 0.97, errors 0, fitness 11788 [1238s]
+td3_actor.py split=final D2 n=200: median 8396 mg, p25 6943 mg, crash 0%, time-avg od 0.23, errors 0, fitness 7670 [1097s]
+td3_actor.py split=final D2 n=200: median 1157 mg, p25 883 mg, crash 0%, time-avg od 1.28, errors 0, fitness 1020 [1015s]
+td3_actor.py split=final D2 n=200: median 5172 mg, p25 3871 mg, crash 34%, time-avg od 0.05, errors 0, fitness 1122 [1149s]

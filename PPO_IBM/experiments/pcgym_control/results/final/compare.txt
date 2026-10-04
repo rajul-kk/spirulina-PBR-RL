@@ -1,0 +1,25 @@
+200 episodes per run; cost = mean ((Ca - setpoint) / 0.01)^2, lower is better
+
+arm          runs  mean cost   median  runaway   per-run mean cost
+whitebox        5      0.180    0.134     0.0%   [0.18, 0.183, 0.172, 0.178, 0.186]
+blackbox        5      0.192    0.144     0.0%   [0.187, 0.185, 0.198, 0.186, 0.204]
+sac             5      0.242    0.203     0.0%   [0.237, 0.254, 0.24, 0.242, 0.237]
+cmaes-pid       5      0.293    0.238     0.0%   [0.297, 0.289, 0.294, 0.292, 0.294]
+ref-pid         1      0.540    0.460     0.0%   [0.54]
+
+Pre-registered comparisons (mean paired cost difference, hierarchical 95% CI, Holm-adjusted p)
+  whitebox - blackbox: -0.012 [-0.021, -0.005]  p_holm=0.0001  whitebox better in 92% of episodes
+  blackbox - cmaes-pid: -0.101 [-0.113, -0.089]  p_holm=<5e-05  blackbox better in 99% of episodes
+  whitebox - cmaes-pid: -0.113 [-0.125, -0.103]  p_holm=<5e-05  whitebox better in 99% of episodes
+  blackbox - sac: -0.050 [-0.060, -0.040]  p_holm=<5e-05  blackbox better in 97% of episodes
+  whitebox - sac: -0.062 [-0.072, -0.054]  p_holm=<5e-05  whitebox better in 98% of episodes
+
+  seed-level exact permutation test whitebox vs blackbox (5 v 5 runs, per-run mean cost): p=0.0159
+
+  seed-level exact permutation test blackbox vs cmaes-pid (5 v 5 runs, per-run mean cost): p=0.0079
+
+  seed-level exact permutation test whitebox vs cmaes-pid (5 v 5 runs, per-run mean cost): p=0.0079
+
+  seed-level exact permutation test blackbox vs sac (5 v 5 runs, per-run mean cost): p=0.0079
+
+  seed-level exact permutation test whitebox vs sac (5 v 5 runs, per-run mean cost): p=0.0079

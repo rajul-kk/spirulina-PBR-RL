@@ -1,0 +1,27 @@
+TD3 secondary endpoints (protocol section 4). Unadjusted p-values, no Holm correction;
+lru vs lstm is the pre-registered pair, other pairs are exploratory. Budget 2,000,000 steps.
+
+core   seed      D1 at      D2 at  tier  dem  abort      steps  crash%  final g  best g  status
+lru       1  1,100,000  1,500,000    D2    0     no  2,000,000     0.0     2.97   11.86  complete
+lru       2  1,400,000  1,950,000    D2    0     no  2,000,000     0.0     9.76    9.76  complete
+lru       3  1,000,000  1,400,000    D2    0     no  2,000,000     0.0     0.90   12.34  complete
+lru       4  1,000,000          -    D0    1     no  2,000,000     0.0     8.40    1.16  complete
+lru       5  1,000,000  1,400,000    D2    0     no  2,000,000     0.0    12.00   12.59  complete
+lstm      1          -          -    D0    0     no  2,000,000    80.0     3.07    5.44  complete
+lstm      2          -          -    D0    0    yes  1,950,000    87.5     5.15   12.60  complete
+lstm      3          -          -    D0    0     no  2,000,000    34.0     5.17   11.38  complete
+lstm      4          -          -    D0    0     no  2,000,000     0.0     0.82   13.03  complete
+lstm      5    800,000          -    D0    1     no  2,000,000     0.0     0.54    6.38  complete
+
+Per core (complete seeds only)
+core   seeds  reach D1  reach D2   med steps D1   med steps D2  mean crash
+lru        5         5         4      1,000,000      1,500,000        0.0%
+lstm       5         1         0    >=2,000,000    >=2,000,000       40.3%
+(medians use steps censored at the budget; '>=' means at least half the seeds never reached the tier)
+
+lru vs lstm (pre-registered; 5 v 5 seeds)
+  seeds reaching D1: lru 5/5, lstm 1/5  Fisher exact two-sided p=0.0476
+  seeds reaching D2: lru 4/5, lstm 0/5  Fisher exact two-sided p=0.0476
+  steps to D1 (censored at budget): mean lru 1,100,000, lstm 1,760,000; median lru 1,000,000, lstm >=2,000,000; exact permutation p=0.0476
+  steps to D2 (censored at budget): mean lru 1,650,000, lstm 2,000,000; median lru 1,500,000, lstm >=2,000,000; exact permutation p=0.0476
+  final-checkpoint crash rate: mean lru 0.0%, lstm 40.3%; seed-level exact permutation p=0.1667

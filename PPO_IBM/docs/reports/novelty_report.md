@@ -1,269 +1,236 @@
 # Novelty and Publishability Report
 
-> Rewritten 2026-09-18, superseding the 2026-08-17 audit (in git history) in full. That audit predated
-> every TD3 run in this project (v33 onward) and its central claim is now false: it asserted
-> "no RL run ever produced a held-out-validated D2 policy" and recommended shipping a pure
-> behaviour-cloned controller instead. TD3+BC has passed the D2 held-out gate on every criterion
-> since v45 (2026-09-06), and the project's actual strongest contribution — an architecture-
-> dependent recurrent-state-reset-cadence finding — did not exist as a candidate when the first
-> version of this report was written. This is a search-based audit, not an exhaustive prior-art
-> clearance — treat "not found" as "not found by this search," not as proof of absence.
+> **2026-10-06. Supersedes the 2026-09-18 version (in git history).** That version predates the
+> LLM-writer comparison and the pre-registered final results. As a result it:
+> - led with the wrong contribution (the LSTM/LRU reset-cadence finding, not the writer comparison);
+> - called the reset-cadence finding "unoccupied" (overstated: the mechanism is classic and only
+>   a narrow part is open, see R1);
+> - cited n=2 where the protocol now has n=5 per arm;
+> - made optimistic TD3 claims that do not survive the final-split results (TD3 loses to CMA-ES
+>   on the photobioreactor, see R2).
+>
+> **Scope of this check.** It is search-based: about 15 searches on 2026-10-06. It is not
+> exhaustive prior-art clearance; "not found" means "not found by this search". The author has
+> **not yet read the 2026 arXiv papers listed below in full**; the descriptions of them come from
+> abstracts and search snippets and must be checked before anything is written against them.
+> This area moves monthly; repeat the search before submission.
 
-## Bottom line
+## 1. Bottom line
 
-This project's best-supported claim is no longer the PPO-era negative result. It is now
-**C1 below: a mechanistic diagnosis of recurrent-network collapse in long-horizon RL, a fix
-that produced the project's first held-out-validated policy of any kind, and a follow-up
-finding that the fix's correct cadence is architecture-dependent** — replicated at n=2 for the
-bounded-state case. That chain is real, causal, and — per the literature search run alongside
-this rewrite — currently unoccupied. The realistic target remains a **workshop paper or an
-applied-domain journal**, not a flagship ML venue, because the empirical base is still one
-simulator and 1-2 training seeds per configuration. Two secondary contributions (C2, C3) are
-also citable, narrower boundary conditions. The PPO-era BC-vs-RL result (C4) is retained but
-reframed: it no longer means "RL doesn't work here" (RL does, via TD3+BC); it means "RL
-*fine-tuning of a fixed feedforward PPO policy* was destructive under this project's specific
-credit-assignment defect," a materially smaller and more defensible claim.
+- The strongest contribution is now the **LLM controller-writer comparison (L1)**. On two
+  simulators, both Claude-writer arms (white-box and black-box) beat CMA-ES, TD3 (photobioreactor)
+  and SAC (PC-Gym), and on the photobioreactor also the hand-tuned expert and oracle references.
+  Statistics were pre-registered (frozen controllers, disjoint final split, Holm family, n=5 per
+  arm).
+- Second: the **white-box vs black-box source-access ablation (L2)** on the unpublished
+  photobioreactor (+1.94 g, seed-level p=0.0079).
+- L1 is the crowded part. Several 2025-2026 papers already show coding agents or LLMs writing
+  controllers that match or beat RL. What is open is the specific combination: bioprocess plus
+  PC-Gym, head-to-head against CMA-ES and RL with pre-registered paired statistics, and the
+  source-access ablation.
+- The recurrent-RL material (R1-R3) is now secondary. It is mostly a careful application of known
+  mechanisms, and the pre-registered LRU vs LSTM test came out null on the primary endpoint.
+- Realistic venue: an agents-for-science or ML4Science workshop, or an applied journal
+  (Computers & Chemical Engineering, Journal of Process Control). Not a flagship-ML main track
+  as-is: one custom simulator, one easy public benchmark, no hardware.
 
-## The contributions, individually assessed
+## 2. Contributions, with status
 
-### C1 — Recurrent-core collapse in long-horizon RL: mechanism, fix, and an architecture-dependent boundary condition
+Status key: SCOOPED = published already; PARTIALLY COVERED = core idea published, a narrower
+part open; APPEARS OPEN = not found by this search.
 
-**What was done, across the whole TD3 line (v33 through v56):**
+### L1. LLM-written controllers beat tuned and learned baselines. PARTIALLY COVERED, crowded
 
-1. **Diagnosis (v44).** A recurring, previously-unexplained pattern of sudden mid-training
-   det-eval collapses across six earlier runs (v33/v34/v40/v42/v43/v44) — each blamed on that
-   run's own specific change at the time — was traced to a single shared mechanism: the LSTM
-   actor's cell state grows **unbounded** over a 7200-step episode, saturating ~40% of hidden
-   units by step 10-20 and freezing the actor (identical, corner-valued action regardless of
-   input) for the remainder of the episode.
-2. **Fix and first held-out pass (v45).** Resetting the recurrent hidden/cell state to zero
-   every `HIDDEN_RESET_INTERVAL=60` steps during rollout and evaluation eliminated the failure
-   mode entirely — v45 exhausted its full 2,000,000-step budget with zero collapse and became
-   **the first policy of any kind in this project (PPO, TD-MPC2, or TD3) to pass the D2
-   held-out validation gate on every criterion.**
-3. **A second, independent collapse mode in a bounded-state variant (v48/v50/v52/v53).**
-   Swapping the LSTM for a diagonal Linear Recurrent Unit (LRU) — bounded by construction, so
-   it cannot suffer unbounded cell-state growth — nonetheless collapsed at high starting
-   population across four separate attempts, under three different reward formulations and on
-   both recurrent cores. This ruled out the reward shape as the sole cause (a directional
-   reward fix, tested on both cores, made the collapse *worse* on both) and pointed at the
-   architecture/protocol interaction instead.
-4. **The architecture-dependent finding (v54, replicated v55).** `HIDDEN_RESET_INTERVAL=60` is
-   a correctness requirement specific to the LSTM's unbounded state — it has no equivalent
-   justification for a bounded core. Decoupling the *rollout* reset cadence from the *training*
-   sequence window (`TD3_HIDDEN_RESET_INTERVAL=600` vs `SEQ_LEN=60`, avoiding the `O(T²)`
-   training-cost blowup a matching increase in `SEQ_LEN` would cause) turned the LRU from
-   reliably collapsing into reliably completing: v54 held D2 for 16 straight chunks through
-   full budget exhaustion with zero collapse, and **v55, an exact replicate, reproduced this
-   cleanly** (14 clean D2 chunks, held-out numbers consistent with v54 to within normal
-   run-to-run variance). This is the project's only n=2 result and its most novel finding.
-5. **Grid completed (v56, LSTM at reset=600).** Passed the D2 gate, but retained 37-66% at
-   high population vs 153-219% for LRU at the same reset interval. The effect is real but
-   confined to the high-population tail. See `docs/reports/lstm_lru_reset_interval_grid_report.md`.
+**Our result (final split, n=5 runs per arm).**
 
-**What the literature says.** A targeted search (2026-09-18) for hidden-state reset cadence,
-context length, and bounded-vs-unbounded recurrent state in RL found no work addressing this
-specific question. [RLBenchNet](https://arxiv.org/html/2505.15040v1) (2025) benchmarks
-LSTM/GRU/Mamba/Mamba-2 for RL but runs no reset-cadence ablations, and explicitly flags
-unresolved state *leakage* across episode boundaries for Mamba as an open limitation rather
-than a studied one. [Yang & Nguyen's recurrent off-policy baselines](https://arxiv.org/abs/2110.12628)
-(recurrent DDPG/TD3/SAC) never reset hidden state mid-episode at all, run no context-length
-ablations, and name "inability to deal with too long episodes" as an inherited RNN weakness
-they do not solve. General LRU-for-RL work found (e.g.
-[real-time recurrent learning with trace units](https://arxiv.org/pdf/2409.01449)) is about
-gradient-computation efficiency, not state-reset policy. R2D2-style stored-state/burn-in
-targets a related but distinct problem — stale hidden states sampled from a replay buffer —
-not rollout reset cadence for an on-policy-collected trajectory. **This appears to be a
-genuinely open question**, though this is a search-based finding, not exhaustive clearance.
+| Photobioreactor, harvest g (higher better) | median | p25 | crash |
+|---|---|---|---|
+| White-box writer | 19.00 | 16.68 | 0% |
+| Black-box writer | 17.10 | 15.14 | 0% |
+| CMA-ES (6 knobs of the expert law) | 13.23 | 11.41 | 0% |
+| Oracle expert (reference) | 13.12 | 11.17 | 0% |
+| Hand-tuned expert (reference) | 13.08 | 11.19 | 0% |
+| TD3, LRU core | 6.87 | 5.47 | 0% |
+| TD3, LSTM core | 3.00 | 2.11 | 40% |
 
-**Novelty tier: real and, on current search evidence, unoccupied — the strongest claim in this
-project.** It is a complete unit: a mechanistic diagnosis that retroactively explains six prior
-"unrelated" failures, a fix validated by the project's first-ever held-out pass, a second
-independent failure mode in a different architecture that the same fix does not address, and a
-targeted follow-up experiment (with a replication) that isolates *why* — the fix's necessary
-cadence is a property of the architecture's state dynamics, not a universal constant. v56
-confirmed the cross-core gap at matched reset interval (see item 5).
+Paired differences vs CMA-ES: black-box +3.60 g [+3.19, +4.04], white-box +5.53 g
+[+5.22, +5.84]; Holm p<5e-05 (episode-level), seed-level exact permutation p=0.0079 (the
+minimum possible at 5 v 5). TD3 LRU is -8.36 g [-13.24, -3.99] and TD3 LSTM -10.00 g
+[-11.92, -8.17] vs CMA-ES.
 
-**Caveats, stated plainly:** n=1 for every cell of the grid except LRU/600 (n=2); one
-simulator; no cross-architecture-family comparison beyond LSTM/LRU (no transformer, no S5/
-Mamba); the free-running (no periodic reset at all) condition is only spot-checked, not run to
-completion at either core. A prior training-seed variance measurement in this project (v21 vs.
-v23, PPO era, nominally identical config) found ~30% spread from seed alone on a different
-metric — a reminder that single-run claims anywhere in this project should be read with that
-in mind.
+| PC-Gym CSTR, mean cost (lower better) | mean | median | runaway |
+|---|---|---|---|
+| White-box writer | 0.180 | 0.134 | 0% |
+| Black-box writer | 0.192 | 0.144 | 0% |
+| SAC (SB3 defaults, 100k steps) | 0.242 | 0.203 | 0% |
+| CMA-ES over PID gains | 0.293 | 0.238 | 0% |
+| Untuned PID (reference) | 0.540 | 0.460 | 0% |
 
-### C2 — TD3+BC's behaviour-cloning anchor is load-bearing, not merely helpful, once the RL policy has already surpassed the expert
+Black-box vs SAC -0.050 [-0.060, -0.040]; vs CMA-ES-PID -0.101 [-0.113, -0.089]. White-box:
+-0.062 vs SAC, -0.113 vs CMA-ES-PID. All Holm p<5e-05 at episode level; seed-level p=0.0079.
 
-**What was done:** With `TD3_BC_COEF=0` (removing the BC term from the actor loss while
-keeping demo transitions in the replay buffer as ordinary off-policy data) and a real
-confound removed first — the `alpha/|Q|` actor-loss normalization is specific to TD3+BC and
-was still silently damping the Q-gradient with no BC term to balance against; fixing that
-was itself necessary before the ablation was clean — a formula-correct vanilla TD3 actor
-reliably diverged to a degenerate, state-independent policy within 1-3 D0 chunks. This
-matters specifically *because* the expert prior is no longer a performance ceiling at this
-point in the project (TD3+BC policies out-harvest the scripted expert by 15-25% at high
-population), so the ablation asks a live question rather than a rhetorical one.
+**Closest prior work (all 2025-2026, not read in full by the author).**
+- "Heuristic Learning for Active Flow Control Using Coding Agents", arXiv 2607.11565 (Jul 2026):
+  coding agents match or beat deep RL on 10 of 13 benchmarks. This is the nearest threat: same
+  headline claim, different domain.
+- "Code Evolution for Control", arXiv 2601.06845.
+- ControlAgent, arXiv 2410.19811; AgenticControl, arXiv 2506.19160; GenControl, arXiv 2506.12554.
+- "AI Control Scientist", arXiv 2608.26780 (Aug 2026).
+- An LLM workflow for process control, arXiv 2607.21292.
 
-**What the literature says:** that a stochastic-policy-gradient actor-critic method can diverge
-without a behavioural anchor is textbook extrapolation-error theory, and TD3+BC's own paper
-(Fujimoto & Gu 2021) motivates the BC term exactly this way. What is not generic is the
-specific, controlled demonstration that removing *only* the loss term (not the data) causes
-collapse in this domain, after ruling out a real implementation confound that could otherwise
-have been mistaken for the effect.
+**How we differ.** Domain (bioprocess and PC-Gym), a head-to-head against both CMA-ES and RL,
+pre-registered paired statistics with n=5 writer runs per arm, a frozen-controller protocol, and
+the source-access ablation (L2). We do not claim a new method; the claim is an evaluation. If a
+reviewer knows 2607.11565, the "LLMs can beat RL at control" framing alone will not read as new.
 
-**Novelty tier: a clean ablation, not a new mechanism.** Citable as a case study; does not
-generalize beyond the demonstrated setting.
+### L2. Source access helps. APPEARS OPEN
 
-### C3 — Reward dead zones from bounded shaping terms
+- Photobioreactor (unpublished plant): white-box over black-box +1.94 g [+1.46, +2.39],
+  seed-level p=0.0079, white-box better in 100% of episodes. Clean test: the plant is ours and
+  not in any training corpus.
+- PC-Gym: white-box cost lower by 0.012 [-0.021, -0.005] (about 6%), Holm p=0.0001, seed-level
+  p=0.0159. Small, and **not a clean test** (next paragraph).
+- Nearest prior work found: "Software Engineering Agents for Embodied Controller Generation",
+  arXiv 2510.21902 (Minigrid). Not a source-access ablation on a process plant.
 
-**What was done:** A bounded above-target OD penalty (`max(floor, decay(x))`) was shown to
-reach *exactly zero gradient* past a calculable threshold (7.67× target under one formulation),
-diagnosed by directly measuring that high-population episodes spent 53-90% of their steps
-inside that zone. A subsequent fix (log-tail decay, never reaching zero) resolved it; a later,
-separate attempt to fix a *different* reward term (`reward_od_delta`'s sign) was shown, via a
-controlled test on both recurrent cores, to be independently harmful regardless of core —
-isolating the true remaining mechanism as a 5-7× scale mismatch between an unavoidable
-per-step state penalty and a capped per-event corrective reward, making the needed recovery
-action effectively undiscoverable by gradient ascent alone.
+**PC-Gym contamination caveat** (`pcgym_protocol.md` sections 5-6). The black-box writers are
+not blind: all five assumed the textbook exothermic CSTR structure, and two (bb1, bb5) shipped
+the exact published constants (k0 7.2e10, E/R 8750) from memory. The access audit confirms they
+read only the manual and their run directory. Recalled constants gave no visible edge (mean cost
+0.187 and 0.204 recalled vs 0.185, 0.198, 0.186 fitted). Treat this as a small contamination data
+point, not a finding. It does mean the PC-Gym white/black-box gap understates or muddles the
+effect of source access; the photobioreactor is the real test.
 
-**Novelty tier: a generalizable diagnostic pattern** (bounded shaping terms can silently zero
-their own gradient exactly where the policy most needs signal), demonstrated with an unusually
-complete before/after/root-cause trail, but not a new theoretical result.
+### R1. LSTM cell-state saturation and the periodic-reset fix. PARTIALLY COVERED, mechanism is classic
 
-### C4 — BC-then-RL fine-tuning was destructive for a specific, diagnosed reason (PPO era, reframed)
+- The mechanism (unbounded LSTM cell-state growth on long sequences) is known: Gers et al. 2000
+  ("Learning to Forget", Neural Computation). Periodic hidden-state reset at a fixed interval is
+  known practice (e.g. arXiv 1905.13469). Recurrent off-policy baselines exist (arXiv 2110.12628).
+- What this project found: saturation of about 40% of hidden units explained a series of
+  mid-training collapses (v33-v44); reset 60 fixed it (v45).
+- What may be open, and it is narrow: the architecture-dependent cadence ablation (LRU works at
+  reset 600, LSTM needs about 60). Only n=1-2 per cell in the earlier grid, and it has not been
+  tested at n=5. Do not call this "unoccupied" or lead with it.
 
-**What was done:** Across 24+ PPO runs and one full TD-MPC2 run, the only PPO-track artifact to
-pass held-out D2 validation was a behaviour-cloned controller with **no RL fine-tuning
-applied**, and every attempt to fine-tune it with PPO made it strictly worse (v19: 149.1mg →
-28.3mg harvest, 0% → 80-93% crash, over 8M steps). The root cause was independently diagnosed
-(Fix #16): the harvest action is only read on 1-in-600 timesteps, so PPO's per-step advantage
-assignment was overwhelmingly spurious on that dimension specifically.
+### R2. Pre-registered LRU vs LSTM for TD3. NULL on the primary endpoint
 
-**This claim MUST now be stated narrowly.** It is not "RL fine-tuning doesn't work on this
-task" — TD3+BC, a different RL method with an explicit anchor term and off-policy replay, both
-avoids the collapse (C2) and beats the BC clone outright on held-out harvest (v45: 95.7mg;
-v49: 135.8mg; both exceed the clone's 109.4mg). The defensible claim is narrower and more
-interesting: **on-policy fine-tuning (PPO) with a severe, undiagnosed sparse-credit defect
-destroyed a good BC initialization; off-policy fine-tuning with an explicit BC anchor and the
-credit-assignment defect fixed did not.** Framed this way it is a real, useful boundary
-condition on when RL fine-tuning helps vs. hurts a BC baseline, consistent with the contrast
-noted against Gil et al.'s pH-control paper below, where RL fine-tuning (SAC+BC) *did* improve
-on a PID/BC baseline by 8%.
+- Primary (final checkpoint, 5 v 5): +1.64 g [-3.56, +6.31], Holm p=0.51, seed-level p=0.1349.
+  No detectable difference.
+- Secondary (unadjusted, `td3_secondary.txt`): seeds reaching D1 5/5 (LRU) vs 1/5 (LSTM); D2 4/5
+  vs 0/5; Fisher p=0.0476 for both. Final-checkpoint crash rate 0.0% vs 40.3% (seed-level
+  p=0.1667). This is a **hypothesis, not a finding**: unadjusted, outside the Holm family, and a
+  p of 0.0476 with 5 v 5 is fragile.
+- **Confound.** Both cores ran at reset 600, which was chosen for the LRU (R1 says the LSTM
+  wants about 60). The LSTM may simply have been handicapped. The `comparison_protocol.md`
+  section 7 follow-up (4M steps, plus an LSTM reset-60 arm; family F1-F3, Holm over three) is
+  designed to settle this. **Status: pending.**
+- Both TD3 cores lose to CMA-ES on the photobioreactor by 8-10 g, so TD3 is not a competitive
+  controller in this study. Earlier optimistic claims about TD3 are withdrawn.
+- Exploratory GRU and RTU cores (protocol section 6): in progress; so far no better than LSTM.
+  Pending; do not cite as a result.
 
-### C5 — Harvest/dilution-fraction control specifically, for Spirulina (narrowed since the original audit)
+### R3. Final vs best checkpoint gap in TD3. KNOWN PHENOMENON, practical note only
 
-**What was done:** The action space controls periodic biomass harvest fraction via a
-semi-continuous harvest-and-dilute mechanism every `HARVEST_INTERVAL_STEPS`, rather than only
-growth-condition setpoints (light/temperature/nutrients).
+LRU best-det checkpoints scored 9.8-12.6 g on 4 of 5 seeds against finals of 0.9-12.0 g. The gap
+is large only on seeds 1 (2.97 vs 11.86) and 3 (0.90 vs 12.34); seed 2 has none, seed 5 is
+near-equal, and seed 4 is reversed (best 1.16, final 8.40). Policy degradation and checkpoint
+selection are well-known in RL. Worth one sentence on why the primary endpoint used the final
+checkpoint (no selection leakage); not a contribution.
 
-**What changed since the original audit:** a supervised-learning harvest-fraction paper
-(**[Machine learning-based decision support for harvest optimization in commercial microalgae
-photobioreactors](https://www.sciencedirect.com/science/article/abs/pii/S0168169926006356)**,
-*Computers and Electronics in Agriculture*, 4 July 2026) was found in a follow-up search and
-was not caught by the original audit (published after its literature cutoff, and this
-project's own August search). It uses a Random Forest (R²=0.705) to predict next-day
-post-harvest concentration and an inference module that scores candidate harvest fractions —
-field-validated across 12 commercial *Nannochloropsis* reactors over 4 weeks, achieving
-productivity comparable to (not exceeding) expert human operators.
+### Smaller items
 
-**Novelty tier, revised: narrower than previously stated, but still real.** "RL applied to
-microalgae harvest fraction" is no longer an unclaimed combination in the *broadest* sense —
-ML-guided harvest-fraction *decision support* is now published and field-validated. What
-remains open, on current search evidence, is **closed-loop, multi-step-credit-assignment RL
-control** of harvest fraction specifically (as distinct from single-step supervised
-recommendation, RL control of bacterial chemostat dilution generally — see Treloar et al.,
-PLOS Comp Bio, already cited in the original audit — or RL control of microalgae
-growth-condition setpoints without harvest, as in the UNIST Spirulina MARL work). Any writeup
-must state the July 2026 paper explicitly to avoid an easy, embarrassing "this already exists"
-rejection.
+- **C2 (BC anchor is load-bearing in TD3+BC) and C3 (bounded-shaping reward dead zones):**
+  textbook-adjacent. Divergence without a behavioural anchor is the motivation of Fujimoto & Gu
+  2021 (arXiv 2106.06860). Case-study material only.
+- **C4 (PPO fine-tuning destroyed the BC policy):** narrow. The harvest action is read on 1 of
+  600 steps, so per-step advantages were spurious on that dimension. Keep as discussion; state
+  narrowly (it is about on-policy fine-tuning under a credit-assignment defect, not about RL in
+  general; TD3+BC later beat the clone).
+- **C5 (closed-loop RL for the harvest fraction): APPEARS OPEN but low-value.** Must cite the
+  4 July 2026 paper "Machine learning-based decision support for harvest optimization in
+  commercial microalgae photobioreactors" (*Computers and Electronics in Agriculture*; Random
+  Forest, R2=0.705, 12 commercial *Nannochloropsis* reactors over 4 weeks, productivity
+  comparable to human operators, not above). Open part: closed-loop multi-step RL control of the
+  harvest fraction. Also cite Treloar et al. (PLOS Comp Bio) for RL chemostat dilution control.
 
-## Closest related work, examined in detail: Gil et al. 2025
+### Closest sibling: Gil et al. 2025 (arXiv 2509.06853)
 
-**[Reinforcement learning meets bioprocess control through behaviour cloning: real-world
-deployment in an industrial photobioreactor](https://arxiv.org/abs/2509.06853)** (Gil, Del Rio
-Chanona, Guzmán, Berenguel; arXiv:2509.06853, Sept 2025) is the closest methodological sibling
-to this project found in either search pass, and is worth detailing precisely rather than
-citing loosely.
+SAC with behaviour-cloning pretraining from a PID controller, feedforward MLP, pH control by CO2
+injection in an industrial open photobioreactor, 8-day real deployment: 8% lower IAE and 54%
+lower control effort than PID, 5% and 7% better than plain SAC. They have hardware validation,
+which this project lacks. We have a different problem (partially observed, harvest every 600
+steps), recurrent policies, and a comparison against LLM-written controllers, which they do not
+have. Cite as a sibling, not as prior art on L1 or L2. Note their finding that RL fine-tuning
+helped, against our C4.
 
-**What they built.** Soft Actor-Critic (SAC) — off-policy, entropy-regularized, **feedforward
-MLP actor and critic, no recurrent component**. It regulates pH in an open photobioreactor by
-controlling CO₂ injection, observing dissolved oxygen, pH, optical density, and temperature.
-Behaviour cloning is used as an **offline pretraining phase**: the SAC policy is first trained
-to imitate trajectories generated by a nominal PID controller, entirely offline, before ever
-touching the real system; a daily online fine-tuning phase then adapts it to the real plant's
-drift and disturbances.
+## 3. What a reviewer will hit
 
-**What they achieved.** Deployed for an 8-day real-world validation on an industrial-scale
-photobioreactor under varying environmental conditions — a genuine hardware deployment, not a
-simulation-only result. Against a PID baseline: **8% lower integral absolute error, 54% lower
-control effort.** Against a standard off-policy RL baseline (SAC without the BC pretraining,
-by implication): **5% lower IAE, 7% lower control effort.** The paper positions itself
-explicitly as "the first application of an RL-based control strategy to such a nonlinear and
-disturbance-prone bioprocess" for open-PBR pH regulation specifically.
+1. **Scope.** One custom simulator, one easy public benchmark (a single-loop CSTR that PID suits
+   well), no hardware. Gil et al. have a real deployment.
+2. **Budget comparability.** Writers: 300 pilot batches each, plus LLM pretraining and inference,
+   which is not counted. CMA-ES: 1,164 episodes. TD3: 2M steps. SAC: 100k steps (833 batches).
+   **LLM cost (tokens, dollars, wall-clock) is not yet reported**; a cost-per-controller
+   comparison is the first thing an applied reviewer will ask for.
+3. **Baseline strength.** TD3 is untuned by design (the tuning grid was withdrawn so it could not
+   favour one core); SAC is SB3 defaults with no tuning, stated in the protocol; CMA-ES tunes only
+   the expert law's 6 knobs (or PID gains) and cannot change controller structure. The writers
+   can change structure, so "writers beat CMA-ES" partly measures structure, not search. The
+   "oracle" reference (13.12 g) is not an upper bound (CMA-ES and the writers exceed it), so
+   there is no known ceiling.
+4. **Contamination.** Language models know textbook control and the textbook CSTR (see L2). The
+   protocol records this honestly; the photobioreactor is the clean test, and it is one plant.
+5. **n=5.** Headline the seed-level p (0.008, the minimum for 5 v 5), not the episode-level
+   p<5e-05, which treats 175-200 episodes per run as if they were independent of the run. Five
+   writer runs per arm is also a small sample of "what the writer does".
+6. **Post-hoc elements.** GRU/RTU arms and the section 7 follow-up were chosen after seeing
+   results; both are labelled exploratory or a separate family.
 
-**How close this is to the current project — assessed honestly on both axes:**
+## 4. Evidence quality
 
-| axis | Gil et al. | this project |
-|---|---|---|
-| algorithm | SAC | TD3(+BC) |
-| network | feedforward MLP | recurrent (LSTM or diagonal LRU) |
-| controlled variable | pH (single loop, CO₂ injection) | harvest fraction (periodic, 1-in-600-step event) |
-| observability | fully observed at every step (pH is read continuously) | partially observed / long-horizon credit assignment (harvest signal is 600 steps sparse) |
-| BC's role | offline pretraining phase, then discarded | persistent anchor term in the actor loss throughout training (shown load-bearing by ablation, C2) |
-| validation | **real hardware, 8-day field deployment** | simulation only, held-out sweep across 40 seeds + adversarial cold starts |
-| central finding | RL+BC beats PID and beats plain RL on a real system | architecture-dependent recurrent-state-reset cadence (an orthogonal question their feedforward design cannot raise, since it has no persistent hidden state to reset) |
+Above typical for the target venues: protocols written before the final runs (the PC-Gym and
+comparison protocols are dated before scoring), frozen controllers, a final split disjoint from
+every seed used in search, pilot and training, a Holm-corrected pre-registered family,
+hierarchical bootstrap plus seed-level exact permutation tests, a documented access audit, and
+one invalid-run repeat disclosed (TD3 LRU seed 3, two of 200 episodes hit the 300 s wall-clock
+guard; moved to `results/final/invalid/` and repeated). Weak spot: test coverage of the
+comparison and RL code is thin (being addressed); the held-out tests for CMA-ES and the writer
+controller exist, but the TD3 path is less covered.
 
-**The honest verdict:** these are sibling papers under "RL+BC bioprocess control," not
-competing claims on the same result, and each is stronger where the other is weaker. Gil et
-al. have something this project does not — a real deployment, which is the single biggest gap
-this project's own `README.md` and prior audit both name. This project has something Gil et
-al.'s design cannot produce — because their network is feedforward with no persistent hidden
-state, the entire recurrent-state-reset-cadence question (C1) simply does not arise for them;
-it is a genuinely different sub-problem, unlocked specifically by long-horizon partial
-observability, which their fully-observed single-loop pH task does not have. Any writeup
-citing Gil et al. should state plainly: they establish that RL+BC *works* on a real PBR for a
-different (fully-observed, feedforward-adequate) control problem; this project's contribution
-is a mechanism-level finding about *how* to make a recurrent RL controller work reliably on a
-long-horizon, partially-observed one, which their architecture was never exposed to needing.
+## 5. What would most strengthen it, in order
 
-## What's missing for publication
+1. **A third plant**, ideally another public benchmark (another PC-Gym model or a standard
+   process-control benchmark), so the result is not "one custom simulator plus one easy CSTR".
+2. **Report LLM cost per writer run** (tokens, dollars, wall-clock) and compare with CMA-ES and
+   RL compute.
+3. **Run the section 7 follow-up** (4M steps, LSTM reset 60) so R2 is settled either way.
+4. **A stronger RL baseline** with a tuning budget matched to the writers (tuned SAC or TD3,
+   not defaults), so that "beats RL" cannot be dismissed as a weak baseline.
 
-Unchanged in kind from the original audit, restated against the current best contribution:
+## 6. Sources
 
-1. **No statistical treatment across training seeds for C1.** v54/v55 give n=2 for the LRU/600
-   cell; every other cell in the grid is n=1. `statistical_validation.md`'s existing bootstrap
-   analysis (10,000-resample, 95% CI) was run against PPO/TD-MPC2-era held-out logs and would
-   need to be re-run against the TD3 held-out sweep logs to put a confidence interval on any of
-   C1's numbers.
-2. **No real-world or cross-simulator validation** — still the single largest gap, thrown into
-   sharper relief by Gil et al.'s real deployment above. Every number in this report comes from
-   one custom simulator.
-3. **The grid is incomplete.** v56 (LSTM/600) is running as of this rewrite; the free-running
-   (no periodic reset at all) condition has only ever been spot-checked, never run to
-   completion, at either core.
-4. **Related-work depth remains a handful of targeted searches**, not a systematic review with
-   defined inclusion criteria, across both the original audit and this rewrite's follow-up pass.
+Agents writing or evolving controllers:
+- [Heuristic Learning for Active Flow Control Using Coding Agents](https://arxiv.org/abs/2607.11565) (2607.11565)
+- [Code Evolution for Control](https://arxiv.org/abs/2601.06845) (2601.06845)
+- [ControlAgent](https://arxiv.org/abs/2410.19811) (2410.19811)
+- [AgenticControl](https://arxiv.org/abs/2506.19160) (2506.19160)
+- [GenControl](https://arxiv.org/abs/2506.12554) (2506.12554)
+- [AI Control Scientist](https://arxiv.org/abs/2608.26780) (2608.26780)
+- [LLM workflow for process control](https://arxiv.org/abs/2607.21292) (2607.21292)
+- [Software Engineering Agents for Embodied Controller Generation](https://arxiv.org/abs/2510.21902) (2510.21902)
 
-## Recommended framing and venue tier, if pursued
+Recurrent state and RL:
+- Gers, Schmidhuber, Cummins (2000), "Learning to Forget: Continual Prediction with LSTM", Neural Computation 12(10). No arXiv version.
+- [Interval Timing in Deep Reinforcement Learning Agents](https://arxiv.org/abs/1905.13469) (1905.13469; found by search, mentions a fixed reset interval; verify before citing)
+- [Recurrent Off-policy Baselines for Memory-based Continuous Control](https://arxiv.org/abs/2110.12628) (2110.12628)
+- [RLBenchNet](https://arxiv.org/abs/2505.15040) (2505.15040)
+- [Recurrent Trace Units, Elelimy et al.](https://arxiv.org/abs/2409.01449) (2409.01449)
+- [A Minimalist Approach to Offline Reinforcement Learning (TD3+BC)](https://arxiv.org/abs/2106.06860) (2106.06860)
 
-- **Best single paper to write:** C1 as the spine — mechanism, fix, first held-out pass,
-  independent second failure mode, and the architecture-dependent resolution — with C3 (the
-  reward-dead-zone diagnosis) as a supporting methodological finding from the same
-  investigation, and C2 (the BC ablation) as a discussion point on why the fix worked via
-  TD3+BC specifically. This is a more coherent and more novel spine than the original audit's
-  C2-anchored recommendation (the deterministic/stochastic decoupling finding), which remains
-  true but is a narrower, more purely confirmatory result by comparison.
-- **Tier:** workshop paper (RL or ML-for-science workshop track) or a bioprocess-engineering
-  journal's applied-ML case-study format. Still not a fit for a flagship ML conference main
-  track without the seed-count and cross-validation work in the gaps above.
-- **C4 and C5** are supporting/discussion material — C4 as a "when does RL fine-tuning help vs.
-  hurt a BC baseline" boundary condition (strengthened by contrast with Gil et al.'s opposite
-  finding), C5 as a narrowly-scoped claim about closed-loop harvest control specifically (must
-  cite the July 2026 decision-support paper to pre-empt an obvious reviewer objection).
-- **Gil et al.** should be cited as the closest sibling work, explicitly distinguishing the two
-  papers' architectures (feedforward vs. recurrent) and control problems (fully-observed
-  single-loop vs. long-horizon sparse-credit) rather than treated as prior art that weakens
-  this project's claim — it does not address C1 at all, since a feedforward network has no
-  persistent state whose reset cadence could matter.
+Bioprocess:
+- [Gil et al. 2025, RL meets bioprocess control through behaviour cloning](https://arxiv.org/abs/2509.06853) (2509.06853)
+- [ML-based decision support for harvest optimization in commercial microalgae photobioreactors](https://www.sciencedirect.com/science/article/abs/pii/S0168169926006356), *Computers and Electronics in Agriculture*, 4 July 2026
+- Treloar et al., RL control of bacterial chemostat dilution, PLOS Computational Biology (cited in the earlier audit; citation to be re-checked).
 
----
+Project documents: `docs/reports/comparison_protocol.md`, `docs/reports/pcgym_protocol.md`,
+`experiments/program_control/results/final/compare.txt`, `.../td3_secondary.txt`,
+`experiments/pcgym_control/results/final/compare.txt`.

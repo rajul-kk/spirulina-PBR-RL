@@ -73,3 +73,6 @@ desktop.ini
 *.gif
 *.bmp
 *.ico
+
+# pytest
+**/.pytest_cache/

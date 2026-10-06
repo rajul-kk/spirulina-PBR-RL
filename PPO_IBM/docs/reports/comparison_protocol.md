@@ -123,3 +123,11 @@ Outputs:
 - Session logs: `results/rl_4m/<arm>-s<seed>/session<N>`.
 - Scores: `results/final/followup/td3_<arm>_<steps>__s<seed>.json`.
 - Analysis: `results/final/followup/compare_followup.py`.
+
+## 8. Note added 2026-10-06 (test suite, after all section 4 results)
+A simulation in `tests/test_stats.py` found that the hierarchical bootstrap is mildly liberal at
+5 runs per arm when runs differ from each other. Nominal 95% CIs covered a known shift in about
+84% of 150 replicates; with no run-to-run variance the coverage was fine. The seed-level exact
+permutation test does not depend on the bootstrap. It is therefore the conservative headline test
+for every comparison here (smallest possible p is 0.008 at 5 v 5), and the bootstrap CIs should
+be read as somewhat narrow.

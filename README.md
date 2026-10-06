@@ -213,3 +213,19 @@ attributed):
 | `TURB_FOULING_COEF` | `0.0` | nephelometer window fouling (biases the reading high). Realistic, but works **against** the OD-reward fix it would otherwise improve. |
 | `HARVEST_PUMP_ERROR` | `0.0` | ±fraction harvest delivery error. Forces closed-loop harvest control. |
 | `USE_EPISODE_PHASE` | `True` | `True`: obs channel 7 = `step/max_steps` (only present when `OBS_EXTENDED=True`). Not sim-to-real transferable, and reveals when the `time_avg_od` scoring window opens — a gaming hazard held-out sweeps cannot detect by score alone (an action trace showed no gaming in practice). `False`: periodic harvest-cycle phase, transferable and non-gameable. Set `False` for anything intended for deployment. |
+
+## Running tests
+
+CPU-only, offline (no Kaggle, no network, no LLM calls). From `PPO_IBM/`:
+
+```
+pip install torch --index-url https://download.pytorch.org/whl/cpu
+pip install -r requirements-dev.txt
+python -m pytest              # fast suite, ~1 min; slow tests are excluded by default
+python -m pytest -m slow      # full-N_BOOT golden regressions + one full-length episode
+```
+
+The suite covers the statistics behind the confirmatory comparisons (with golden re-runs against
+the committed `compare.txt` / `td3_secondary.txt`), split integrity, simulator invariants, the TD3
+recurrent cores and PC-Gym task scoring. See [`PPO_IBM/tests/README.md`](PPO_IBM/tests/README.md).
+CI runs the fast suite on every push (`.github/workflows/tests.yml`).

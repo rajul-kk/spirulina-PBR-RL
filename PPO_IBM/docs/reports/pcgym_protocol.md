@@ -65,3 +65,10 @@ control-engineering knowledge, not specific to this benchmark. Writers vs CMA-ES
 therefore compare an agent that knows chemical engineering with two methods that start from
 nothing, which is part of what is being measured. The photobioreactor study is the test without
 that prior.
+
+## 7. Correction, 2026-10-06
+The seed-range comments in `rl_sac.py` and `plant_trial.py` describe SAC training seeds (7M+) as
+disjoint from the writers' pilot blocks. They are not: the pilot blocks lie at
+5M + 100k x (1..97), up to about 14.7M, and overlap the SAC training range. Both are development
+data, so the scores are unaffected. The `final` split (20M+) is disjoint from every other range,
+and `tests/test_splits.py` asserts this.

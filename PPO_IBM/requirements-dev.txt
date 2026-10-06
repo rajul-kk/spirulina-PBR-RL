@@ -1,0 +1,12 @@
+# Test / development dependencies for PPO_IBM (CPU only; no GPU, Kaggle or network needed).
+# Install CPU torch first, then this file:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+#   pip install -r requirements-dev.txt
+# Versions the suite was last run with: python 3.10, torch 2.10, numpy 2.2, scipy 1.15,
+# gymnasium 1.2, pcgym 0.1.6 (pulls in casadi), pytest 9.
+pytest
+numpy
+scipy        # tests/test_stats.py cross-checks the hand-written Fisher exact test (skipped without it)
+gymnasium
+tqdm
+pcgym==0.1.6 # PC-Gym CSTR task tests and the pcgym_control comparison

@@ -1,0 +1,68 @@
+--- TD3+RTU | threads=4 ---
+--- TD3 (Twin Delayed DDPG) for GeneticPhotobioreactorEnv ---
+Device: cpu | obs_dim=6 action_dim=3 | gamma=0.9995
+Budget: 2,000,000 steps | Gate: project dual (stochastic + deterministic)
+Hidden reset every 600 steps | SEQ_LEN=60
+Demo replay: 24 scripted-expert episodes, 25% of every training batch, never evicted
+
+  [RESUME] step=1,650,000 D0 online_buffer=237 episodes
+  Collecting 24 scripted-expert demonstration episodes (mix {0: 0.4, 1: 0.4, 2: 0.2})...
+    demo  1/24  D1  harvested=16472.0mg  time_avg_od=0.7819
+    demo  2/24  D0  harvested=14967.6mg  time_avg_od=0.7864
+    demo  3/24  D1  harvested= 9512.9mg  time_avg_od=0.7553
+    demo  4/24  D2  harvested=14604.8mg  time_avg_od=0.7570
+    demo  5/24  D2  harvested=11221.2mg  time_avg_od=0.7856
+    demo  6/24  D0  harvested= 8095.5mg  time_avg_od=0.7287
+    demo  7/24  D0  harvested=13141.0mg  time_avg_od=0.7440
+    demo  8/24  D0  harvested=11349.5mg  time_avg_od=0.7505
+    demo  9/24  D1  harvested=10279.9mg  time_avg_od=0.7492
+    demo 10/24  D2  harvested=10827.1mg  time_avg_od=0.7718
+    demo 11/24  D1  harvested= 7152.9mg  time_avg_od=0.7281
+    demo 12/24  D1  harvested=13293.8mg  time_avg_od=0.7818
+    demo 13/24  D1  harvested=13952.5mg  time_avg_od=0.8265
+    demo 14/24  D0  harvested= 8316.6mg  time_avg_od=0.7313
+    demo 15/24  D1  harvested=13704.1mg  time_avg_od=0.7669
+    demo 16/24  D2  harvested= 9602.2mg  time_avg_od=0.7217
+    demo 17/24  D0  harvested=13990.4mg  time_avg_od=0.7773
+    demo 18/24  D0  harvested=12074.7mg  time_avg_od=0.7931
+    demo 19/24  D0  harvested=11215.9mg  time_avg_od=0.7621
+    demo 20/24  D1  harvested=12993.9mg  time_avg_od=0.7592
+    demo 21/24  D1  harvested=10273.4mg  time_avg_od=0.7645
+    demo 22/24  D1  harvested=11451.0mg  time_avg_od=0.7313
+    demo 23/24  D0  harvested=13399.0mg  time_avg_od=0.7488
+    demo 24/24  D0  harvested=13973.0mg  time_avg_od=0.8555
+
+[Chunk] train_diff=D0 | mastery_diff=D0 | init=276 | steps=100,000
+
+  [Stoch] D0 cvar10_harvest=607.1
+  [Det] eps=8 harvest_mg=8064.5 p25=4751.0 time_avg_od=3.2159 crash=0.0%
+  [Det/bucket] 120:1405  250:3521  380:5161  700:6602  1100:9527  1500:10212  2500:12656  4000:16623  45:288
+  [Det/window] full-episode median=8064.5  back-half median=4857.3  back-half share=60%
+  [BEST] new best det checkpoint saved -> model_data/td3_rtu_checkpoints_best (harvest=8064.5mg, 0% crash, D0)
+  Curriculum hold D0 | chunk_eps=13 eps=39 harvest_mg=1544.6 p25=1143.4 time_avg_od=1.9953 crash=0.00% adv=0/2 dem=0/2 capfail=0/12
+
+[Chunk] train_diff=D0 | mastery_diff=D0 | init=162 | steps=100,000
+
+  [Stoch] D0 cvar10_harvest=613.6
+  [Det] eps=8 harvest_mg=6395.1 p25=4439.7 time_avg_od=3.5286 crash=0.0%
+  [Det/bucket] 120:2552  250:3999  380:4587  700:5203  1100:7587  1500:8885  2500:12698  4000:15577  45:1058
+  [Det/window] full-episode median=6395.1  back-half median=3952.0  back-half share=62%
+  Curriculum hold D0 | chunk_eps=13 eps=39 harvest_mg=2038.5 p25=1263.4 time_avg_od=1.8228 crash=0.00% adv=0/2 dem=0/2 capfail=0/12
+
+[Chunk] train_diff=D0 | mastery_diff=D0 | init=165 | steps=100,000
+
+  [Stoch] D0 cvar10_harvest=1072.4
+  [Det] eps=8 harvest_mg=6126.9 p25=4114.1 time_avg_od=3.5293 crash=0.0%
+  [Det/bucket] 120:2644  250:3707  380:4250  700:4753  1100:7501  1500:8464  2500:11945  4000:15861  45:1013
+  [Det/window] full-episode median=6126.9  back-half median=3763.3  back-half share=61%
+  Curriculum hold D0 | chunk_eps=13 eps=38 harvest_mg=2565.8 p25=2039.3 time_avg_od=1.9726 crash=0.00% adv=0/2 dem=0/2 capfail=0/12
+
+[Chunk] train_diff=D0 | mastery_diff=D0 | init=169 | steps=50,000
+
+  [Stoch] D0 cvar10_harvest=1072.4
+  [Det] eps=8 harvest_mg=7186.4 p25=4796.3 time_avg_od=3.4435 crash=0.0%
+  [Det/bucket] 120:2976  250:3832  380:5118  700:5806  1100:8567  1500:9912  2500:12899  4000:17203  45:1259
+  [Det/window] full-episode median=7186.4  back-half median=4458.4  back-half share=62%
+  Curriculum hold D0 | chunk_eps=6 eps=37 harvest_mg=2787.4 p25=2156.3 time_avg_od=1.9549 crash=0.00% adv=1/2 dem=0/2 capfail=0/12
+
+--- Training Complete. Final model saved. ---

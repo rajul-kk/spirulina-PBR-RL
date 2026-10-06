@@ -44,8 +44,11 @@ for prev in glob.glob("/kaggle/input/**/model_data", recursive=True):
         break
 os.makedirs(f"{PPO}/logs", exist_ok=True)
 
+# Protocol defaults; RL_ENV may override any of them (the 4M follow-up sets TD3_STEPS and
+# TD3_HIDDEN_RESET_INTERVAL, comparison_protocol.md section 7).
 env = dict(os.environ, PYTHONIOENCODING="utf-8", TD3_THREADS="4", TD3_HIDDEN_RESET_INTERVAL="600",
-           TD3_STEPS="2000000", **{k: str(v) for k, v in EXTRA.items()})
+           TD3_STEPS="2000000")
+env.update({k: str(v) for k, v in EXTRA.items()})
 if CORE in ("gru", "rtu"):
     cmd = ["python", "-u", "td3/TD3_cores.py", "--core", CORE]
 else:

@@ -79,3 +79,47 @@ Two more recurrent cores for TD3, same configuration and budget, seeds 1-5 each,
   architecture differs.
 They were chosen after seeing that the LSTM stalls at D0, so their comparisons with LRU and LSTM
 are reported as exploratory, with the same statistics but outside the Holm family.
+
+## 7. Follow-up: LRU vs LSTM with a 4M-step budget and an LSTM reset of 60 (written 2026-10-06)
+Written after the section 4 result (LRU vs LSTM: null on the primary endpoint, LRU ahead on
+reaching D1/D2) and before any run below. It is a separate family; it does not change the
+section 4 result. Two open questions:
+1. Does the result change with more training? (2M steps may be too short for either core.)
+2. Is the LSTM's weakness caused by the hidden-state reset of 600? The LSTM's cell state grows
+   with the step count (`docs/decision_history.md`, saturation diagnosis). A reset of 60 fixed
+   that in v45. Section 3 ran both cores at 600, a setting chosen for the LRU.
+
+Arms (tag `rl-protocol-v3`, which only lets a session set `TD3_STEPS` and
+`TD3_HIDDEN_RESET_INTERVAL`; the TD3, LSTM, LRU and simulator code is unchanged from
+`rl-protocol-v1`):
+
+| Arm | Seeds | How |
+|---|---|---|
+| LRU, reset 600, 4M | 1-5 | the section 3 runs, resumed from their 2M state with `TD3_STEPS=4000000` |
+| LSTM, reset 600, 4M | 1, 3, 4, 5 resumed; 2 carried over | as above. lstm-s2 hit the D0 capability abort before 2M. Under section 3's rules an aborted run is finished, so its 2M result counts as its 4M result |
+| LSTM, reset 60 | 1-5 | fresh runs with `TD3_HIDDEN_RESET_INTERVAL=60`. Each trains to 2M (scored there), then resumes to 4M (scored again) |
+
+Everything else is as in section 3: same seeds, curriculum, gates, D0 capability abort, BC
+scaffold and noise schedule. The exploration noise anneal is fixed at 600k steps, so extending a
+run does not raise its noise again. A resume reseeds from `TD3_SEED`, as every session boundary
+already does. Scoring is the section 4 `final` split. Each actor is evaluated with the reset
+it was trained with (600 or 60).
+
+Pre-registered family, Holm-corrected over these three. The endpoint is the mean paired
+per-episode harvest of the final checkpoint, with the section 4 bootstrap and the seed-level
+exact permutation test:
+- F1: LRU-600 vs LSTM-600, both at 4M.
+- F2: LRU-600 vs LSTM-60, both at 4M.
+- F3: LSTM-60 vs LSTM-600, both at 2M (matched budget, so this isolates the reset).
+
+Secondary, unadjusted: seeds reaching D1 and D2 by 4M; steps to D1 and D2; crash rate; the
+best-det checkpoint; the change from 2M to 4M within each seed. GRU and RTU are not extended.
+
+Limits stated in advance. This follow-up was designed after seeing the 2M results, so it can
+confirm or overturn them only within its own family. Five seeds per arm put the smallest
+seed-level p at 0.008.
+
+Outputs:
+- Session logs: `results/rl_4m/<arm>-s<seed>/session<N>`.
+- Scores: `results/final/followup/td3_<arm>_<steps>__s<seed>.json`.
+- Analysis: `results/final/followup/compare_followup.py`.

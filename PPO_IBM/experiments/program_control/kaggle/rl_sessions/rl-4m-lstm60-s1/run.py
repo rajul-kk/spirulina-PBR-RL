@@ -4,7 +4,7 @@ import os
 import subprocess
 
 os.environ["RL_CORE"] = "lstm"
-os.environ["RL_ENV"] = '{"TD3_SEED": 1, "TD3_HIDDEN_RESET_INTERVAL": 60, "TD3_STEPS": 2000000}'
+os.environ["RL_ENV"] = '{"TD3_SEED": 1, "TD3_HIDDEN_RESET_INTERVAL": 60, "TD3_STEPS": 4000000}'
 subprocess.run("git clone --depth 1 -b rl-protocol-v3 https://github.com/rajul-kk/spirulina-PBR-RL.git /kaggle/working/repo",
                shell=True, check=True)
 exec(open("/kaggle/working/repo/PPO_IBM/experiments/program_control/kaggle/run_rl.py").read())

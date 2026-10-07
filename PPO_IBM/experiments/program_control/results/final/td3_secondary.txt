@@ -12,11 +12,23 @@ lstm      2          -          -    D0    0    yes  1,950,000    87.5     5.15 
 lstm      3          -          -    D0    0     no  2,000,000    34.0     5.17   11.38  complete
 lstm      4          -          -    D0    0     no  2,000,000     0.0     0.82   13.03  complete
 lstm      5    800,000          -    D0    1     no  2,000,000     0.0     0.54    6.38  complete
+gru       1          -          -    D0    0     no  2,000,000    94.5     3.90    6.46  complete
+gru       2    600,000          -    D1    0     no  2,000,000     0.0     1.23    5.90  complete
+gru       3          -          -    D0    0    yes  1,300,000    98.5     3.00       -  complete
+gru       4          -          -    D0    0     no  2,000,000    80.0     3.81   13.13  complete
+gru       5          -          -    D0    0     no  2,000,000     0.0     1.02   11.27  complete
+rtu       1          -          -    D0    0     no  2,000,000    85.5     4.94   11.51  complete
+rtu       2          -          -    D0    0    yes  1,850,000   100.0     3.10   12.85  complete
+rtu       3          -          -    D0    0     no  2,000,000    99.5     3.12    5.75  complete
+rtu       4          -          -    D0    0     no  2,000,000     0.0     3.72    3.17  complete
+rtu       5          -          -    D0    0    yes  1,900,000   100.0     2.98       -  complete
 
 Per core (complete seeds only)
 core   seeds  reach D1  reach D2   med steps D1   med steps D2  mean crash
 lru        5         5         4      1,000,000      1,500,000        0.0%
 lstm       5         1         0    >=2,000,000    >=2,000,000       40.3%
+gru        5         1         0    >=2,000,000    >=2,000,000       54.6%
+rtu        5         0         0    >=2,000,000    >=2,000,000       77.0%
 (medians use steps censored at the budget; '>=' means at least half the seeds never reached the tier)
 
 lru vs lstm (pre-registered; 5 v 5 seeds)
@@ -25,3 +37,24 @@ lru vs lstm (pre-registered; 5 v 5 seeds)
   steps to D1 (censored at budget): mean lru 1,100,000, lstm 1,760,000; median lru 1,000,000, lstm >=2,000,000; exact permutation p=0.0476
   steps to D2 (censored at budget): mean lru 1,650,000, lstm 2,000,000; median lru 1,500,000, lstm >=2,000,000; exact permutation p=0.0476
   final-checkpoint crash rate: mean lru 0.0%, lstm 40.3%; seed-level exact permutation p=0.1667
+
+rtu vs lru (exploratory; 5 v 5 seeds)
+  seeds reaching D1: rtu 0/5, lru 5/5  Fisher exact two-sided p=0.0079
+  seeds reaching D2: rtu 0/5, lru 4/5  Fisher exact two-sided p=0.0476
+  steps to D1 (censored at budget): mean rtu 2,000,000, lru 1,100,000; median rtu >=2,000,000, lru 1,000,000; exact permutation p=0.0079
+  steps to D2 (censored at budget): mean rtu 2,000,000, lru 1,650,000; median rtu >=2,000,000, lru 1,500,000; exact permutation p=0.0476
+  final-checkpoint crash rate: mean rtu 77.0%, lru 0.0%; seed-level exact permutation p=0.0476
+
+gru vs lstm (exploratory; 5 v 5 seeds)
+  seeds reaching D1: gru 1/5, lstm 1/5  Fisher exact two-sided p=1.0000
+  seeds reaching D2: gru 0/5, lstm 0/5  Fisher exact two-sided p=1.0000
+  steps to D1 (censored at budget): mean gru 1,720,000, lstm 1,760,000; median gru >=2,000,000, lstm >=2,000,000; exact permutation p=1.0000
+  steps to D2 (censored at budget): mean gru 2,000,000, lstm 2,000,000; median gru >=2,000,000, lstm >=2,000,000; exact permutation p=1.0000
+  final-checkpoint crash rate: mean gru 54.6%, lstm 40.3%; seed-level exact permutation p=0.6667
+
+gru vs lru (exploratory; 5 v 5 seeds)
+  seeds reaching D1: gru 1/5, lru 5/5  Fisher exact two-sided p=0.0476
+  seeds reaching D2: gru 0/5, lru 4/5  Fisher exact two-sided p=0.0476
+  steps to D1 (censored at budget): mean gru 1,720,000, lru 1,100,000; median gru >=2,000,000, lru 1,000,000; exact permutation p=0.0476
+  steps to D2 (censored at budget): mean gru 2,000,000, lru 1,650,000; median gru >=2,000,000, lru 1,500,000; exact permutation p=0.0476
+  final-checkpoint crash rate: mean gru 54.6%, lru 0.0%; seed-level exact permutation p=0.1667

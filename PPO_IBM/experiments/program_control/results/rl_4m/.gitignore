@@ -1,0 +1,3 @@
+# Checkpoints and raw logs stay local; train_summary.log (progress bars stripped) is committed.
+*/session*/model_data/
+*/session*/train.log

@@ -10,7 +10,7 @@
   "enable_internet": true,
   "keywords": [],
   "dataset_sources": [],
-  "kernel_sources": ["rajulkabir/pbr-rl-v3-lru-s2"],
+  "kernel_sources": ["rajulkabir/pbr-rl-4m-lru-s2"],
   "competition_sources": [],
   "model_sources": []
 }

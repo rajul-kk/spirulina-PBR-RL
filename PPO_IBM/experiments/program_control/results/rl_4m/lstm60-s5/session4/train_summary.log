@@ -1,0 +1,90 @@
+--- TD3 (Twin Delayed DDPG) for GeneticPhotobioreactorEnv ---
+Device: cpu | obs_dim=6 action_dim=3 | gamma=0.9995
+Budget: 4,000,000 steps | Gate: project dual (stochastic + deterministic)
+Hidden reset every 60 steps | SEQ_LEN=60
+Demo replay: 24 scripted-expert episodes, 25% of every training batch, never evicted
+
+  [RESUME] step=3,300,000 D0 online_buffer=511 episodes
+  Collecting 24 scripted-expert demonstration episodes (mix {0: 0.4, 1: 0.4, 2: 0.2})...
+    demo  1/24  D1  harvested=11911.2mg  time_avg_od=0.7762
+    demo  2/24  D0  harvested=13480.2mg  time_avg_od=0.7851
+    demo  3/24  D1  harvested=11314.2mg  time_avg_od=0.7612
+    demo  4/24  D2  harvested=10572.3mg  time_avg_od=0.7510
+    demo  5/24  D2  harvested=15893.1mg  time_avg_od=0.7800
+    demo  6/24  D0  harvested=12732.7mg  time_avg_od=0.7361
+    demo  7/24  D0  harvested=13455.3mg  time_avg_od=0.7410
+    demo  8/24  D0  harvested=14046.1mg  time_avg_od=0.7708
+    demo  9/24  D1  harvested=15345.3mg  time_avg_od=0.7633
+    demo 10/24  D2  harvested= 8256.2mg  time_avg_od=0.8057
+    demo 11/24  D1  harvested=10564.5mg  time_avg_od=0.7220
+    demo 12/24  D1  harvested=15523.0mg  time_avg_od=0.8040
+    demo 13/24  D1  harvested=14161.7mg  time_avg_od=0.8340
+    demo 14/24  D0  harvested=11615.8mg  time_avg_od=0.7348
+    demo 15/24  D1  harvested=11064.7mg  time_avg_od=0.7780
+    demo 16/24  D2  harvested= 5867.9mg  time_avg_od=0.7415
+    demo 17/24  D0  harvested=10085.3mg  time_avg_od=0.7723
+    demo 18/24  D0  harvested=14633.7mg  time_avg_od=0.8088
+    demo 19/24  D0  harvested=13911.3mg  time_avg_od=0.7573
+    demo 20/24  D1  harvested=12637.7mg  time_avg_od=0.7642
+    demo 21/24  D1  harvested=10166.0mg  time_avg_od=0.7562
+    demo 22/24  D1  harvested= 7994.8mg  time_avg_od=0.7151
+    demo 23/24  D0  harvested=11688.3mg  time_avg_od=0.7577
+    demo 24/24  D0  harvested=18334.9mg  time_avg_od=0.8441
+
+[Chunk] train_diff=D0 | mastery_diff=D0 | init=261 | steps=100,000
+
+  [Stoch] D0 cvar10_harvest=1881.9
+  [Det] eps=8 harvest_mg=12734.3 p25=5098.2 time_avg_od=0.1142 crash=22.2%
+  [Det/bucket] 120:1916*  250:3607  380:5595  700:9786  1100:15683  1500:21338  2500:35725  4000:51948  45:597*
+  [Det/window] full-episode median=12734.3  back-half median=1322.0  back-half share=10%
+  Curriculum hold D0 | chunk_eps=13 eps=36 harvest_mg=4141.9 p25=2824.2 time_avg_od=0.1484 crash=5.56% adv=0/2 dem=0/2 capfail=1/12
+
+[Chunk] train_diff=D0 | mastery_diff=D0 | init=182 | steps=100,000
+
+  [Stoch] D0 cvar10_harvest=1702.2
+  [Det] eps=8 harvest_mg=11734.2 p25=5378.9 time_avg_od=0.2542 crash=22.2%
+  [Det/bucket] 120:1825*  250:3819  380:5899  700:9161  1100:14307  1500:20352  2500:34923  4000:44442  45:643*
+  [Det/window] full-episode median=11734.2  back-half median=2953.2  back-half share=25%
+  Curriculum hold D0 | chunk_eps=15 eps=38 harvest_mg=3934.1 p25=2488.1 time_avg_od=0.1176 crash=18.42% adv=0/2 dem=0/2 capfail=2/12
+
+[Chunk] train_diff=D0 | mastery_diff=D0 | init=3,000 | steps=100,000
+
+  [Stoch] D0 cvar10_harvest=1667.7
+  [Det] eps=8 harvest_mg=11702.7 p25=5332.7 time_avg_od=0.0469 crash=77.8%
+  [Det/bucket] 120:1592*  250:3582*  380:5916*  700:9311*  1100:14094*  1500:20303*  2500:35118  4000:50592  45:578*
+  [Det/window] full-episode median=11702.7  back-half median=588.7  back-half share=5%
+  Curriculum hold D0 | chunk_eps=15 eps=38 harvest_mg=3976.9 p25=2307.5 time_avg_od=0.0706 crash=36.84% adv=0/2 dem=0/2 capfail=3/12
+
+[Chunk] train_diff=D0 | mastery_diff=D0 | init=100 | steps=100,000
+
+  [Stoch] D0 cvar10_harvest=1501.3
+  [Det] eps=8 harvest_mg=11652.7 p25=5510.3 time_avg_od=0.0594 crash=66.7%
+  [Det/bucket] 120:5251  250:4089*  380:5597*  700:9090*  1100:14216*  1500:20175*  2500:33041  4000:48972  45:608*
+  [Det/window] full-episode median=11652.7  back-half median=1056.8  back-half share=9%
+  Curriculum hold D0 | chunk_eps=20 eps=37 harvest_mg=3933.8 p25=2044.2 time_avg_od=0.0374 crash=78.38% adv=0/2 dem=0/2 capfail=4/12
+
+[Chunk] train_diff=D0 | mastery_diff=D0 | init=372 | steps=100,000
+
+  [Stoch] D0 cvar10_harvest=1519.3
+  [Det] eps=8 harvest_mg=12662.9 p25=6350.1 time_avg_od=0.0564 crash=100.0%
+  [Det/bucket] 120:1941*  250:5471*  380:6643*  700:9620*  1100:15706*  1500:20232*  2500:32831*  4000:50187*  45:596*
+  [Det/window] full-episode median=12662.9  back-half median=885.8  back-half share=7%
+  Curriculum hold D0 | chunk_eps=22 eps=36 harvest_mg=3089.1 p25=2229.3 time_avg_od=0.0238 crash=100.00% adv=0/2 dem=0/2 capfail=5/12
+
+[Chunk] train_diff=D0 | mastery_diff=D0 | init=255 | steps=100,000
+
+  [Stoch] D0 cvar10_harvest=1503.3
+  [Det] eps=8 harvest_mg=14745.3 p25=10502.6 time_avg_od=0.0798 crash=77.8%
+  [Det/bucket] 120:1689*  250:8738*  380:13648  700:11091*  1100:15842*  1500:19967*  2500:33030*  4000:53623  45:586*
+  [Det/window] full-episode median=14745.3  back-half median=1879.7  back-half share=13%
+  Curriculum hold D0 | chunk_eps=21 eps=32 harvest_mg=3139.3 p25=2159.1 time_avg_od=0.0173 crash=96.88% adv=0/2 dem=0/2 capfail=6/12
+
+[Chunk] train_diff=D0 | mastery_diff=D0 | init=1,264 | steps=100,000
+
+  [Stoch] D0 cvar10_harvest=1502.0
+  [Det] eps=8 harvest_mg=12495.0 p25=5216.1 time_avg_od=0.0549 crash=77.8%
+  [Det/bucket] 120:1846*  250:3834*  380:5677*  700:10100*  1100:14890*  1500:19713*  2500:33179  4000:50169  45:619*
+  [Det/window] full-episode median=12495.0  back-half median=1018.6  back-half share=8%
+  Curriculum hold D0 | chunk_eps=21 eps=33 harvest_mg=4690.1 p25=2018.2 time_avg_od=0.0236 crash=100.00% adv=0/2 dem=0/2 capfail=7/12
+
+--- Training Complete. Final model saved. ---

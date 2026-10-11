@@ -1,0 +1,102 @@
+Carry-over applied: LSTM-600 seed 2 (aborted before 2M); its 2M result (td3_lstm__s2.json) is scored as its 4M result.
+
+Follow-up family (protocol section 7), Holm over 3: F1: LRU-600@4M vs LSTM-600@4M; F2: LRU-600@4M vs LSTM-60@4M; F3: LSTM-60@2M vs LSTM-600@2M
+175 yield-scored episodes per run
+
+arm           runs  median g   p25 g  crash   per-run medians
+LRU-600@2M       5      6.87    5.47     0%   [2.97, 9.76, 0.9, 8.4, 12.0]
+LRU-600@4M       5      6.37    5.04     0%   [7.91, 9.87, 0.34, 6.77, 7.11]
+LSTM-60@4M       5      3.96    2.49    47%   [5.3, 3.13, 3.22, 3.97, 3.68]
+LSTM-60@2M       5      3.09    2.03    40%   [3.0, 0.55, 4.66, 3.97, 3.94]
+LSTM-600@2M      5      3.00    2.11    40%   [3.07, 5.15, 5.17, 0.82, 0.54]
+LSTM-600@4M      5      2.69    1.85    37%   [3.1, 5.15, 3.65, 0.53, 1.12]
+
+Pre-registered comparisons (mean paired difference, hierarchical 95% CI, Holm-adjusted p over the family of 3)
+  F1  LRU-600@4M - LSTM-600@4M: +2.09 g [-2.85, +6.57]  p_holm=0.7668  LRU-600@4M better in 91% of episodes
+  F2  LRU-600@4M - LSTM-60@4M: +1.32 g [-3.19, +5.14]  p_holm=0.7668  LRU-600@4M better in 89% of episodes
+  F3  LSTM-60@2M - LSTM-600@2M: -2.03 g [-5.35, +0.77]  p_holm=0.5430  LSTM-60@2M better in 53% of episodes
+
+  F1 seed-level exact permutation test LRU-600@4M vs LSTM-600@4M (5 v 5 runs, per-run medians): p=0.0873
+
+  F2 seed-level exact permutation test LRU-600@4M vs LSTM-60@4M (5 v 5 runs, per-run medians): p=0.1667
+
+  F3 seed-level exact permutation test LSTM-60@2M vs LSTM-600@2M (5 v 5 runs, per-run medians): p=0.8413
+
+====================================================================================================
+Secondary endpoints (unadjusted p-values, no Holm correction)
+
+2M -> 4M change in each seed's median harvest (g, yield-scored episodes, final checkpoint)
+arm        seed       2M       4M   change
+LRU-600       1     2.97     7.91    +4.94
+LRU-600       2     9.76     9.87    +0.11
+LRU-600       3     0.90     0.34    -0.56
+LRU-600       4     8.40     6.77    -1.63
+LRU-600       5    12.00     7.11    -4.89
+LRU-600    mean                      -0.41   (2/5 seeds up)
+LSTM-600      1     3.07     3.10    +0.03
+LSTM-600      2     5.15     5.15    +0.00   (carried over: 2M result is the 4M result)
+LSTM-600      3     5.17     3.65    -1.52
+LSTM-600      4     0.82     0.53    -0.30
+LSTM-600      5     0.54     1.12    +0.59
+LSTM-600   mean                      -0.24   (2/5 seeds up)
+LSTM-60       1     3.00     5.30    +2.30
+LSTM-60       2     0.55     3.13    +2.58
+LSTM-60       3     4.66     3.22    -1.43
+LSTM-60       4     3.97     3.97    +0.00
+LSTM-60       5     3.94     3.68    -0.26
+LSTM-60    mean                      +0.64   (2/5 seeds up)
+
+Best-det checkpoint: per-seed median harvest (g, yield-scored episodes)
+  LRU-600@4M    median of seeds 11.86   {1: 11.86, 2: 5.56, 3: 12.34, 4: 6.77, 5: 12.59}
+  LSTM-600@4M   median of seeds 6.38   {1: 5.44, 2: 12.6, 3: 3.65, 4: 13.03, 5: 6.38}
+  LSTM-60@4M    median of seeds 8.83   {1: 8.83, 2: 3.81, 3: 5.64, 4: 13.11, 5: 11.69}
+  LSTM-60@2M    median of seeds 8.83   {1: 8.83, 2: 3.81, 3: 4.84, 4: 13.11, 5: 11.69}
+  LSTM-600@2M   median of seeds 11.38   {1: 5.44, 2: 12.6, 3: 11.38, 4: 13.03, 5: 6.38}
+  LRU-600@2M    median of seeds 11.86   {1: 11.86, 2: 9.76, 3: 12.34, 4: 1.16, 5: 12.59}
+
+Crash rate of the final checkpoint (per seed)
+  LRU-600@4M    mean 0.0%   {1: '0.0%', 2: '0.0%', 3: '0.0%', 4: '0.0%', 5: '0.0%'}
+  LSTM-600@4M   mean 37.2%   {1: '98.5%', 2: '87.5%', 3: '0.0%', 4: '0.0%', 5: '0.0%'}
+  LSTM-60@4M    mean 47.3%   {1: '46.5%', 2: '24.0%', 3: '0.0%', 4: '75.5%', 5: '90.5%'}
+  LSTM-60@2M    mean 40.2%   {1: '100.0%', 2: '0.0%', 3: '22.5%', 4: '75.5%', 5: '3.0%'}
+  LSTM-600@2M   mean 40.3%   {1: '80.0%', 2: '87.5%', 3: '34.0%', 4: '0.0%', 5: '0.0%'}
+  LRU-600@2M    mean 0.0%   {1: '0.0%', 2: '0.0%', 3: '0.0%', 4: '0.0%', 5: '0.0%'}
+
+Curriculum from training logs (steps censored at the 4,000,000 budget)
+arm        seed      D1 at      D2 at  tier  dem  abort      steps  status
+LRU-600       1  1,100,000  1,500,000    D0    2     no  4,000,000  complete
+LRU-600       2  1,400,000  1,950,000    D0    2     no  4,000,000  complete
+LRU-600       3  1,000,000  1,400,000    D2    0     no  4,000,000  complete
+LRU-600       4  1,000,000  3,950,000    D2    1     no  4,000,000  complete
+LRU-600       5  1,000,000  1,400,000    D2    0     no  4,000,000  complete
+LSTM-600      1          -          -    D0    0    yes  3,000,000  complete
+LSTM-600      2          -          -    D0    0    yes  1,950,000  complete
+LSTM-600      3  3,600,000          -    D1    0     no  4,000,000  complete
+LSTM-600      4          -          -    D0    0     no  4,000,000  complete
+LSTM-600      5    800,000          -    D0    1     no  4,000,000  complete
+LSTM-60       1    700,000  1,100,000    D0    2    yes  3,500,000  complete
+LSTM-60       2    600,000          -    D0    1     no  4,000,000  complete
+LSTM-60       3    900,000          -    D1    1     no  4,000,000  complete
+LSTM-60       4          -          -    D0    0    yes  1,600,000  complete
+LSTM-60       5    300,000          -    D0    1     no  4,000,000  complete
+
+Per arm (finished seeds only)
+arm        seeds  reach D1  reach D2   med steps D1   med steps D2
+LRU-600        5         5         5      1,000,000      1,500,000
+LSTM-600       5         2         0    >=4,000,000    >=4,000,000
+LSTM-60        5         4         1        700,000    >=4,000,000
+(medians use steps censored at the budget; '>=' means at least half the seeds never reached the tier)
+
+F1 pair LRU-600 vs LSTM-600 at 4M (5 v 5 seeds)
+  seeds reaching D1: LRU-600 5/5, LSTM-600 2/5  Fisher exact two-sided p=0.1667
+  seeds reaching D2: LRU-600 5/5, LSTM-600 0/5  Fisher exact two-sided p=0.0079
+  steps to D1 (censored at budget): mean LRU-600 1,100,000, LSTM-600 3,280,000; median LRU-600 1,000,000, LSTM-600 >=4,000,000; exact permutation p=0.0476
+  steps to D2 (censored at budget): mean LRU-600 2,040,000, LSTM-600 4,000,000; median LRU-600 1,500,000, LSTM-600 >=4,000,000; exact permutation p=0.0079
+  final-checkpoint crash rate: mean LRU-600 0.0%, LSTM-600 37.2%; seed-level exact permutation p=0.4444
+
+F2 pair LRU-600 vs LSTM-60 at 4M (5 v 5 seeds)
+  seeds reaching D1: LRU-600 5/5, LSTM-60 4/5  Fisher exact two-sided p=1.0000
+  seeds reaching D2: LRU-600 5/5, LSTM-60 1/5  Fisher exact two-sided p=0.0476
+  steps to D1 (censored at budget): mean LRU-600 1,100,000, LSTM-60 1,300,000; median LRU-600 1,000,000, LSTM-60 700,000; exact permutation p=1.0000
+  steps to D2 (censored at budget): mean LRU-600 2,040,000, LSTM-60 3,420,000; median LRU-600 1,500,000, LSTM-60 >=4,000,000; exact permutation p=0.1746
+  final-checkpoint crash rate: mean LRU-600 0.0%, LSTM-60 47.3%; seed-level exact permutation p=0.0476

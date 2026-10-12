@@ -1,0 +1,5 @@
+actor lstm60_s3 core=lstm path=E:/SEGP/.claude/worktrees/agent-a87c1f2edcbd1556b/PPO_IBM/experiments/program_control/results/rl_4m/lstm60-s3/session4/model_data/td3_checkpoints/actor.pth
+episodes=3 (test split, first 3)
+state L2 norm (mean over episodes) at step 60/300/600/1200/end; peak saturation (LSTM) / peak max|c| or |h|
+[reset600] norm@ 60:145.08  300:521.10  600:1033.26  1200:1042.18  end:862.98  peak sat_frac=0.406  max_c=589.963
+[never] norm@ 60:145.08  300:521.10  600:1033.26  1200:1963.60  end:3975.54  peak sat_frac=0.406  max_c=3714.418

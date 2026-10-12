@@ -1,0 +1,5 @@
+actor lru600_s3 core=lru path=E:/SEGP/.claude/worktrees/agent-a87c1f2edcbd1556b/PPO_IBM/experiments/program_control/results/rl_4m/lru-s3/session3/model_data/td3_lru_checkpoints/actor.pth
+episodes=3 (test split, first 3)
+state L2 norm (mean over episodes) at step 60/300/600/1200/end; peak saturation (LSTM) / peak max|c| or |h|
+[reset600] norm@ 60:373.10  300:810.05  600:1023.67  1200:1020.60  end:976.67  peak max_h=441.029
+[never] norm@ 60:373.10  300:810.05  600:1023.67  1200:1162.81  end:1445.40  peak max_h=708.827

@@ -1,0 +1,5 @@
+actor gru_s1 core=gru path=E:/SEGP/.claude/worktrees/agent-a87c1f2edcbd1556b/PPO_IBM/experiments/program_control/results/rl_v3/rl-v3-gru-s1/session2/model_data/td3_gru_checkpoints/actor.pth
+episodes=3 (test split, first 3)
+state L2 norm (mean over episodes) at step 60/300/600/1200/end; peak saturation (LSTM) / peak max|c| or |h|
+[reset600] norm@ 60:10.51  300:10.52  600:10.47  1200:10.53  end:7.28  peak max_h=1.000
+[never] norm@ 60:10.51  300:10.52  600:10.47  1200:10.50  end:10.50  peak max_h=1.000

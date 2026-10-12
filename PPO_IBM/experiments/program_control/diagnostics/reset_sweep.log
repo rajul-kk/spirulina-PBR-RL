@@ -1,0 +1,4 @@
+16:25:05 start lru600 s1 r30
+td3_actor.py split=test D2 n=52: median 3288 mg, p25 1977 mg, crash 92%, time-avg od 0.02, errors 0, fitness -6599 [189s]
+16:28:15 done  lru600 s1 r30
+16:28:15 start lru600 s1 r60

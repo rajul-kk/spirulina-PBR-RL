@@ -131,3 +131,64 @@ A simulation in `tests/test_stats.py` found that the hierarchical bootstrap is m
 permutation test does not depend on the bootstrap. It is therefore the conservative headline test
 for every comparison here (smallest possible p is 0.008 at 5 v 5), and the bootstrap CIs should
 be read as somewhat narrow.
+
+## 9. Training-context ablation: does more training context fix the LSTM? (written 2026-10-13)
+Written after sections 4, 6 and 7 and the evaluation-reset diagnostics, and before any run below.
+It is a separate family; it does not change the section 4 or 7 results.
+
+Motivation. Diagnostics on the `test` split
+(`experiments/program_control/diagnostics/reset_sweep_summary.txt`, commit 9f97a1c) showed that
+LSTM-600 harvest is flat across evaluation resets 30..never (2.9 g), and that LSTM-60 and the GRU
+are not rescued either, while LRU-600 peaks at reset 600 (6.8 g, against 3.3 g at reset 30).
+Hypothesis: the gated cores, trained on 60-step zero-start replay windows, learn near-memoryless
+policies; giving them more training context should help.
+
+Arms (tag `rl-protocol-v4`; code is commit c2fda43). Everything else is as in section 3: 2M
+steps, rollout and evaluation hidden reset 600, seeds 1-5, curriculum, gates, D0 capability
+abort, BC scaffold, noise schedule, `BATCH_SIZE` 24.
+
+| Arm | Seeds | How |
+|---|---|---|
+| BI-LSTM | 1-5 | `TD3_BURN_IN=40`, `TD3_STATE_STRIDE=10`. R2D2-style: the rollout actor state is stored every 10 steps, and a no-grad burn-in of 40 steps runs from the stored state before each replay window. Critics burn in from zero. |
+| W150-LSTM | 1-5 | `TD3_SEQ_LEN=150` (replay windows of 150 steps instead of 60) |
+
+Controls, reused and not rerun: the section 3 LSTM-600 and LRU-600 2M runs. `td3/TD3.py`,
+`td3/TD3_lru.py`, `environments/` and `training/` are byte-identical to `rl-protocol-v1` before
+c2fda43, and `tests/test_context_ablation.py` pins the default path bit-identical to a reference
+generated from the pre-change code, so the controls are what the new code would give at defaults.
+
+Dropped before any run, for compute. Measured slowdowns: burn-in about 2.2x (LSTM) and 2.5x
+(LRU); 150-step window about 2.3x; 300-step window 4.5x (LSTM) and 12x (LRU); LayerNorm LSTM
+3.8x. Dropped: 300-step windows, the LRU arms, and the LayerNorm LSTM (also the least motivated:
+the bounded GRU fails too, so saturation is not the main suspect).
+
+Checkpoint rule (fixed now, applied identically to new and control runs). Candidates are the
+run's final 2M checkpoint and its best-det checkpoint (if one exists). Each is scored once on the
+new `val` split (`harness.py`, `main_block(40_000_000, 40)` + `high_block(40_000_000, 12)`,
+disjoint from all other splits) with reset 600. Select the higher median harvest; ties or a
+missing best-det checkpoint select the final checkpoint. The selected checkpoint's `final`-split
+score is the endpoint. For the controls, both checkpoints were already scored on the `final`
+split in section 4, so the endpoint is the existing `final` score of whichever checkpoint `val`
+selects. The selection is mechanical and made on `val` only; that the controls' `final` scores
+already exist is a limit.
+
+Pre-registered family, Holm-corrected over two. Endpoint: mean paired per-episode harvest on the
+`final` split of the selected checkpoint, with the section 4 hierarchical bootstrap and the
+seed-level exact permutation test, the latter being the headline (section 8).
+- C1: BI-LSTM vs the LSTM control.
+- C2: W150-LSTM vs the LSTM control.
+
+Secondary, unadjusted: LRU control vs BI-LSTM and vs W150-LSTM (does the gap close); seeds
+reaching D1/D2; steps to D1/D2; crash rate; the raw final-checkpoint scores (continuity with
+section 4); and an evaluation-reset sweep (resets 30, 60, 150, 600, never) of the new arms' final
+checkpoints on the `test` split, as in `diagnostics/reset_sweep.sh`, to see whether harvest now
+depends on context.
+
+Limits stated in advance. Designed after seeing sections 4, 6, 7 and the diagnostics. Five seeds
+per arm put the smallest seed-level p at 0.008. Laptop timing benchmarks were noisy (+-30%).
+
+Outputs:
+- Sessions: `results/rl_ctx/<arm>-s<seed>/session<N>` (arm = `bi` or `w150`).
+- Scores: `results/final/ctx/td3_<arm>_<final|best>__s<seed>.<val|final>.json`.
+- Analysis: `results/final/ctx/compare_ctx.py` (to be written later, before any `final`-split
+  scoring of the new arms).

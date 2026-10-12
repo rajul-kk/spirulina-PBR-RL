@@ -3,6 +3,8 @@
 Env (set by the per-session wrapper in kaggle/rl_sessions/<name>/run.py):
   RL_CORE      lstm | lru | gru | rtu
   RL_ENV       JSON dict of extra environment variables (TD3_BC_COEF, PBR_HARVEST_REWARD, ...)
+               training-context ablation: TD3_SEQ_LEN, TD3_BURN_IN, TD3_STATE_STRIDE, TD3_CORE_LN
+               (all forwarded verbatim; defaults reproduce rl-protocol-v1)
   REPO_BRANCH  branch to clone
 Resume: attach the previous session's output as a kernel source; its model_data/ is copied in
 and training continues with --resume. Training is stopped at 11 h so the session can save its

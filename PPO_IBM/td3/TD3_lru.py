@@ -44,12 +44,14 @@ class LRUCritic(base.RecurrentCritic):
         return (self.q1_lstm.initial_hidden(batch, device=DEVICE),
                 self.q2_lstm.initial_hidden(batch, device=DEVICE))
 
-    def q1_only(self, obs, action):
+    def q1_only(self, obs, action, hidden=None):
         # base.q1_only hard-codes the LSTM (h, c) tuple, so it must be overridden.
         B, T, _ = obs.shape
         sa = torch.cat([obs, action], dim=-1).reshape(B * T, -1)
         x = self.q1_input(sa).reshape(B, T, -1)
-        out, _ = self.q1_lstm(x, self.q1_lstm.initial_hidden(B, device=DEVICE))
+        if hidden is None:
+            hidden = self.q1_lstm.initial_hidden(B, device=DEVICE)
+        out, _ = self.q1_lstm(x, hidden)
         return self.q1_head(out)
 
 
@@ -74,7 +76,8 @@ def td3_update(actor, actor_target, critic, critic_target, actor_opt, critic_opt
     if batch is None:
         return None, None
 
-    critic_loss = base.critic_update(actor_target, critic, critic_target, critic_opt, batch)
+    ctx = base.burn_in_context(batch, actor, actor_target, critic, critic_target) if "burn" in batch else None
+    critic_loss = base.critic_update(actor_target, critic, critic_target, critic_opt, batch, ctx)
 
     actor_loss = None
     if update_idx % base.POLICY_DELAY == 0:
@@ -83,16 +86,18 @@ def td3_update(actor, actor_target, critic, critic_target, actor_opt, critic_opt
         if bc_obs:
             bc_obs_t = torch.tensor(np.array(bc_obs), dtype=torch.float32, device=DEVICE)
             bc_act_t = torch.tensor(np.array(bc_act), dtype=torch.float32, device=DEVICE)
-            fused, _ = actor(torch.cat([obs, bc_obs_t], dim=0))
+            fused, _ = (actor(torch.cat([obs, bc_obs_t], dim=0)) if ctx is None else
+                        actor(torch.cat([obs, bc_obs_t], dim=0),
+                              base.actor_hidden_for_rows(ctx, bc_obs_t.shape[0], actor.initial_hidden(1))))
             sat_term = base.preact_penalty(actor.last_preact)
             pred_action, bc_pred = fused[:obs.shape[0]], fused[obs.shape[0]:]
             bc_term = base.BC_COEF * F.mse_loss(bc_pred, bc_act_t)
         else:
-            pred_action, _ = actor(obs)
+            pred_action, _ = actor(obs) if ctx is None else actor(obs, ctx["actor"])
             sat_term = base.preact_penalty(actor.last_preact)
             bc_term = torch.tensor(0.0, device=DEVICE)
 
-        q_pred = critic.q1_only(obs, pred_action)
+        q_pred = critic.q1_only(obs, pred_action) if ctx is None else critic.q1_only(obs, pred_action, ctx["critic"][0])
         actor_loss = base.actor_step(actor, actor_target, critic, critic_target, actor_opt,
                                      -base.actor_q_weight(q_pred) * q_pred.mean() + bc_term + sat_term)
 

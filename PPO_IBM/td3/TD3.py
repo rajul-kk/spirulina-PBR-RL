@@ -25,6 +25,7 @@ from curriculum_schedule import (
     det_eval_set, DET_EVAL_ADVERSARIAL_MAX,
 )
 from genetic_env import GeneticPhotobioreactorEnv
+from ln_lstm import LNLSTM
 
 # ─── CONSTANTS ──────────────────────────────────────────────────────────────
 OBS_DIM = 6
@@ -38,7 +39,11 @@ GAMMA = 0.9995
 HIDDEN_DIM = 128
 LSTM_LAYERS = 1
 BATCH_SIZE = 24
-SEQ_LEN = 60  # long enough for real pre/post context around a harvest event; see HARVEST_BIAS_PROB
+# Training-context ablation knobs (all default to the rl-protocol-v1 behaviour; see
+# docs/reports/comparison_protocol.md). SEQ_LEN is the replay window length;
+# BURN_IN > 0 prepends a no-grad burn-in from the actor's stored rollout state (R2D2 style),
+# STATE_STRIDE is how often the rollout stores that state; CORE_LN swaps nn.LSTM for ln_lstm.LNLSTM.
+SEQ_LEN = int(os.environ.get("TD3_SEQ_LEN", "60"))  # long enough for real pre/post context around a harvest event; see HARVEST_BIAS_PROB
 # Rollout/det-eval reset cadence, independently overridable via TD3_HIDDEN_RESET_INTERVAL.
 # Defaults to SEQ_LEN (unchanged behavior) -- this caps LSTM cell state to the horizon
 # actually seen in training. Decoupled from SEQ_LEN (the TRAINING batch window length,
@@ -46,7 +51,12 @@ SEQ_LEN = 60  # long enough for real pre/post context around a harvest event; se
 # given a longer rollout memory horizon WITHOUT paying forward_sequence's O(T^2) training
 # cost -- rollout/det-eval only ever call the actor one step (T=1) at a time.
 # (full rationale: docs/decision_history.md#--legacy-TD3-py-hidden-reset-decouple)
-HIDDEN_RESET_INTERVAL = int(os.environ.get("TD3_HIDDEN_RESET_INTERVAL", str(SEQ_LEN)))
+# The default stays the legacy 60 and is NOT tied to TD3_SEQ_LEN, so changing the training window
+# never silently changes the rollout/eval cadence (the protocol runs all set it to 600 anyway).
+HIDDEN_RESET_INTERVAL = int(os.environ.get("TD3_HIDDEN_RESET_INTERVAL", "60"))
+BURN_IN = int(os.environ.get("TD3_BURN_IN", "0"))
+STATE_STRIDE = int(os.environ.get("TD3_STATE_STRIDE", "20"))
+CORE_LN = os.environ.get("TD3_CORE_LN", "0") == "1"
 # (full rationale: docs/decision_history.md#--legacy-TD3-py-107-lstm-cell-state-saturation)
 ONLINE_BUFFER_CAPACITY = 5_000       # episodes
 LR_ACTOR = 3e-4
@@ -132,14 +142,15 @@ class RecurrentActor(nn.Module):
     """LSTM encoder + tanh-squashed deterministic head. Exploration noise is added
     externally during environment interaction, not sampled internally (unlike SAC)."""
 
-    def __init__(self, obs_dim, action_dim, hidden_dim=HIDDEN_DIM, lstm_layers=LSTM_LAYERS):
+    def __init__(self, obs_dim, action_dim, hidden_dim=HIDDEN_DIM, lstm_layers=LSTM_LAYERS, core_ln=None):
         super().__init__()
         self.hidden_dim = hidden_dim
         self.lstm_layers = lstm_layers
+        core_ln = CORE_LN if core_ln is None else core_ln
         self.input_fc = nn.Sequential(
             nn.Linear(obs_dim, hidden_dim), nn.LayerNorm(hidden_dim), nn.ELU(),
         )
-        self.lstm = nn.LSTM(hidden_dim, hidden_dim, lstm_layers, batch_first=True)
+        self.lstm = (LNLSTM if core_ln else nn.LSTM)(hidden_dim, hidden_dim, lstm_layers, batch_first=True)
         self.mean_fc = nn.Linear(hidden_dim, action_dim)
 
     def initial_hidden(self, batch):
@@ -162,16 +173,18 @@ class RecurrentActor(nn.Module):
 class RecurrentCritic(nn.Module):
     """Twin independent-LSTM Q-networks (Fujimoto et al. 2018 twin-critic-min)."""
 
-    def __init__(self, obs_dim, action_dim, hidden_dim=HIDDEN_DIM, lstm_layers=LSTM_LAYERS):
+    def __init__(self, obs_dim, action_dim, hidden_dim=HIDDEN_DIM, lstm_layers=LSTM_LAYERS, core_ln=None):
         super().__init__()
         self.hidden_dim = hidden_dim
         self.lstm_layers = lstm_layers
+        core_ln = CORE_LN if core_ln is None else core_ln
+        Core = LNLSTM if core_ln else nn.LSTM
         inp = obs_dim + action_dim
         self.q1_input = nn.Sequential(nn.Linear(inp, hidden_dim), nn.LayerNorm(hidden_dim), nn.ELU())
-        self.q1_lstm = nn.LSTM(hidden_dim, hidden_dim, lstm_layers, batch_first=True)
+        self.q1_lstm = Core(hidden_dim, hidden_dim, lstm_layers, batch_first=True)
         self.q1_head = nn.Linear(hidden_dim, 1)
         self.q2_input = nn.Sequential(nn.Linear(inp, hidden_dim), nn.LayerNorm(hidden_dim), nn.ELU())
-        self.q2_lstm = nn.LSTM(hidden_dim, hidden_dim, lstm_layers, batch_first=True)
+        self.q2_lstm = Core(hidden_dim, hidden_dim, lstm_layers, batch_first=True)
         self.q2_head = nn.Linear(hidden_dim, 1)
 
     def initial_hidden(self, batch):
@@ -189,10 +202,11 @@ class RecurrentCritic(nn.Module):
         out2, hidden2 = self.q2_lstm(x2, hidden2)
         return self.q1_head(out1), self.q2_head(out2), hidden1, hidden2
 
-    def q1_only(self, obs, action):
+    def q1_only(self, obs, action, hidden=None):
         B, T, _ = obs.shape
-        hidden = (torch.zeros(self.lstm_layers, B, self.hidden_dim, device=DEVICE),
-                  torch.zeros(self.lstm_layers, B, self.hidden_dim, device=DEVICE))
+        if hidden is None:
+            hidden = (torch.zeros(self.lstm_layers, B, self.hidden_dim, device=DEVICE),
+                      torch.zeros(self.lstm_layers, B, self.hidden_dim, device=DEVICE))
         sa = torch.cat([obs, action], dim=-1).reshape(B * T, -1)
         x = self.q1_input(sa).reshape(B, T, -1)
         out, _ = self.q1_lstm(x, hidden)
@@ -201,6 +215,46 @@ class RecurrentCritic(nn.Module):
 
 # ═════════════════════════════════════════════════════════════════════════════
 # (full rationale: docs/decision_history.md#--legacy-TD3-py-181)
+
+# ── Stored actor state / burn-in (TD3_BURN_IN > 0 only) ──────────────────────────────────────
+# A recurrent state is handled as a flat vector [B, D]: nn.LSTM's (h, c) -> [h; c] (D = 2H),
+# the LRU / GRU / RTU cores' single [B, D] tensor -> itself. Single-layer cores only.
+
+def hidden_to_vec(hidden):
+    if isinstance(hidden, tuple):
+        return torch.cat([x.reshape(x.shape[-2], x.shape[-1]) for x in hidden], dim=-1)
+    return hidden
+
+
+def vec_to_hidden(vec, like):
+    """Inverse of hidden_to_vec; `like` is any hidden of the same core (picks tuple vs tensor)."""
+    if isinstance(like, tuple):
+        H = vec.shape[-1] // 2
+        return (vec[:, :H].unsqueeze(0).contiguous(), vec[:, H:].unsqueeze(0).contiguous())
+    return vec
+
+
+class StateRecorder:
+    """Stores the actor's recurrent state *before* the forward of every STRIDE-th episode step,
+    as float16. Called from the rollout loop after the hidden-reset check, so a stored state is
+    exactly what the actor held (zeros right after a reset or at episode start)."""
+
+    FP16_MAX = 65000.0
+
+    def __init__(self, stride):
+        self.stride = stride
+        self.states = []
+
+    def before_step(self, step_idx, hidden):
+        if step_idx % self.stride == 0:
+            v = hidden_to_vec(hidden).detach().reshape(-1).cpu().numpy()
+            self.states.append(np.clip(v, -self.FP16_MAX, self.FP16_MAX).astype(np.float16))
+
+    def attach(self, episode):
+        episode["hstate"] = np.stack(self.states) if self.states else np.zeros((0, 0), dtype=np.float16)
+        episode["hstride"] = self.stride
+        return episode
+
 
 class SequenceReplayBuffer:
     # Harvest fires every HARVEST_INTERVAL_STEPS; uniform window sampling gives a
@@ -229,7 +283,25 @@ class SequenceReplayBuffer:
                     return int(np.random.randint(lo, hi + 1))
         return int(np.random.randint(0, ep_len - self.seq_len + 1))
 
-    def _sample_raw(self, batch_size):
+    def burn_info(self, ep, start):
+        """Burn-in span for a window starting at `start`: obs/actions over [b, start] and the
+        stored actor state at b (None = zero state). b is the largest stored index
+        <= start - BURN_IN (0 if none), never earlier than the last hidden reset at or before
+        `start` -- the rollout actor held a zero state there, so burn-in must not cross it.
+        Episodes without stored states (demos) use the same b with a zero state."""
+        stride = int(ep.get("hstride", STATE_STRIDE))
+        has_state = "hstate" in ep
+        b = max(0, ((start - BURN_IN) // stride) * stride)
+        if has_state:
+            r0 = (start // HIDDEN_RESET_INTERVAL) * HIDDEN_RESET_INTERVAL
+            b = max(b, r0)
+        h0 = None
+        if has_state and b % stride == 0 and b // stride < len(ep["hstate"]):
+            h0 = ep["hstate"][b // stride].astype(np.float32)
+        return {"b": b, "start": start, "h0": h0,
+                "obs": ep["obs"][b:start + 1], "action": ep["action"][b:start + 1]}
+
+    def _sample_raw(self, batch_size, extra=None):
         obs_b, act_b, rew_b, next_obs_b, done_b = [], [], [], [], []
         tries = 0
         while len(obs_b) < batch_size and tries < batch_size * 20:
@@ -242,6 +314,8 @@ class SequenceReplayBuffer:
                 continue
             start = self._sample_start(ep_len)
             sl = slice(start, start + self.seq_len)
+            if extra is not None:
+                extra.append(self.burn_info(ep, start))
             obs_b.append(ep["obs"][sl]); act_b.append(ep["action"][sl])
             rew_b.append(ep["reward"][sl]); next_obs_b.append(ep["next_obs"][sl])
             done_b.append(ep["done"][sl])
@@ -272,8 +346,9 @@ def sample_mixed_batch(demo_buffer, online_buffer, batch_size, demo_fraction):
     if len(online_buffer) == 0:
         n_demo, n_online = batch_size, 0
 
-    d_obs, d_act, d_rew, d_nobs, d_done = demo_buffer._sample_raw(n_demo)
-    o_obs, o_act, o_rew, o_nobs, o_done = online_buffer._sample_raw(n_online)
+    burn = [] if BURN_IN > 0 else None
+    d_obs, d_act, d_rew, d_nobs, d_done = demo_buffer._sample_raw(n_demo, burn)
+    o_obs, o_act, o_rew, o_nobs, o_done = online_buffer._sample_raw(n_online, burn)
 
     obs = d_obs + o_obs; act = d_act + o_act; rew = d_rew + o_rew
     nobs = d_nobs + o_nobs; done = d_done + o_done
@@ -284,10 +359,74 @@ def sample_mixed_batch(demo_buffer, online_buffer, batch_size, demo_fraction):
         t = torch.tensor(np.array(lst), dtype=torch.float32, device=DEVICE)
         return t.unsqueeze(-1) if unsqueeze_last else t
 
-    return {
+    out = {
         "obs": to_t(obs), "action": to_t(act), "reward": to_t(rew, True),
         "next_obs": to_t(nobs), "done": to_t(done, True),
     }
+    if burn is not None:
+        out["burn"] = burn
+    return out
+
+
+def burn_in_context(batch, actor, actor_target, critic, critic_target):
+    """Initial recurrent states for the training window, from a no-grad burn-in.
+
+    Per sample, with the window starting at s and burn-in starting at b (l = s - b):
+      actor         stored state at b, run over obs[b:s]            -> state before obs[s]
+      actor_target  stored state at b, run over obs[b:s+1]          -> state before next_obs[s]
+      critic        zero at b, run over (obs, action)[b:s]          -> state before (obs, action)[s]
+      critic_target zero at b, run over (obs, action)[b+1:s+1]      -> state before (next_obs, .)[s]
+    (the target stream is the online stream shifted one step, as next_obs is obs shifted.)
+    Burn-in lengths differ per sample (b sits on the stored-state stride), so samples are grouped
+    by length and each group is one batched call: exact, no padding contaminating a state, and at
+    most STATE_STRIDE (+ a few prefix cases) groups."""
+    items = batch["burn"]
+    B = len(items)
+    like_a = actor.initial_hidden(1)
+    like_c = critic.initial_hidden(1)
+    Da = hidden_to_vec(like_a).shape[-1]
+    Dc1, Dc2 = hidden_to_vec(like_c[0]).shape[-1], hidden_to_vec(like_c[1]).shape[-1]
+    z = lambda d: torch.zeros(B, d, device=DEVICE)
+    a_init = z(Da)
+    for i, it in enumerate(items):
+        if it["h0"] is not None:
+            a_init[i] = torch.from_numpy(it["h0"]).to(DEVICE)
+    a_h, at_h = a_init.clone(), z(Da)
+    c1, c2, ct1, ct2 = z(Dc1), z(Dc2), z(Dc1), z(Dc2)
+
+    by_len = defaultdict(list)
+    for i, it in enumerate(items):
+        by_len[len(it["obs"]) - 1].append(i)
+    with torch.no_grad():
+        for l, idx in by_len.items():
+            ix = torch.tensor(idx, device=DEVICE)
+            obs_g = torch.tensor(np.array([items[i]["obs"] for i in idx]), dtype=torch.float32, device=DEVICE)
+            act_g = torch.tensor(np.array([items[i]["action"] for i in idx]), dtype=torch.float32, device=DEVICE)
+            h0 = vec_to_hidden(a_init[ix], like_a)
+            _, h = actor_target(obs_g, h0)
+            at_h[ix] = hidden_to_vec(h)
+            if l > 0:
+                _, h = actor(obs_g[:, :l], h0)
+                a_h[ix] = hidden_to_vec(h)
+                _, _, h1, h2 = critic(obs_g[:, :l], act_g[:, :l])
+                c1[ix], c2[ix] = hidden_to_vec(h1), hidden_to_vec(h2)
+                _, _, h1, h2 = critic_target(obs_g[:, 1:], act_g[:, 1:])
+                ct1[ix], ct2[ix] = hidden_to_vec(h1), hidden_to_vec(h2)
+    return {
+        "actor_vec": a_h,
+        "actor": vec_to_hidden(a_h, like_a), "actor_target": vec_to_hidden(at_h, like_a),
+        "critic": (vec_to_hidden(c1, like_c[0]), vec_to_hidden(c2, like_c[1])),
+        "critic_target": (vec_to_hidden(ct1, like_c[0]), vec_to_hidden(ct2, like_c[1])),
+    }
+
+
+def actor_hidden_for_rows(ctx, n_extra, like):
+    """Policy rows start from the burn-in state; the n_extra BC rows (fused into the same actor
+    pass) start from zero, as before."""
+    vec = ctx["actor_vec"]
+    if n_extra:
+        vec = torch.cat([vec, torch.zeros(n_extra, vec.shape[-1], device=DEVICE)], dim=0)
+    return vec_to_hidden(vec, like)
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -419,19 +558,21 @@ def soft_update(net, target_net, tau=TAU):
         tp.data.copy_(tau * p.data + (1.0 - tau) * tp.data)
 
 
-def critic_update(actor_target, critic, critic_target, critic_opt, batch):
-    """Twin-critic TD step with target policy smoothing. Returns the critic loss."""
+def critic_update(actor_target, critic, critic_target, critic_opt, batch, ctx=None):
+    """Twin-critic TD step with target policy smoothing. Returns the critic loss.
+    ctx (burn-in context, TD3_BURN_IN > 0) supplies the initial recurrent states; None = zeros."""
     obs, actions, rewards = batch["obs"], batch["action"], batch["reward"]
     next_obs, dones = batch["next_obs"], batch["done"]
 
     with torch.no_grad():
-        next_action, _ = actor_target(next_obs)
+        next_action, _ = actor_target(next_obs) if ctx is None else actor_target(next_obs, ctx["actor_target"])
         noise = (torch.randn_like(next_action) * POLICY_NOISE).clamp(-NOISE_CLIP, NOISE_CLIP)
         next_action = (next_action + noise).clamp(-1.0, 1.0)
-        q1_next, q2_next, _, _ = critic_target(next_obs, next_action)
+        q1_next, q2_next, _, _ = (critic_target(next_obs, next_action) if ctx is None
+                                  else critic_target(next_obs, next_action, *ctx["critic_target"]))
         q_target = rewards + GAMMA * (1.0 - dones) * torch.min(q1_next, q2_next)
 
-    q1, q2, _, _ = critic(obs, actions)
+    q1, q2, _, _ = critic(obs, actions) if ctx is None else critic(obs, actions, *ctx["critic"])
     # Huber, not MSE: genetic_env.py's crash penalty is an outlier against typical rewards.
     # (full rationale: docs/decision_history.md#--legacy-TD3-py-394)
     critic_loss = F.huber_loss(q1, q_target, delta=1.0) + F.huber_loss(q2, q_target, delta=1.0)
@@ -474,7 +615,8 @@ def td3_update(actor, actor_target, critic, critic_target, actor_opt, critic_opt
     if batch is None:
         return None, None
 
-    critic_loss = critic_update(actor_target, critic, critic_target, critic_opt, batch)
+    ctx = burn_in_context(batch, actor, actor_target, critic, critic_target) if "burn" in batch else None
+    critic_loss = critic_update(actor_target, critic, critic_target, critic_opt, batch, ctx)
 
     actor_loss = None
     if update_idx % POLICY_DELAY == 0:
@@ -486,15 +628,17 @@ def td3_update(actor, actor_target, critic, critic_target, actor_opt, critic_opt
             # initial state, so this equals two passes (to float rounding) at ~one pass's cost.
             bc_obs_t = torch.tensor(np.array(bc_obs), dtype=torch.float32, device=DEVICE)
             bc_act_t = torch.tensor(np.array(bc_act), dtype=torch.float32, device=DEVICE)
-            fused, _ = actor(torch.cat([obs, bc_obs_t], dim=0))
+            fused, _ = (actor(torch.cat([obs, bc_obs_t], dim=0)) if ctx is None else
+                        actor(torch.cat([obs, bc_obs_t], dim=0),
+                              actor_hidden_for_rows(ctx, bc_obs_t.shape[0], actor.initial_hidden(1))))
             pred_action, bc_pred = fused[:obs.shape[0]], fused[obs.shape[0]:]
             bc_term = BC_COEF * F.mse_loss(bc_pred, bc_act_t)
         else:
-            pred_action, _ = actor(obs)
+            pred_action, _ = actor(obs) if ctx is None else actor(obs, ctx["actor"])
         # Policy rows only, as before the fusion. (TD3_lru's fused update penalises the BC rows
         # too; the matched LSTM/LRU runs v62-v65 were launched with that difference.)
         sat_term = preact_penalty(actor.last_preact[:obs.shape[0]])
-        q_pred = critic.q1_only(obs, pred_action)
+        q_pred = critic.q1_only(obs, pred_action) if ctx is None else critic.q1_only(obs, pred_action, ctx["critic"][0])
         q_term = -actor_q_weight(q_pred) * q_pred.mean()
 
         actor_loss = actor_step(actor, actor_target, critic, critic_target, actor_opt,
@@ -599,6 +743,8 @@ def train(resume=False):
     print(f"Device: {DEVICE} | obs_dim={OBS_DIM} action_dim={ACTION_DIM} | gamma={GAMMA}")
     print(f"Budget: {TOTAL_TRAINING_STEPS:,} steps | Gate: project dual (stochastic + deterministic)")
     print(f"Hidden reset every {HIDDEN_RESET_INTERVAL} steps | SEQ_LEN={SEQ_LEN}")
+    if BURN_IN > 0 or CORE_LN:
+        print(f"Context ablation: BURN_IN={BURN_IN} STATE_STRIDE={STATE_STRIDE} CORE_LN={int(CORE_LN)}")
     print(f"Demo replay: {N_DEMO_EPISODES} scripted-expert episodes, "
           f"{DEMO_FRACTION*100:.0f}% of every training batch, never evicted\n")
 
@@ -665,6 +811,7 @@ def train(resume=False):
         obs, init_cells = begin_episode(env, train_diff, saved_env_state, completed_episodes)
         actor_hidden = actor.initial_hidden(batch=1)
         steps_since_hidden_reset = 0
+        recorder = StateRecorder(STATE_STRIDE) if BURN_IN > 0 else None
 
         ep_obs, ep_act, ep_rew, ep_nobs, ep_done = [], [], [], [], []
         episodes_this_chunk = 0
@@ -681,6 +828,8 @@ def train(resume=False):
                 actor_hidden = actor.initial_hidden(batch=1)
                 steps_since_hidden_reset = 0
 
+            if recorder is not None:
+                recorder.before_step(len(ep_obs), actor_hidden)
             with torch.no_grad():
                 obs_t = torch.tensor(obs, dtype=torch.float32, device=DEVICE).view(1, 1, -1)
                 action_t, actor_hidden = actor(obs_t, actor_hidden)
@@ -707,7 +856,8 @@ def train(resume=False):
             if done:
                 episodes_this_chunk += 1
                 if len(ep_obs) >= SEQ_LEN:
-                    online_buffer.add(episode_arrays(ep_obs, ep_act, ep_rew, ep_nobs, ep_done))
+                    episode = episode_arrays(ep_obs, ep_act, ep_rew, ep_nobs, ep_done)
+                    online_buffer.add(episode if recorder is None else recorder.attach(episode))
                 crashed = env.step_count < env.max_steps
                 history_by_diff[train_diff].append({
                     "harvested_mg": float(info.get("cumulative_harvested_mg", 0.0)),
@@ -727,6 +877,7 @@ def train(resume=False):
                 obs, init_cells = begin_episode(env, train_diff, saved_env_state, completed_episodes)
                 actor_hidden = actor.initial_hidden(batch=1)
                 steps_since_hidden_reset = 0
+                recorder = StateRecorder(STATE_STRIDE) if BURN_IN > 0 else None
                 ep_obs, ep_act, ep_rew, ep_nobs, ep_done = [], [], [], [], []
 
             if global_step % 50_000 == 0:

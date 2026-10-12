@@ -17,6 +17,8 @@ def detect_core(state_dict):
         return "lru"
     if any("gru.weight_ih_l0" in k for k in keys):
         return "gru"
+    if any("lstm.ln_c.weight" in k for k in keys):   # TD3_CORE_LN=1 (ln_lstm.LNLSTM)
+        return "lstm_ln"
     if any("weight_ih_l0" in k for k in keys):
         return "lstm"
     raise ValueError(
@@ -39,6 +41,8 @@ def load_actor(path, obs_dim=None, action_dim=None, device=None):
     elif core in ("gru", "rtu"):
         from TD3_cores import make_classes
         Cls = make_classes(core)[0]
+    elif core == "lstm_ln":
+        Cls = lambda o, a: RecurrentActor(o, a, core_ln=True)
     else:
         Cls = RecurrentActor
 
@@ -61,6 +65,8 @@ def load_critic(path, obs_dim=None, action_dim=None, device=None):
     elif core in ("gru", "rtu"):
         from TD3_cores import make_classes
         Cls = make_classes(core)[1]
+    elif core == "lstm_ln":
+        Cls = lambda o, a: RecurrentCritic(o, a, core_ln=True)
     else:
         Cls = RecurrentCritic
 

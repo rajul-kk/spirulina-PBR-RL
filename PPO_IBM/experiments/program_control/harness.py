@@ -18,6 +18,8 @@ Splits (all seeds disjoint):
   final   D2, the confirmatory split (base seed 20,000,000: 160 main + 40 high-pop), run once
           per controller after every method is frozen (docs/reports/comparison_protocol.md)
   det     the curriculum's fixed DET_EVAL_SET (9 instances)
+  val     D2, validation for the training-context ablation (base seed 40,000,000: 40 main + 12
+          high-pop); disjoint from every split above
 
   python experiments/program_control/harness.py <controller.py> [--split test] [--difficulty 2]
 """
@@ -154,6 +156,8 @@ def split_jobs(split, difficulty):
         return main_block(1000, 40) + high_block(1000, 12)
     if split == "final":
         return main_block(20_000_000, 160) + high_block(20_000_000, 40)
+    if split == "val":
+        return main_block(40_000_000, 40) + high_block(40_000_000, 12)
     raise ValueError(split)
 
 
@@ -186,7 +190,7 @@ def evaluate(path, split="search", difficulty=2, params=None, privileged=False, 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("controller")
-    ap.add_argument("--split", default="search", choices=["search", "test", "final", "det"])
+    ap.add_argument("--split", default="search", choices=["search", "test", "final", "det", "val"])
     ap.add_argument("--difficulty", type=int, default=2)
     ap.add_argument("--params", default=None, help="JSON dict passed to Controller(params)")
     ap.add_argument("--privileged", action="store_true")

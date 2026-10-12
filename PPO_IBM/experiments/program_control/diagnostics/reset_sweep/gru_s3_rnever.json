@@ -1,0 +1,482 @@
+{
+ "summary": {
+  "n": 52,
+  "median_mg": 2812.2229312,
+  "p25_mg": 1720.0655775999999,
+  "mean_mg": 4381.9627839666655,
+  "crash_rate": 0.9230769230769231,
+  "median_time_avg_od": 0.01114949258044362,
+  "errors": 0,
+  "fitness": -6964.62497636923
+ },
+ "episodes": [
+  {
+   "seed": 1000,
+   "init_cells": 117,
+   "steps": 3001,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 1489.6446528,
+   "time_avg_od": 0.0
+  },
+  {
+   "seed": 1001,
+   "init_cells": 195,
+   "steps": 3601,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 2510.5895424000005,
+   "time_avg_od": 0.006727571599185467
+  },
+  {
+   "seed": 1002,
+   "init_cells": 134,
+   "steps": 3001,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 1760.5476672,
+   "time_avg_od": 0.0
+  },
+  {
+   "seed": 1003,
+   "init_cells": 49,
+   "steps": 1201,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 529.2919423999999,
+   "time_avg_od": 0.0
+  },
+  {
+   "seed": 1004,
+   "init_cells": 321,
+   "steps": 4201,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 4180.1108832,
+   "time_avg_od": 0.013704130426049232
+  },
+  {
+   "seed": 1005,
+   "init_cells": 279,
+   "steps": 3601,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 3563.8988351999997,
+   "time_avg_od": 0.008873597718775272
+  },
+  {
+   "seed": 1006,
+   "init_cells": 128,
+   "steps": 3601,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 1643.0851007999997,
+   "time_avg_od": 0.005441263783723116
+  },
+  {
+   "seed": 1007,
+   "init_cells": 110,
+   "steps": 3001,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 1474.6648704000002,
+   "time_avg_od": 0.0
+  },
+  {
+   "seed": 1008,
+   "init_cells": 374,
+   "steps": 4201,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 4745.4941984,
+   "time_avg_od": 0.018809285014867783
+  },
+  {
+   "seed": 1009,
+   "init_cells": 177,
+   "steps": 3601,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 2348.5354848,
+   "time_avg_od": 0.005434272810816765
+  },
+  {
+   "seed": 1010,
+   "init_cells": 79,
+   "steps": 2401,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 1014.6264,
+   "time_avg_od": 0.0
+  },
+  {
+   "seed": 1011,
+   "init_cells": 266,
+   "steps": 4201,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 3455.1191616,
+   "time_avg_od": 0.018619516864418983
+  },
+  {
+   "seed": 1012,
+   "init_cells": 104,
+   "steps": 2401,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 1367.6574463999998,
+   "time_avg_od": 0.0
+  },
+  {
+   "seed": 1013,
+   "init_cells": 248,
+   "steps": 4201,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 3235.6938303999996,
+   "time_avg_od": 0.013587250374257565
+  },
+  {
+   "seed": 1014,
+   "init_cells": 215,
+   "steps": 3601,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 2841.0275904,
+   "time_avg_od": 0.012949347496032715
+  },
+  {
+   "seed": 1015,
+   "init_cells": 350,
+   "steps": 4801,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 4422.7872736,
+   "time_avg_od": 0.017613807693123817
+  },
+  {
+   "seed": 1016,
+   "init_cells": 33,
+   "steps": 2401,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 420.742528,
+   "time_avg_od": 0.0
+  },
+  {
+   "seed": 1017,
+   "init_cells": 120,
+   "steps": 3001,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 1597.356832,
+   "time_avg_od": 0.0
+  },
+  {
+   "seed": 1018,
+   "init_cells": 173,
+   "steps": 3601,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 2235.3928703999995,
+   "time_avg_od": 0.012761996127665043
+  },
+  {
+   "seed": 1019,
+   "init_cells": 128,
+   "steps": 3601,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 1656.0775743999998,
+   "time_avg_od": 0.009982298128306866
+  },
+  {
+   "seed": 1020,
+   "init_cells": 102,
+   "steps": 3001,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 1339.5937984000002,
+   "time_avg_od": 0.0
+  },
+  {
+   "seed": 1021,
+   "init_cells": 191,
+   "steps": 3601,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 2550.205552,
+   "time_avg_od": 0.007415369153022766
+  },
+  {
+   "seed": 1022,
+   "init_cells": 344,
+   "steps": 4201,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 4402.4591456,
+   "time_avg_od": 0.01364459004253149
+  },
+  {
+   "seed": 1023,
+   "init_cells": 110,
+   "steps": 3001,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 1439.7852159999998,
+   "time_avg_od": 0.0
+  },
+  {
+   "seed": 1024,
+   "init_cells": 51,
+   "steps": 2401,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 687.0806911999999,
+   "time_avg_od": 0.0
+  },
+  {
+   "seed": 1025,
+   "init_cells": 153,
+   "steps": 4201,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 2063.9586544,
+   "time_avg_od": 0.01602192409336567
+  },
+  {
+   "seed": 1026,
+   "init_cells": 133,
+   "steps": 2401,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 1741.3949119999997,
+   "time_avg_od": 0.0
+  },
+  {
+   "seed": 1027,
+   "init_cells": 219,
+   "steps": 3001,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 2832.255104,
+   "time_avg_od": 0.0
+  },
+  {
+   "seed": 1028,
+   "init_cells": 121,
+   "steps": 3001,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 1576.9729408000003,
+   "time_avg_od": 0.0
+  },
+  {
+   "seed": 1029,
+   "init_cells": 120,
+   "steps": 4201,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 1597.0765984,
+   "time_avg_od": 0.015656398609280586
+  },
+  {
+   "seed": 1030,
+   "init_cells": 138,
+   "steps": 3601,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 1764.4604672,
+   "time_avg_od": 0.008987904526293278
+  },
+  {
+   "seed": 1031,
+   "init_cells": 219,
+   "steps": 3601,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 2876.6275263999996,
+   "time_avg_od": 0.006584341637790203
+  },
+  {
+   "seed": 1032,
+   "init_cells": 156,
+   "steps": 3601,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 2082.3305087999997,
+   "time_avg_od": 0.010762038640677929
+  },
+  {
+   "seed": 1033,
+   "init_cells": 331,
+   "steps": 4201,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 4262.1117312,
+   "time_avg_od": 0.013923311606049538
+  },
+  {
+   "seed": 1034,
+   "init_cells": 116,
+   "steps": 3001,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 1537.1089728,
+   "time_avg_od": 0.0
+  },
+  {
+   "seed": 1035,
+   "init_cells": 176,
+   "steps": 2401,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 2103.8935424,
+   "time_avg_od": 0.0
+  },
+  {
+   "seed": 1036,
+   "init_cells": 264,
+   "steps": 3601,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 3341.5291967999997,
+   "time_avg_od": 0.011536946520209312
+  },
+  {
+   "seed": 1037,
+   "init_cells": 179,
+   "steps": 3601,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 2355.8673568000004,
+   "time_avg_od": 0.01062322873622179
+  },
+  {
+   "seed": 1038,
+   "init_cells": 210,
+   "steps": 3601,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 2792.1907584000005,
+   "time_avg_od": 0.010159923695027828
+  },
+  {
+   "seed": 1039,
+   "init_cells": 108,
+   "steps": 3001,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 1430.3956160000002,
+   "time_avg_od": 0.0
+  },
+  {
+   "seed": 501000,
+   "init_cells": 720,
+   "steps": 4801,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 8947.684832,
+   "time_avg_od": 0.02438274584710598
+  },
+  {
+   "seed": 501001,
+   "init_cells": 691,
+   "steps": 4801,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 8638.1950912,
+   "time_avg_od": 0.028436211869120598
+  },
+  {
+   "seed": 501002,
+   "init_cells": 1232,
+   "steps": 5401,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 14963.7287392,
+   "time_avg_od": 0.028239812701940536
+  },
+  {
+   "seed": 501003,
+   "init_cells": 4995,
+   "steps": 7200,
+   "crashed": false,
+   "error": null,
+   "harvested_mg": 10353.011763199998,
+   "time_avg_od": 9.828436851501465
+  },
+  {
+   "seed": 501004,
+   "init_cells": 1411,
+   "steps": 5401,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 16990.489932799996,
+   "time_avg_od": 0.04375477135181427
+  },
+  {
+   "seed": 501005,
+   "init_cells": 651,
+   "steps": 3601,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 8052.927974399999,
+   "time_avg_od": 0.01195006724447012
+  },
+  {
+   "seed": 501006,
+   "init_cells": 2274,
+   "steps": 7200,
+   "crashed": false,
+   "error": null,
+   "harvested_mg": 5754.5811968,
+   "time_avg_od": 7.648448467254639
+  },
+  {
+   "seed": 501007,
+   "init_cells": 715,
+   "steps": 4201,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 8842.817439999999,
+   "time_avg_od": 0.023959051817655563
+  },
+  {
+   "seed": 501008,
+   "init_cells": 1192,
+   "steps": 5401,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 14480.1116064,
+   "time_avg_od": 0.023325718939304352
+  },
+  {
+   "seed": 501009,
+   "init_cells": 2260,
+   "steps": 7200,
+   "crashed": false,
+   "error": null,
+   "harvested_mg": 5447.8204416,
+   "time_avg_od": 6.386495113372803
+  },
+  {
+   "seed": 501010,
+   "init_cells": 4929,
+   "steps": 7200,
+   "crashed": false,
+   "error": null,
+   "harvested_mg": 10436.018431999997,
+   "time_avg_od": 9.728644371032715
+  },
+  {
+   "seed": 501011,
+   "init_cells": 710,
+   "steps": 4801,
+   "crashed": true,
+   "error": null,
+   "harvested_mg": 8808.924767999999,
+   "time_avg_od": 0.01989774964749813
+  }
+ ]
+}

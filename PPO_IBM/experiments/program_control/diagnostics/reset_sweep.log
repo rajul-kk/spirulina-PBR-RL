@@ -2,3 +2,300 @@
 td3_actor.py split=test D2 n=52: median 3288 mg, p25 1977 mg, crash 92%, time-avg od 0.02, errors 0, fitness -6599 [189s]
 16:28:15 done  lru600 s1 r30
 16:28:15 start lru600 s1 r60
+td3_actor.py split=test D2 n=52: median 3502 mg, p25 2080 mg, crash 23%, time-avg od 0.06, errors 0, fitness 483 [313s]
+16:33:29 done  lru600 s1 r60
+16:33:29 start lru600 s1 r150
+td3_actor.py split=test D2 n=52: median 6531 mg, p25 4428 mg, crash 2%, time-avg od 0.31, errors 0, fitness 5287 [266s]
+16:37:56 done  lru600 s1 r150
+16:37:56 start lru600 s1 r600
+td3_actor.py split=test D2 n=52: median 7850 mg, p25 6035 mg, crash 0%, time-avg od 1.01, errors 0, fitness 6943 [306s]
+16:43:04 done  lru600 s1 r600
+16:43:04 start lru600 s1 rnever
+td3_actor.py split=test D2 n=52: median 6162 mg, p25 4943 mg, crash 0%, time-avg od 1.40, errors 0, fitness 5552 [262s]
+16:47:26 done  lru600 s1 rnever
+16:47:26 start lru600 s2 r30
+td3_actor.py split=test D2 n=52: median 3064 mg, p25 2024 mg, crash 15%, time-avg od 0.42, errors 0, fitness 1005 [250s]
+16:51:36 done  lru600 s2 r30
+16:51:36 start lru600 s2 r60
+td3_actor.py split=test D2 n=52: median 2437 mg, p25 1183 mg, crash 13%, time-avg od 0.36, errors 0, fitness 464 [219s]
+16:55:15 done  lru600 s2 r60
+16:55:15 start lru600 s2 r150
+td3_actor.py split=test D2 n=52: median 5608 mg, p25 2466 mg, crash 6%, time-avg od 0.61, errors 0, fitness 3460 [341s]
+17:00:57 done  lru600 s2 r150
+17:00:57 start lru600 s2 r600
+td3_actor.py split=test D2 n=52: median 9743 mg, p25 7065 mg, crash 0%, time-avg od 0.53, errors 0, fitness 8404 [340s]
+17:06:37 done  lru600 s2 r600
+17:06:37 start lru600 s2 rnever
+td3_actor.py split=test D2 n=52: median 8712 mg, p25 5465 mg, crash 21%, time-avg od 0.11, errors 0, fitness 4973 [294s]
+17:11:32 done  lru600 s2 rnever
+17:11:32 start lru600 s3 r30
+td3_actor.py split=test D2 n=52: median 227 mg, p25 158 mg, crash 0%, time-avg od 0.48, errors 0, fitness 193 [371s]
+17:17:43 done  lru600 s3 r30
+17:17:43 start lru600 s3 r60
+td3_actor.py split=test D2 n=52: median 296 mg, p25 177 mg, crash 0%, time-avg od 0.50, errors 0, fitness 236 [364s]
+17:23:48 done  lru600 s3 r60
+17:23:48 start lru600 s3 r150
+td3_actor.py split=test D2 n=52: median 306 mg, p25 129 mg, crash 0%, time-avg od 0.57, errors 0, fitness 217 [392s]
+17:30:20 done  lru600 s3 r150
+17:30:20 start lru600 s3 r600
+td3_actor.py split=test D2 n=52: median 268 mg, p25 107 mg, crash 0%, time-avg od 0.88, errors 0, fitness 187 [410s]
+17:37:11 done  lru600 s3 r600
+17:37:11 start lru600 s3 rnever
+td3_actor.py split=test D2 n=52: median 239 mg, p25 88 mg, crash 0%, time-avg od 1.44, errors 0, fitness 164 [395s]
+17:43:46 done  lru600 s3 rnever
+17:43:46 start lru600 s4 r30
+td3_actor.py split=test D2 n=52: median 11069 mg, p25 5840 mg, crash 13%, time-avg od 0.49, errors 0, fitness 7108 [337s]
+17:49:24 done  lru600 s4 r30
+17:49:24 start lru600 s4 r60
+td3_actor.py split=test D2 n=52: median 8100 mg, p25 3842 mg, crash 35%, time-avg od 0.11, errors 0, fitness 2509 [316s]
+17:54:41 done  lru600 s4 r60
+17:54:41 start lru600 s4 r150
+td3_actor.py split=test D2 n=52: median 4893 mg, p25 2582 mg, crash 69%, time-avg od 0.04, errors 0, fitness -3185 [284s]
+17:59:25 done  lru600 s4 r150
+17:59:25 start lru600 s4 r600
+td3_actor.py split=test D2 n=52: median 6365 mg, p25 4073 mg, crash 0%, time-avg od 0.35, errors 0, fitness 5219 [366s]
+18:05:32 done  lru600 s4 r600
+18:05:32 start lru600 s4 rnever
+td3_actor.py split=test D2 n=52: median 5474 mg, p25 3996 mg, crash 0%, time-avg od 0.82, errors 0, fitness 4735 [423s]
+18:12:35 done  lru600 s4 rnever
+18:12:35 start lru600 s5 r30
+td3_actor.py split=test D2 n=52: median 8498 mg, p25 2844 mg, crash 0%, time-avg od 1.70, errors 0, fitness 5671 [493s]
+18:20:49 done  lru600 s5 r30
+18:20:49 start lru600 s5 r60
+td3_actor.py split=test D2 n=52: median 8650 mg, p25 4729 mg, crash 0%, time-avg od 1.18, errors 0, fitness 6690 [525s]
+18:29:35 done  lru600 s5 r60
+18:29:35 start lru600 s5 r150
+td3_actor.py split=test D2 n=52: median 7154 mg, p25 4244 mg, crash 0%, time-avg od 0.28, errors 0, fitness 5699 [441s]
+18:36:56 done  lru600 s5 r150
+18:36:56 start lru600 s5 r600
+td3_actor.py split=test D2 n=52: median 6754 mg, p25 5497 mg, crash 0%, time-avg od 0.72, errors 0, fitness 6125 [576s]
+18:46:33 done  lru600 s5 r600
+18:46:33 start lru600 s5 rnever
+td3_actor.py split=test D2 n=52: median 5058 mg, p25 3916 mg, crash 0%, time-avg od 1.17, errors 0, fitness 4487 [590s]
+18:56:24 done  lru600 s5 rnever
+18:56:24 start lstm600 s1 r30
+td3_actor.py split=test D2 n=52: median 2911 mg, p25 1780 mg, crash 94%, time-avg od 0.02, errors 0, fitness -7077 [344s]
+19:02:09 done  lstm600 s1 r30
+19:02:09 start lstm600 s1 r60
+td3_actor.py split=test D2 n=52: median 2904 mg, p25 1782 mg, crash 96%, time-avg od 0.01, errors 0, fitness -7272 [332s]
+19:07:41 done  lstm600 s1 r60
+19:07:41 start lstm600 s1 r150
+td3_actor.py split=test D2 n=52: median 2934 mg, p25 1754 mg, crash 98%, time-avg od 0.02, errors 0, fitness -7464 [315s]
+19:12:57 done  lstm600 s1 r150
+19:12:57 start lstm600 s1 r600
+td3_actor.py split=test D2 n=52: median 2894 mg, p25 1760 mg, crash 100%, time-avg od 0.01, errors 0, fitness -7673 [249s]
+19:17:07 done  lstm600 s1 r600
+19:17:08 start lstm600 s1 rnever
+td3_actor.py split=test D2 n=52: median 2909 mg, p25 1762 mg, crash 100%, time-avg od 0.01, errors 0, fitness -7664 [230s]
+19:20:58 done  lstm600 s1 rnever
+19:20:58 start lstm600 s2 r30
+td3_actor.py split=test D2 n=52: median 3698 mg, p25 2108 mg, crash 96%, time-avg od 0.02, errors 0, fitness -6712 [282s]
+19:25:41 done  lstm600 s2 r30
+19:25:41 start lstm600 s2 r60
+td3_actor.py split=test D2 n=52: median 4013 mg, p25 2187 mg, crash 92%, time-avg od 0.03, errors 0, fitness -6131 [287s]
+19:30:28 done  lstm600 s2 r60
+19:30:28 start lstm600 s2 r150
+td3_actor.py split=test D2 n=52: median 4507 mg, p25 2462 mg, crash 92%, time-avg od 0.03, errors 0, fitness -5747 [304s]
+19:35:33 done  lstm600 s2 r150
+19:35:33 start lstm600 s2 r600
+td3_actor.py split=test D2 n=52: median 4936 mg, p25 2670 mg, crash 87%, time-avg od 0.03, errors 0, fitness -4851 [297s]
+19:40:30 done  lstm600 s2 r600
+19:40:30 start lstm600 s2 rnever
+td3_actor.py split=test D2 n=52: median 4974 mg, p25 2862 mg, crash 94%, time-avg od 0.03, errors 0, fitness -5505 [296s]
+19:45:27 done  lstm600 s2 rnever
+19:45:27 start lstm600 s3 r30
+td3_actor.py split=test D2 n=52: median 3471 mg, p25 2066 mg, crash 40%, time-avg od 0.04, errors 0, fitness -1270 [369s]
+19:51:37 done  lstm600 s3 r30
+19:51:37 start lstm600 s3 r60
+td3_actor.py split=test D2 n=52: median 3637 mg, p25 2174 mg, crash 0%, time-avg od 0.12, errors 0, fitness 2906 [430s]
+19:58:47 done  lstm600 s3 r60
+19:58:47 start lstm600 s3 r150
+td3_actor.py split=test D2 n=52: median 3517 mg, p25 2100 mg, crash 0%, time-avg od 0.11, errors 0, fitness 2808 [472s]
+20:06:41 done  lstm600 s3 r150
+20:06:41 start lstm600 s3 r600
+td3_actor.py split=test D2 n=52: median 3344 mg, p25 2133 mg, crash 0%, time-avg od 0.11, errors 0, fitness 2739 [474s]
+20:14:36 done  lstm600 s3 r600
+20:14:36 start lstm600 s3 rnever
+td3_actor.py split=test D2 n=52: median 3393 mg, p25 2044 mg, crash 0%, time-avg od 0.10, errors 0, fitness 2719 [455s]
+20:22:12 done  lstm600 s3 rnever
+20:22:12 start lstm600 s4 r30
+td3_actor.py split=test D2 n=52: median 2106 mg, p25 900 mg, crash 0%, time-avg od 0.49, errors 0, fitness 1503 [490s]
+20:30:23 done  lstm600 s4 r30
+20:30:23 start lstm600 s4 r60
+td3_actor.py split=test D2 n=52: median 1204 mg, p25 564 mg, crash 0%, time-avg od 0.46, errors 0, fitness 884 [469s]
+20:38:13 done  lstm600 s4 r60
+20:38:13 start lstm600 s4 r150
+td3_actor.py split=test D2 n=52: median 701 mg, p25 385 mg, crash 0%, time-avg od 0.45, errors 0, fitness 543 [434s]
+20:45:28 done  lstm600 s4 r150
+20:45:28 start lstm600 s4 r600
+td3_actor.py split=test D2 n=52: median 477 mg, p25 282 mg, crash 0%, time-avg od 0.44, errors 0, fitness 379 [429s]
+20:52:37 done  lstm600 s4 r600
+20:52:37 start lstm600 s4 rnever
+td3_actor.py split=test D2 n=52: median 367 mg, p25 230 mg, crash 0%, time-avg od 0.44, errors 0, fitness 298 [376s]
+20:58:54 done  lstm600 s4 rnever
+20:58:54 start lstm600 s5 r30
+td3_actor.py split=test D2 n=52: median 1938 mg, p25 1255 mg, crash 0%, time-avg od 0.29, errors 0, fitness 1596 [328s]
+21:04:23 done  lstm600 s5 r30
+21:04:23 start lstm600 s5 r60
+td3_actor.py split=test D2 n=52: median 1444 mg, p25 913 mg, crash 0%, time-avg od 0.33, errors 0, fitness 1178 [328s]
+21:09:51 done  lstm600 s5 r60
+21:09:52 start lstm600 s5 r150
+td3_actor.py split=test D2 n=52: median 1235 mg, p25 657 mg, crash 0%, time-avg od 0.33, errors 0, fitness 946 [325s]
+21:15:17 done  lstm600 s5 r150
+21:15:17 start lstm600 s5 r600
+td3_actor.py split=test D2 n=52: median 1027 mg, p25 525 mg, crash 0%, time-avg od 0.35, errors 0, fitness 776 [320s]
+21:20:39 done  lstm600 s5 r600
+21:20:39 start lstm600 s5 rnever
+td3_actor.py split=test D2 n=52: median 995 mg, p25 479 mg, crash 0%, time-avg od 0.35, errors 0, fitness 737 [327s]
+21:26:09 done  lstm600 s5 rnever
+21:26:09 start lstm60 s1 r30
+td3_actor.py split=test D2 n=52: median 5406 mg, p25 1794 mg, crash 48%, time-avg od 1.26, errors 0, fitness -1208 [266s]
+21:30:35 done  lstm60 s1 r30
+21:30:35 start lstm60 s1 r60
+td3_actor.py split=test D2 n=52: median 5566 mg, p25 1780 mg, crash 48%, time-avg od 1.70, errors 0, fitness -1135 [298s]
+21:35:34 done  lstm60 s1 r60
+21:35:34 start lstm60 s1 r150
+td3_actor.py split=test D2 n=52: median 3017 mg, p25 1770 mg, crash 56%, time-avg od 0.03, errors 0, fitness -3183 [288s]
+21:40:24 done  lstm60 s1 r150
+21:40:24 start lstm60 s1 r600
+td3_actor.py split=test D2 n=52: median 2540 mg, p25 1708 mg, crash 63%, time-avg od 0.02, errors 0, fitness -4222 [268s]
+21:44:53 done  lstm60 s1 r600
+21:44:53 start lstm60 s1 rnever
+td3_actor.py split=test D2 n=52: median 2182 mg, p25 1581 mg, crash 65%, time-avg od 0.02, errors 0, fitness -4657 [271s]
+21:49:26 done  lstm60 s1 rnever
+21:49:26 start lstm60 s2 r30
+td3_actor.py split=test D2 n=52: median 3274 mg, p25 2060 mg, crash 25%, time-avg od 0.06, errors 0, fitness 167 [318s]
+21:54:45 done  lstm60 s2 r30
+21:54:45 start lstm60 s2 r60
+td3_actor.py split=test D2 n=52: median 2562 mg, p25 1821 mg, crash 29%, time-avg od 0.06, errors 0, fitness -693 [313s]
+21:59:59 done  lstm60 s2 r60
+21:59:59 start lstm60 s2 r150
+td3_actor.py split=test D2 n=52: median 2268 mg, p25 1634 mg, crash 25%, time-avg od 0.06, errors 0, fitness -549 [315s]
+22:05:15 done  lstm60 s2 r150
+22:05:15 start lstm60 s2 r600
+td3_actor.py split=test D2 n=52: median 1772 mg, p25 1484 mg, crash 23%, time-avg od 0.06, errors 0, fitness -680 [317s]
+22:10:33 done  lstm60 s2 r600
+22:10:33 start lstm60 s2 rnever
+td3_actor.py split=test D2 n=52: median 1660 mg, p25 1329 mg, crash 31%, time-avg od 0.06, errors 0, fitness -1582 [318s]
+22:15:52 done  lstm60 s2 rnever
+22:15:52 start lstm60 s3 r30
+td3_actor.py split=test D2 n=52: median 3189 mg, p25 1973 mg, crash 29%, time-avg od 0.12, errors 0, fitness -304 [305s]
+22:20:57 done  lstm60 s3 r30
+22:20:57 start lstm60 s3 r60
+td3_actor.py split=test D2 n=52: median 3167 mg, p25 2392 mg, crash 0%, time-avg od 0.41, errors 0, fitness 2779 [331s]
+22:26:29 done  lstm60 s3 r60
+22:26:29 start lstm60 s3 r150
+td3_actor.py split=test D2 n=52: median 3568 mg, p25 2588 mg, crash 0%, time-avg od 0.72, errors 0, fitness 3078 [333s]
+22:32:03 done  lstm60 s3 r150
+22:32:03 start lstm60 s3 r600
+td3_actor.py split=test D2 n=52: median 5555 mg, p25 2850 mg, crash 0%, time-avg od 0.84, errors 0, fitness 4202 [336s]
+22:37:40 done  lstm60 s3 r600
+22:37:40 start lstm60 s3 rnever
+td3_actor.py split=test D2 n=52: median 5638 mg, p25 3091 mg, crash 0%, time-avg od 0.76, errors 0, fitness 4364 [334s]
+22:43:15 done  lstm60 s3 rnever
+22:43:15 start lstm60 s4 r30
+td3_actor.py split=test D2 n=52: median 5325 mg, p25 2133 mg, crash 46%, time-avg od 0.41, errors 0, fitness -886 [286s]
+22:48:02 done  lstm60 s4 r30
+22:48:02 start lstm60 s4 r60
+td3_actor.py split=test D2 n=52: median 3700 mg, p25 2138 mg, crash 73%, time-avg od 0.03, errors 0, fitness -4389 [258s]
+22:52:21 done  lstm60 s4 r60
+22:52:21 start lstm60 s4 r150
+td3_actor.py split=test D2 n=52: median 3765 mg, p25 2156 mg, crash 77%, time-avg od 0.03, errors 0, fitness -4732 [269s]
+22:56:52 done  lstm60 s4 r150
+22:56:52 start lstm60 s4 r600
+td3_actor.py split=test D2 n=52: median 3700 mg, p25 2142 mg, crash 88%, time-avg od 0.02, errors 0, fitness -5925 [248s]
+23:01:00 done  lstm60 s4 r600
+23:01:00 start lstm60 s4 rnever
+td3_actor.py split=test D2 n=52: median 3675 mg, p25 2109 mg, crash 90%, time-avg od 0.02, errors 0, fitness -6146 [264s]
+23:05:25 done  lstm60 s4 rnever
+23:05:25 start lstm60 s5 r30
+td3_actor.py split=test D2 n=52: median 3269 mg, p25 1833 mg, crash 94%, time-avg od 0.02, errors 0, fitness -6872 [222s]
+23:09:08 done  lstm60 s5 r30
+23:09:08 start lstm60 s5 r60
+td3_actor.py split=test D2 n=52: median 3502 mg, p25 2005 mg, crash 92%, time-avg od 0.03, errors 0, fitness -6477 [224s]
+23:12:53 done  lstm60 s5 r60
+23:12:53 start lstm60 s5 r150
+td3_actor.py split=test D2 n=52: median 4204 mg, p25 2483 mg, crash 90%, time-avg od 0.03, errors 0, fitness -5695 [238s]
+23:16:51 done  lstm60 s5 r150
+23:16:51 start lstm60 s5 r600
+td3_actor.py split=test D2 n=52: median 4745 mg, p25 2815 mg, crash 90%, time-avg od 0.03, errors 0, fitness -5259 [249s]
+23:21:01 done  lstm60 s5 r600
+23:21:01 start lstm60 s5 rnever
+td3_actor.py split=test D2 n=52: median 5110 mg, p25 2859 mg, crash 75%, time-avg od 0.03, errors 0, fitness -3515 [263s]
+23:25:24 done  lstm60 s5 rnever
+23:25:24 start gru s1 r30
+td3_actor.py split=test D2 n=52: median 3780 mg, p25 2175 mg, crash 79%, time-avg od 0.03, errors 0, fitness -4907 [245s]
+23:29:30 done  gru s1 r30
+23:29:30 start gru s1 r60
+td3_actor.py split=test D2 n=52: median 3736 mg, p25 2211 mg, crash 90%, time-avg od 0.02, errors 0, fitness -6065 [216s]
+23:33:07 done  gru s1 r60
+23:33:07 start gru s1 r150
+td3_actor.py split=test D2 n=52: median 3721 mg, p25 2124 mg, crash 94%, time-avg od 0.02, errors 0, fitness -6501 [201s]
+23:36:29 done  gru s1 r150
+23:36:29 start gru s1 r600
+td3_actor.py split=test D2 n=52: median 3584 mg, p25 2206 mg, crash 94%, time-avg od 0.02, errors 0, fitness -6528 [198s]
+23:39:49 done  gru s1 r600
+23:39:49 start gru s1 rnever
+td3_actor.py split=test D2 n=52: median 3649 mg, p25 2171 mg, crash 96%, time-avg od 0.02, errors 0, fitness -6705 [194s]
+23:43:04 done  gru s1 rnever
+23:43:04 start gru s2 r30
+td3_actor.py split=test D2 n=52: median 1692 mg, p25 1255 mg, crash 0%, time-avg od 2.62, errors 0, fitness 1473 [413s]
+23:49:58 done  gru s2 r30
+23:49:58 start gru s2 r60
+td3_actor.py split=test D2 n=52: median 1392 mg, p25 989 mg, crash 0%, time-avg od 2.63, errors 0, fitness 1191 [413s]
+23:56:52 done  gru s2 r60
+23:56:52 start gru s2 r150
+td3_actor.py split=test D2 n=52: median 1259 mg, p25 973 mg, crash 0%, time-avg od 2.69, errors 0, fitness 1116 [425s]
+00:03:57 done  gru s2 r150
+00:03:58 start gru s2 r600
+td3_actor.py split=test D2 n=52: median 1184 mg, p25 871 mg, crash 0%, time-avg od 2.45, errors 0, fitness 1027 [410s]
+00:10:49 done  gru s2 r600
+00:10:49 start gru s2 rnever
+td3_actor.py split=test D2 n=52: median 716 mg, p25 563 mg, crash 19%, time-avg od 2.20, errors 0, fitness -1283 [367s]
+00:16:56 done  gru s2 rnever
+00:16:56 start gru s3 r30
+td3_actor.py split=test D2 n=52: median 2902 mg, p25 1772 mg, crash 92%, time-avg od 0.03, errors 0, fitness -6894 [221s]
+00:20:38 done  gru s3 r30
+00:20:38 start gru s3 r60
+td3_actor.py split=test D2 n=52: median 2836 mg, p25 1761 mg, crash 94%, time-avg od 0.02, errors 0, fitness -7125 [199s]
+00:23:58 done  gru s3 r60
+00:23:58 start gru s3 r150
+td3_actor.py split=test D2 n=52: median 2820 mg, p25 1720 mg, crash 96%, time-avg od 0.01, errors 0, fitness -7346 [184s]
+00:27:02 done  gru s3 r150
+00:27:02 start gru s3 r600
+td3_actor.py split=test D2 n=52: median 2815 mg, p25 1722 mg, crash 98%, time-avg od 0.01, errors 0, fitness -7539 [173s]
+00:29:56 done  gru s3 r600
+00:29:56 start gru s3 rnever
+td3_actor.py split=test D2 n=52: median 2812 mg, p25 1720 mg, crash 92%, time-avg od 0.01, errors 0, fitness -6965 [199s]
+00:33:16 done  gru s3 rnever
+00:33:16 start gru s4 r30
+td3_actor.py split=test D2 n=52: median 3666 mg, p25 2153 mg, crash 87%, time-avg od 0.02, errors 0, fitness -5744 [218s]
+00:36:55 done  gru s4 r30
+00:36:55 start gru s4 r60
+td3_actor.py split=test D2 n=52: median 3730 mg, p25 2186 mg, crash 77%, time-avg od 0.03, errors 0, fitness -4734 [222s]
+00:40:38 done  gru s4 r60
+00:40:38 start gru s4 r150
+td3_actor.py split=test D2 n=52: median 3683 mg, p25 2185 mg, crash 77%, time-avg od 0.02, errors 0, fitness -4758 [224s]
+00:44:23 done  gru s4 r150
+00:44:23 start gru s4 r600
+td3_actor.py split=test D2 n=52: median 3675 mg, p25 2133 mg, crash 77%, time-avg od 0.02, errors 0, fitness -4788 [221s]
+00:48:05 done  gru s4 r600
+00:48:05 start gru s4 rnever
+td3_actor.py split=test D2 n=52: median 2784 mg, p25 1929 mg, crash 77%, time-avg od 0.02, errors 0, fitness -5336 [224s]
+00:51:49 done  gru s4 rnever
+00:51:49 start gru s5 r30
+td3_actor.py split=test D2 n=52: median 3724 mg, p25 2254 mg, crash 10%, time-avg od 0.07, errors 0, fitness 2027 [335s]
+00:57:25 done  gru s5 r30
+00:57:25 start gru s5 r60
+td3_actor.py split=test D2 n=52: median 3656 mg, p25 2192 mg, crash 0%, time-avg od 0.21, errors 0, fitness 2924 [341s]
+01:03:07 done  gru s5 r60
+01:03:07 start gru s5 r150
+td3_actor.py split=test D2 n=52: median 2112 mg, p25 1335 mg, crash 0%, time-avg od 0.36, errors 0, fitness 1724 [353s]
+01:09:01 done  gru s5 r150
+01:09:01 start gru s5 r600
+td3_actor.py split=test D2 n=52: median 904 mg, p25 640 mg, crash 0%, time-avg od 0.49, errors 0, fitness 772 [358s]
+01:15:00 done  gru s5 r600
+01:15:00 start gru s5 rnever
+td3_actor.py split=test D2 n=52: median 865 mg, p25 379 mg, crash 0%, time-avg od 0.69, errors 0, fitness 622 [364s]
+01:21:05 done  gru s5 rnever
+01:21:05 sweep complete

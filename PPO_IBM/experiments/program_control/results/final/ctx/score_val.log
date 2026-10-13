@@ -1,0 +1,60 @@
+2026-10-13T06:18:52 start lstmctl final s1
+td3_actor.py split=val D2 n=52: median 3293 mg, p25 1998 mg, crash 81%, time-avg od 0.01, errors 0, fitness -5432 [387s]
+2026-10-13T06:25:20 done  lstmctl final s1 rc=0
+2026-10-13T06:25:20 start lstmctl best s1
+td3_actor.py split=val D2 n=52: median 5665 mg, p25 3644 mg, crash 2%, time-avg od 0.67, errors 0, fitness 4462 [665s]
+2026-10-13T06:36:26 done  lstmctl best s1 rc=0
+2026-10-13T06:36:26 start lstmctl final s2
+td3_actor.py split=val D2 n=52: median 5987 mg, p25 3080 mg, crash 88%, time-avg od 0.03, errors 0, fitness -4312 [389s]
+2026-10-13T06:42:56 done  lstmctl final s2 rc=0
+2026-10-13T06:42:56 start lstmctl best s2
+td3_actor.py split=val D2 n=52: median 13307 mg, p25 11194 mg, crash 0%, time-avg od 0.78, errors 0, fitness 12251 [634s]
+2026-10-13T06:53:31 done  lstmctl best s2 rc=0
+2026-10-13T06:53:31 start lstmctl final s3
+td3_actor.py split=val D2 n=52: median 5763 mg, p25 3455 mg, crash 33%, time-avg od 0.05, errors 0, fitness 1340 [547s]
+2026-10-13T07:02:39 done  lstmctl final s3 rc=0
+2026-10-13T07:02:39 start lstmctl best s3
+td3_actor.py split=val D2 n=52: median 11235 mg, p25 6528 mg, crash 0%, time-avg od 0.67, errors 0, fitness 8882 [638s]
+2026-10-13T07:13:18 done  lstmctl best s3 rc=0
+2026-10-13T07:13:18 start lstmctl final s4
+td3_actor.py split=val D2 n=52: median 840 mg, p25 559 mg, crash 0%, time-avg od 0.49, errors 0, fitness 700 [563s]
+2026-10-13T07:22:43 done  lstmctl final s4 rc=0
+2026-10-13T07:22:43 start lstmctl best s4
+td3_actor.py split=val D2 n=52: median 13476 mg, p25 11329 mg, crash 0%, time-avg od 0.86, errors 0, fitness 12403 [484s]
+2026-10-13T07:30:48 done  lstmctl best s4 rc=0
+2026-10-13T07:30:48 start lstmctl final s5
+td3_actor.py split=val D2 n=52: median 561 mg, p25 408 mg, crash 0%, time-avg od 0.53, errors 0, fitness 485 [524s]
+2026-10-13T07:39:33 done  lstmctl final s5 rc=0
+2026-10-13T07:39:33 start lstmctl best s5
+td3_actor.py split=val D2 n=52: median 7650 mg, p25 3015 mg, crash 0%, time-avg od 1.18, errors 0, fitness 5332 [578s]
+2026-10-13T07:49:12 done  lstmctl best s5 rc=0
+2026-10-13T07:49:12 start lructl final s1
+td3_actor.py split=val D2 n=52: median 3207 mg, p25 1943 mg, crash 0%, time-avg od 0.36, errors 0, fitness 2575 [488s]
+2026-10-13T07:57:21 done  lructl final s1 rc=0
+2026-10-13T07:57:21 start lructl best s1
+td3_actor.py split=val D2 n=52: median 11938 mg, p25 10173 mg, crash 0%, time-avg od 1.03, errors 0, fitness 11055 [522s]
+2026-10-13T08:06:04 done  lructl best s1 rc=0
+2026-10-13T08:06:04 start lructl final s2
+td3_actor.py split=val D2 n=52: median 9744 mg, p25 7875 mg, crash 0%, time-avg od 0.79, errors 0, fitness 8810 [536s]
+2026-10-13T08:15:01 done  lructl final s2 rc=0
+2026-10-13T08:15:02 start lructl best s2
+td3_actor.py split=val D2 n=52: median 9744 mg, p25 7875 mg, crash 0%, time-avg od 0.79, errors 0, fitness 8810 [606s]
+2026-10-13T08:25:09 done  lructl best s2 rc=0
+2026-10-13T08:25:09 start lructl final s3
+td3_actor.py split=val D2 n=52: median 988 mg, p25 566 mg, crash 0%, time-avg od 2.31, errors 0, fitness 777 [648s]
+2026-10-13T08:35:58 done  lructl final s3 rc=0
+2026-10-13T08:35:58 start lructl best s3
+td3_actor.py split=val D2 n=52: median 12618 mg, p25 9871 mg, crash 0%, time-avg od 1.37, errors 0, fitness 11245 [554s]
+2026-10-13T08:45:13 done  lructl best s3 rc=0
+2026-10-13T08:45:13 start lructl final s4
+td3_actor.py split=val D2 n=52: median 8765 mg, p25 6744 mg, crash 0%, time-avg od 0.23, errors 0, fitness 7755 [513s]
+2026-10-13T08:53:48 done  lructl final s4 rc=0
+2026-10-13T08:53:48 start lructl best s4
+td3_actor.py split=val D2 n=52: median 1194 mg, p25 848 mg, crash 0%, time-avg od 1.25, errors 0, fitness 1021 [500s]
+2026-10-13T09:02:09 done  lructl best s4 rc=0
+2026-10-13T09:02:09 start lructl final s5
+td3_actor.py split=val D2 n=52: median 12848 mg, p25 9805 mg, crash 0%, time-avg od 1.31, errors 0, fitness 11327 [546s]
+2026-10-13T09:11:16 done  lructl final s5 rc=0
+2026-10-13T09:11:16 start lructl best s5
+td3_actor.py split=val D2 n=52: median 13254 mg, p25 10940 mg, crash 0%, time-avg od 1.00, errors 0, fitness 12097 [517s]
+2026-10-13T09:19:54 done  lructl best s5 rc=0

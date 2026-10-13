@@ -1,0 +1,56 @@
+{
+ "lstmctl": {
+  "1": {
+   "final_val_median": 3292.6384944,
+   "best_val_median": 5665.107413600001,
+   "selected": "best"
+  },
+  "2": {
+   "final_val_median": 5986.9040064,
+   "best_val_median": 13307.455623999998,
+   "selected": "best"
+  },
+  "3": {
+   "final_val_median": 5762.807587200001,
+   "best_val_median": 11235.3453792,
+   "selected": "best"
+  },
+  "4": {
+   "final_val_median": 839.7385712,
+   "best_val_median": 13475.913472,
+   "selected": "best"
+  },
+  "5": {
+   "final_val_median": 560.7659395999999,
+   "best_val_median": 7650.4183712,
+   "selected": "best"
+  }
+ },
+ "lructl": {
+  "1": {
+   "final_val_median": 3206.706656,
+   "best_val_median": 11937.530777599997,
+   "selected": "best"
+  },
+  "2": {
+   "final_val_median": 9744.4044192,
+   "best_val_median": 9744.4044192,
+   "selected": "final"
+  },
+  "3": {
+   "final_val_median": 987.7221536,
+   "best_val_median": 12618.4832064,
+   "selected": "best"
+  },
+  "4": {
+   "final_val_median": 8765.4041216,
+   "best_val_median": 1194.1797536000001,
+   "selected": "final"
+  },
+  "5": {
+   "final_val_median": 12848.489715199998,
+   "best_val_median": 13253.888659199998,
+   "selected": "best"
+  }
+ }
+}

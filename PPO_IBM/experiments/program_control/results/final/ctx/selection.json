@@ -52,5 +52,34 @@
    "best_val_median": 13253.888659199998,
    "selected": "best"
   }
+ },
+ "bi": {
+  "1": {
+   "final_val_median": 1919.853936,
+   "best_val_median": 4562.7730768,
+   "selected": "best"
+  },
+  "2": {
+   "final_val_median": 3530.8964383999996,
+   "best_val_median": 13812.296353599999,
+   "selected": "best"
+  },
+  "3": {
+   "final_val_median": 3191.549384,
+   "best_val_median": 6247.343099199999,
+   "selected": "best"
+  }
+ },
+ "w150": {
+  "1": {
+   "final_val_median": 365.7035696,
+   "best_val_median": 13133.2015808,
+   "selected": "best"
+  },
+  "2": {
+   "final_val_median": 2887.4165103999994,
+   "best_val_median": 5026.2951776,
+   "selected": "best"
+  }
  }
 }

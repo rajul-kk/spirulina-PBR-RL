@@ -58,3 +58,38 @@ td3_actor.py split=val D2 n=52: median 12848 mg, p25 9805 mg, crash 0%, time-avg
 2026-10-13T09:11:16 start lructl best s5
 td3_actor.py split=val D2 n=52: median 13254 mg, p25 10940 mg, crash 0%, time-avg od 1.00, errors 0, fitness 12097 [517s]
 2026-10-13T09:19:54 done  lructl best s5 rc=0
+2026-10-14T17:16:16 start bi final s1
+td3_actor.py split=val D2 n=52: median 1920 mg, p25 1467 mg, crash 0%, time-avg od 2.87, errors 0, fitness 1693 [2129s]
+2026-10-14T17:51:46 done  bi final s1 rc=0
+2026-10-14T17:51:46 start bi best s1
+td3_actor.py split=val D2 n=52: median 4563 mg, p25 1215 mg, crash 0%, time-avg od 1.96, errors 0, fitness 2889 [1419s]
+2026-10-14T18:15:27 done  bi best s1 rc=0
+2026-10-14T18:15:27 start bi final s2
+td3_actor.py split=val D2 n=52: median 3531 mg, p25 2060 mg, crash 79%, time-avg od 0.02, errors 0, fitness -5089 [618s]
+2026-10-14T18:25:46 done  bi final s2 rc=0
+2026-10-14T18:25:46 start bi best s2
+td3_actor.py split=val D2 n=52: median 13812 mg, p25 10693 mg, crash 17%, time-avg od 0.76, errors 0, fitness 10522 [795s]
+2026-10-14T18:39:02 done  bi best s2 rc=0
+2026-10-14T18:39:02 start bi final s3
+td3_actor.py split=val D2 n=52: median 3192 mg, p25 1939 mg, crash 100%, time-avg od 0.01, errors 0, fitness -7435 [414s]
+2026-10-14T18:45:58 done  bi final s3 rc=0
+2026-10-14T18:45:58 start bi best s3
+td3_actor.py split=val D2 n=52: median 6247 mg, p25 4907 mg, crash 0%, time-avg od 0.70, errors 0, fitness 5577 [964s]
+2026-10-14T19:02:03 done  bi best s3 rc=0
+2026-10-14T19:02:25 queue2: score_bi_val.sh no longer running, starting
+2026-10-14T19:02:26 start diag bi best s1 det
+td3_actor.py split=det D2 n=9: median 12732 mg, p25 2630 mg, crash 0%, time-avg od 2.32, errors 0, fitness 7681 [189s]
+2026-10-14T19:05:35 done  diag bi best s1 det rc=0
+2026-10-14T19:05:35 start w150 final s1 val
+td3_actor.py split=val D2 n=52: median 366 mg, p25 299 mg, crash 0%, time-avg od 0.59, errors 0, fitness 332 [1045s]
+2026-10-14T19:23:02 done  w150 final s1 rc=0
+2026-10-14T19:23:02 start w150 best s1 val
+td3_actor.py split=val D2 n=52: median 13133 mg, p25 11329 mg, crash 0%, time-avg od 0.74, errors 0, fitness 12231 [1090s]
+2026-10-14T19:41:13 done  w150 best s1 rc=0
+2026-10-14T19:41:13 start w150 final s2 val
+td3_actor.py split=val D2 n=52: median 2887 mg, p25 1890 mg, crash 0%, time-avg od 2.85, errors 0, fitness 2389 [1031s]
+2026-10-14T19:58:26 done  w150 final s2 rc=0
+2026-10-14T19:58:26 start w150 best s2 val
+td3_actor.py split=val D2 n=52: median 5026 mg, p25 3927 mg, crash 0%, time-avg od 2.25, errors 0, fitness 4477 [969s]
+2026-10-14T20:14:36 done  w150 best s2 rc=0
+2026-10-14T20:14:36 queue2 finished

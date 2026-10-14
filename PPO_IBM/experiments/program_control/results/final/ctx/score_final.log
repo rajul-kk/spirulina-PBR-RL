@@ -1,0 +1,32 @@
+2026-10-14T20:18:50 final_q1 start
+2026-10-14T20:18:50 start bi best s1 final
+td3_actor.py split=final D2 n=200: median 1927 mg, p25 1247 mg, crash 0%, time-avg od 1.78, errors 0, fitness 1587 [2938s]
+2026-10-14T21:07:50 done  bi best s1 rc=0
+2026-10-14T21:07:50 start bi final s1 final
+td3_actor.py split=final D2 n=200: median 1988 mg, p25 1375 mg, crash 0%, time-avg od 2.60, errors 0, fitness 1682 [2965s]
+2026-10-14T21:57:17 done  bi final s1 rc=0
+2026-10-14T21:57:17 start bi best s2 final
+td3_actor.py split=final D2 n=200: median 13216 mg, p25 10899 mg, crash 11%, time-avg od 0.78, errors 0, fitness 10958 [7732s]
+2026-10-15T00:06:10 done  bi best s2 rc=0
+2026-10-15T00:06:10 start bi final s2 final
+td3_actor.py split=final D2 n=200: median 3101 mg, p25 2146 mg, crash 80%, time-avg od 0.02, errors 0, fitness -5326 [2142s]
+2026-10-15T00:41:54 done  bi final s2 rc=0
+2026-10-15T00:41:54 start bi best s3 final
+td3_actor.py split=final D2 n=200: median 6764 mg, p25 5343 mg, crash 0%, time-avg od 0.67, errors 0, fitness 6054 [1647s]
+2026-10-15T01:09:22 done  bi best s3 rc=0
+2026-10-15T01:09:22 start bi final s3 final
+td3_actor.py split=final D2 n=200: median 2944 mg, p25 2003 mg, crash 100%, time-avg od 0.01, errors 0, fitness -7527 [663s]
+2026-10-15T01:20:27 done  bi final s3 rc=0
+2026-10-15T01:20:27 start w150 best s1 final
+td3_actor.py split=final D2 n=200: median 12781 mg, p25 10850 mg, crash 0%, time-avg od 0.75, errors 0, fitness 11815 [1448s]
+2026-10-15T01:44:35 done  w150 best s1 rc=0
+2026-10-15T01:44:35 start w150 final s1 final
+td3_actor.py split=final D2 n=200: median 380 mg, p25 275 mg, crash 0%, time-avg od 0.55, errors 0, fitness 327 [1461s]
+2026-10-15T02:08:57 done  w150 final s1 rc=0
+2026-10-15T02:08:57 start w150 best s2 final
+td3_actor.py split=final D2 n=200: median 5073 mg, p25 4045 mg, crash 0%, time-avg od 2.24, errors 0, fitness 4559 [1697s]
+2026-10-15T02:37:14 done  w150 best s2 rc=0
+2026-10-15T02:37:14 start w150 final s2 final
+td3_actor.py split=final D2 n=200: median 2631 mg, p25 2066 mg, crash 0%, time-avg od 2.64, errors 0, fitness 2348 [1688s]
+2026-10-15T03:05:22 done  w150 final s2 rc=0
+2026-10-15T03:05:22 final_q1 finished

@@ -1,0 +1,53 @@
+--- TD3 (Twin Delayed DDPG) for GeneticPhotobioreactorEnv ---
+Device: cpu | obs_dim=6 action_dim=3 | gamma=0.9995
+Budget: 2,000,000 steps | Gate: project dual (stochastic + deterministic)
+Hidden reset every 600 steps | SEQ_LEN=150
+Demo replay: 24 scripted-expert episodes, 25% of every training batch, never evicted
+
+  [RESUME] step=1,300,000 D0 online_buffer=271 episodes
+  Collecting 24 scripted-expert demonstration episodes (mix {0: 0.4, 1: 0.4, 2: 0.2})...
+    demo  1/24  D1  harvested=16472.0mg  time_avg_od=0.7819
+    demo  2/24  D0  harvested=14967.6mg  time_avg_od=0.7864
+    demo  3/24  D1  harvested= 9512.9mg  time_avg_od=0.7553
+    demo  4/24  D2  harvested=14604.8mg  time_avg_od=0.7570
+    demo  5/24  D2  harvested=11221.2mg  time_avg_od=0.7856
+    demo  6/24  D0  harvested= 8095.5mg  time_avg_od=0.7287
+    demo  7/24  D0  harvested=13141.0mg  time_avg_od=0.7440
+    demo  8/24  D0  harvested=11349.5mg  time_avg_od=0.7505
+    demo  9/24  D1  harvested=10279.9mg  time_avg_od=0.7492
+    demo 10/24  D2  harvested=10827.1mg  time_avg_od=0.7718
+    demo 11/24  D1  harvested= 7152.9mg  time_avg_od=0.7281
+    demo 12/24  D1  harvested=13293.8mg  time_avg_od=0.7818
+    demo 13/24  D1  harvested=13952.5mg  time_avg_od=0.8265
+    demo 14/24  D0  harvested= 8316.6mg  time_avg_od=0.7313
+    demo 15/24  D1  harvested=13704.1mg  time_avg_od=0.7669
+    demo 16/24  D2  harvested= 9602.2mg  time_avg_od=0.7217
+    demo 17/24  D0  harvested=13990.4mg  time_avg_od=0.7773
+    demo 18/24  D0  harvested=12074.7mg  time_avg_od=0.7931
+    demo 19/24  D0  harvested=11215.9mg  time_avg_od=0.7621
+    demo 20/24  D1  harvested=12993.9mg  time_avg_od=0.7592
+    demo 21/24  D1  harvested=10273.4mg  time_avg_od=0.7645
+    demo 22/24  D1  harvested=11451.0mg  time_avg_od=0.7313
+    demo 23/24  D0  harvested=13399.0mg  time_avg_od=0.7488
+    demo 24/24  D0  harvested=13973.0mg  time_avg_od=0.8555
+
+[Chunk] train_diff=D0 | mastery_diff=D0 | init=276 | steps=100,000
+
+  [Stoch] D0 cvar10_harvest=1558.6
+  [Det] eps=8 harvest_mg=12649.7 p25=7829.8 time_avg_od=0.0590 crash=66.7%
+  [Det/bucket] 120:1900*  250:3764*  380:10363  700:9185*  1100:14937*  1500:19250*  2500:31068  4000:48756  45:600*
+  [Det/window] full-episode median=12649.7  back-half median=991.1  back-half share=8%
+  Curriculum hold D0 | chunk_eps=25 eps=40 harvest_mg=3115.2 p25=2010.6 time_avg_od=0.0174 crash=100.00% adv=0/2 dem=0/2 capfail=11/12
+
+[Chunk] train_diff=D0 | mastery_diff=D0 | init=186 | steps=100,000
+
+  [Stoch] D0 cvar10_harvest=1502.4
+  [Det] eps=8 harvest_mg=12702.3 p25=7111.6 time_avg_od=0.0457 crash=66.7%
+  [Det/bucket] 120:7625  250:3770*  380:5570*  700:9075*  1100:16330*  1500:19141*  2500:35042  4000:50820  45:666*
+  [Det/window] full-episode median=12702.3  back-half median=1049.9  back-half share=8%
+  [CAPABILITY ABORT] deterministic gate failed 12 consecutive chunks at D0 (crash rate 100.00%) — no tier to demote to, stopping run.
+  Curriculum hold D0 | chunk_eps=24 eps=40 harvest_mg=3029.1 p25=2015.9 time_avg_od=0.0163 crash=100.00% adv=0/2 dem=0/2 capfail=12/12
+
+  [EARLY STOP] D0 capability-abort triggered — see log above.
+
+--- Training Complete. Final model saved. ---

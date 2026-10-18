@@ -68,6 +68,11 @@
    "final_val_median": 3191.549384,
    "best_val_median": 6247.343099199999,
    "selected": "best"
+  },
+  "5": {
+   "final_val_median": 3297.4577136,
+   "best_val_median": 11010.593888799998,
+   "selected": "best"
   }
  },
  "w150": {

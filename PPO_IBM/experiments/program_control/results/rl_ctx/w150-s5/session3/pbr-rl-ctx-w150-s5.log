@@ -1,0 +1,33 @@
+[{"stream_name":"stderr","time":0.815045378,"data":"Cloning into '/kaggle/working/repo'...\n"}
+,{"stream_name":"stderr","time":3.331369971,"data":"Note: switching to 'dbc6bcaa4189e95c255fe1cad5fa97202e070860'.\n"}
+,{"stream_name":"stderr","time":3.331402822,"data":"\n"}
+,{"stream_name":"stderr","time":3.331408836,"data":"You are in 'detached HEAD' state. You can look around, make experimental\n"}
+,{"stream_name":"stderr","time":3.331413766,"data":"changes and commit them, and you can discard any commits you make in this\n"}
+,{"stream_name":"stderr","time":3.331418956,"data":"state without impacting any branches by switching back to a branch.\n"}
+,{"stream_name":"stderr","time":3.331423811,"data":"\n"}
+,{"stream_name":"stderr","time":3.3314283,"data":"If you want to create a new branch to retain commits you create, you may\n"}
+,{"stream_name":"stderr","time":3.331433115,"data":"do so (now or later) by using -c with the switch command. Example:\n"}
+,{"stream_name":"stderr","time":3.331437872,"data":"\n"}
+,{"stream_name":"stderr","time":3.3314422280000002,"data":"  git switch -c \u003cnew-branch-name\u003e\n"}
+,{"stream_name":"stderr","time":3.331445719,"data":"\n"}
+,{"stream_name":"stderr","time":3.331448621,"data":"Or undo this operation with:\n"}
+,{"stream_name":"stderr","time":3.331451743,"data":"\n"}
+,{"stream_name":"stderr","time":3.331454606,"data":"  git switch -\n"}
+,{"stream_name":"stderr","time":3.331457497,"data":"\n"}
+,{"stream_name":"stderr","time":3.3314614909999998,"data":"Turn off this advice by setting config variable advice.detachedHead to false\n"}
+,{"stream_name":"stderr","time":3.33146652,"data":"\n"}
+,{"stream_name":"stdout","time":3.6679321639999998,"data":"$ nvidia-smi --query-gpu=name,memory.total --format=csv\n"}
+,{"stream_name":"stderr","time":3.674230826,"data":"/bin/sh: 1: nvidia-smi: not found\n"}
+,{"stream_name":"stdout","time":3.674452567,"data":"$ git -C /kaggle/working/repo log -1 --format='repo at %h %s'\n"}
+,{"stream_name":"stdout","time":3.681646814,"data":"repo at dbc6bca Protocol section 9: training-context ablation, pre-registered before any run\n"}
+,{"stream_name":"stdout","time":3.683149521,"data":"$ pip -q install gymnasium tqdm\n"}
+,{"stream_name":"stdout","time":12.045028551,"data":"resuming from /kaggle/input/pbr-rl-ctx-w150-s5/model_data\n"}
+,{"stream_name":"stdout","time":39612.355517932,"data":"wall-clock limit: stopping to save output; resume in a new session\n"}
+,{"stream_name":"stdout","time":39612.557021894,"data":"session done in 11.00 h\n"}
+,{"stream_name":"stderr","time":39615.628992341,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":39615.629032923,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":39616.028442952,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":39616.028479947,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":39617.058640488,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":39618.434981538,"data":"[NbConvertApp] Writing 274267 bytes to __results__.html\n"}
+]

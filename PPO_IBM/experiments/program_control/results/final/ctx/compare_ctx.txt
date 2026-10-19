@@ -1,0 +1,102 @@
+Context-ablation family (protocol section 9), Holm over 2: C1: BI-LSTM vs LSTM-ctl; C2: W150-LSTM vs LSTM-ctl
+Endpoint: final-split harvest of the val-selected checkpoint of each run
+175 yield-scored episodes per run
+
+Selected checkpoints (selection.json, made on val only)
+  LSTM-ctl   {1: 'best', 2: 'best', 3: 'best', 4: 'best', 5: 'best'}
+  LRU-ctl    {1: 'best', 2: 'final', 3: 'best', 4: 'final', 5: 'best'}
+  BI-LSTM    {1: 'best', 2: 'best', 3: 'best', 4: 'best', 5: 'best'}
+  W150-LSTM  {1: 'best', 2: 'best', 3: 'best', 4: 'best', 5: 'final'}
+
+arm (selected ckpt)  runs  median g   p25 g  crash   per-run medians
+LRU-ctl                 5     10.96    9.14     0%   [11.86, 9.76, 12.34, 8.4, 12.59]
+W150-LSTM               5      9.50    7.71     1%   [12.78, 5.07, 10.99, 13.22, 4.11]
+LSTM-ctl                5      9.45    7.45     0%   [5.44, 12.6, 11.38, 13.03, 6.38]
+BI-LSTM                 5      8.57    6.73     8%   [1.93, 13.22, 6.76, 11.34, 10.34]
+
+Pre-registered comparisons (mean paired difference, hierarchical 95% CI, Holm-adjusted p over the family of 2)
+  C1  BI-LSTM - LSTM-ctl: -1.58 g [-5.50, +2.50]  p_holm=0.8872  BI-LSTM better in 24% of episodes
+  C2  W150-LSTM - LSTM-ctl: -1.39 g [-6.67, +3.52]  p_holm=0.8872  W150-LSTM better in 49% of episodes
+
+  C1 seed-level exact permutation test BI-LSTM vs LSTM-ctl (5 v 5 runs, per-run medians): p=0.6984  [headline, section 8]
+
+  C2 seed-level exact permutation test W150-LSTM vs LSTM-ctl (5 v 5 runs, per-run medians): p=0.7143  [headline, section 8]
+
+====================================================================================================
+Secondary endpoints (unadjusted p-values, no Holm correction)
+
+LRU control vs the new arms, selected checkpoints (bootstrap p unadjusted)
+  LRU-ctl - BI-LSTM: +1.94 g [-1.73, +5.45]  p_boot=0.3011  seed-level permutation p=0.3571
+  LRU-ctl - W150-LSTM: +1.75 g [-2.84, +6.67]  p_boot=0.4991  seed-level permutation p=0.4206
+
+Raw final checkpoints (continuity with section 4), same comparisons
+arm (final ckpt)     runs  median g  crash   per-run medians
+LSTM-ctl                5      3.00    40%   [3.07, 5.15, 5.17, 0.82, 0.54]
+LRU-ctl                 5      6.87     0%   [2.97, 9.76, 0.9, 8.4, 12.0]
+BI-LSTM                 5      2.44    56%   [1.99, 3.1, 2.94, 0.7, 3.09]
+W150-LSTM               5      2.31    19%   [0.38, 2.63, 0.32, 3.56, 4.11]
+  BI-LSTM - LSTM-ctl: -3.07 g [-5.94, -0.36]  p_boot=0.0237  seed-level permutation p=0.6429
+  W150-LSTM - LSTM-ctl: -3.20 g [-6.87, +0.43]  p_boot=0.0862  seed-level permutation p=0.5714
+  LRU-ctl - BI-LSTM: +4.70 g [-0.42, +9.47]  p_boot=0.0735  seed-level permutation p=0.1032
+  LRU-ctl - W150-LSTM: +4.84 g [-0.81, +10.24]  p_boot=0.0925  seed-level permutation p=0.1032
+
+Crash rate per seed (selected / final checkpoint)
+  LSTM-ctl   selected mean 0.3% {1: '1.5%', 2: '0.0%', 3: '0.0%', 4: '0.0%', 5: '0.0%'}
+             final    mean 40.3% {1: '80.0%', 2: '87.5%', 3: '34.0%', 4: '0.0%', 5: '0.0%'}
+  LRU-ctl    selected mean 0.0% {1: '0.0%', 2: '0.0%', 3: '0.0%', 4: '0.0%', 5: '0.0%'}
+             final    mean 0.0% {1: '0.0%', 2: '0.0%', 3: '0.0%', 4: '0.0%', 5: '0.0%'}
+  BI-LSTM    selected mean 8.0% {1: '0.0%', 2: '11.0%', 3: '0.0%', 4: '26.0%', 5: '3.0%'}
+             final    mean 55.9% {1: '0.0%', 2: '79.5%', 3: '100.0%', 4: '0.0%', 5: '100.0%'}
+  W150-LSTM  selected mean 0.7% {1: '0.0%', 2: '0.0%', 3: '0.0%', 4: '0.0%', 5: '3.5%'}
+             final    mean 19.2% {1: '0.0%', 2: '0.0%', 3: '1.0%', 4: '91.5%', 5: '3.5%'}
+  crash (selected) BI-LSTM vs LSTM-ctl: seed-level exact permutation p=0.1667
+  crash (selected) W150-LSTM vs LSTM-ctl: seed-level exact permutation p=1.0000
+  crash (selected) LRU-ctl vs BI-LSTM: seed-level exact permutation p=0.1667
+  crash (selected) LRU-ctl vs W150-LSTM: seed-level exact permutation p=1.0000
+
+Curriculum from training logs (steps censored at the 2,000,000 budget)
+arm        seed      D1 at      D2 at  tier  dem  abort      steps  status
+LSTM-ctl      1          -          -    D0    0     no  2,000,000  complete
+LSTM-ctl      2          -          -    D0    0    yes  1,950,000  complete
+LSTM-ctl      3          -          -    D0    0     no  2,000,000  complete
+LSTM-ctl      4          -          -    D0    0     no  2,000,000  complete
+LSTM-ctl      5    800,000          -    D0    1     no  2,000,000  complete
+LRU-ctl       1  1,100,000  1,500,000    D2    0     no  2,000,000  complete
+LRU-ctl       2  1,400,000  1,950,000    D2    0     no  2,000,000  complete
+LRU-ctl       3  1,000,000  1,400,000    D2    0     no  2,000,000  complete
+LRU-ctl       4  1,000,000          -    D0    1     no  2,000,000  complete
+LRU-ctl       5  1,000,000  1,400,000    D2    0     no  2,000,000  complete
+BI-LSTM       1    300,000    600,000    D2    0     no  2,000,000  complete
+BI-LSTM       2          -          -    D0    0     no  2,000,000  complete
+BI-LSTM       3          -          -    D0    0     no  2,000,000  complete
+BI-LSTM       4          -          -    D0    0     no  2,000,000  complete
+BI-LSTM       5          -          -    D0    0    yes  1,850,000  complete
+W150-LSTM     1          -          -    D0    0     no  2,000,000  complete
+W150-LSTM     2    600,000          -    D1    0     no  2,000,000  complete
+W150-LSTM     3          -          -    D0    0    yes  1,950,000  complete
+W150-LSTM     4          -          -    D0    0    yes  1,500,000  complete
+W150-LSTM     5  1,850,000          -    D1    0     no  2,000,000  complete
+
+Per arm (finished seeds only)
+arm        seeds  reach D1  reach D2   med steps D1   med steps D2
+LSTM-ctl       5         1         0    >=2,000,000    >=2,000,000
+LRU-ctl        5         5         4      1,000,000      1,500,000
+BI-LSTM        5         1         1    >=2,000,000    >=2,000,000
+W150-LSTM      5         2         0    >=2,000,000    >=2,000,000
+(medians use steps censored at the budget; '>=' means at least half the seeds never reached the tier)
+
+C1 pair BI-LSTM vs LSTM-ctl (5 v 5 seeds)
+  seeds reaching D1: BI-LSTM 1/5, LSTM-ctl 1/5  Fisher exact two-sided p=1.0000; steps to D1 mean 1,660,000 v 1,760,000, exact permutation p=1.0000
+  seeds reaching D2: BI-LSTM 1/5, LSTM-ctl 0/5  Fisher exact two-sided p=1.0000; steps to D2 mean 1,720,000 v 2,000,000, exact permutation p=1.0000
+
+C2 pair W150-LSTM vs LSTM-ctl (5 v 5 seeds)
+  seeds reaching D1: W150-LSTM 2/5, LSTM-ctl 1/5  Fisher exact two-sided p=1.0000; steps to D1 mean 1,690,000 v 1,760,000, exact permutation p=0.7222
+  seeds reaching D2: W150-LSTM 0/5, LSTM-ctl 0/5  Fisher exact two-sided p=1.0000; steps to D2 mean 2,000,000 v 2,000,000, exact permutation p=1.0000
+
+S1 pair LRU-ctl vs BI-LSTM (5 v 5 seeds)
+  seeds reaching D1: LRU-ctl 5/5, BI-LSTM 1/5  Fisher exact two-sided p=0.0476; steps to D1 mean 1,100,000 v 1,660,000, exact permutation p=0.1746
+  seeds reaching D2: LRU-ctl 4/5, BI-LSTM 1/5  Fisher exact two-sided p=0.2063; steps to D2 mean 1,650,000 v 1,720,000, exact permutation p=0.9206
+
+S2 pair LRU-ctl vs W150-LSTM (5 v 5 seeds)
+  seeds reaching D1: LRU-ctl 5/5, W150-LSTM 2/5  Fisher exact two-sided p=0.1667; steps to D1 mean 1,100,000 v 1,690,000, exact permutation p=0.0556
+  seeds reaching D2: LRU-ctl 4/5, W150-LSTM 0/5  Fisher exact two-sided p=0.0476; steps to D2 mean 1,650,000 v 2,000,000, exact permutation p=0.0476

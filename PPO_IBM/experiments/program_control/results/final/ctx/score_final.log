@@ -46,3 +46,11 @@ td3_actor.py split=final D2 n=200: median 13222 mg, p25 11208 mg, crash 0%, time
 td3_actor.py split=final D2 n=200: median 3564 mg, p25 2464 mg, crash 92%, time-avg od 0.02, errors 0, fitness -6136 [1210s]
 2026-10-19T07:31:35 done  w150 final s4 final rc=0
 2026-10-19T07:31:35 w150 s4 scoring finished
+2026-10-19T08:29:57 bi s4 selection FAILED
+2026-10-19T10:18:21 start bi best s4 final
+td3_actor.py split=final D2 n=200: median 11340 mg, p25 5719 mg, crash 26%, time-avg od 0.81, errors 0, fitness 5930 [1101s]
+2026-10-19T10:36:44 done  bi best s4 final rc=0
+2026-10-19T10:36:44 start bi final s4 final
+td3_actor.py split=final D2 n=200: median 703 mg, p25 332 mg, crash 0%, time-avg od 0.67, errors 0, fitness 517 [1159s]
+2026-10-19T10:56:03 done  bi final s4 final rc=0
+2026-10-19T10:56:03 bi s4 scoring finished

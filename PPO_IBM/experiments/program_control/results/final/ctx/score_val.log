@@ -99,3 +99,9 @@ td3_actor.py split=val D2 n=52: median 3297 mg, p25 2027 mg, crash 98%, time-avg
 2026-10-19T02:24:55 start bi best s5 val
 td3_actor.py split=val D2 n=52: median 11011 mg, p25 7594 mg, crash 6%, time-avg od 0.72, errors 0, fitness 8726 [342s]
 2026-10-19T02:30:37 done  bi best s5 val rc=0
+2026-10-19T06:19:14 start w150 final s4 val
+td3_actor.py split=val D2 n=52: median 3926 mg, p25 2310 mg, crash 90%, time-avg od 0.02, errors 0, fitness -5920 [336s]
+2026-10-19T06:24:51 done  w150 final s4 val rc=0
+2026-10-19T06:24:51 start w150 best s4 val
+td3_actor.py split=val D2 n=52: median 13764 mg, p25 11196 mg, crash 0%, time-avg od 0.80, errors 0, fitness 12480 [603s]
+2026-10-19T06:34:56 done  w150 best s4 val rc=0

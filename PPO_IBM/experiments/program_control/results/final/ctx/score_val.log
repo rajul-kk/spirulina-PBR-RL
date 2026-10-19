@@ -111,3 +111,15 @@ td3_actor.py split=val D2 n=52: median 790 mg, p25 397 mg, crash 0%, time-avg od
 2026-10-19T08:25:13 start bi best s4 val
 td3_actor.py split=val D2 n=52: median 12336 mg, p25 6697 mg, crash 19%, time-avg od 0.80, errors 0, fitness 7593 [284s]
 2026-10-19T08:29:57 done  bi best s4 val rc=0
+2026-10-19T16:20:33 start w150 final s3 val
+td3_actor.py split=val D2 n=52: median 292 mg, p25 214 mg, crash 6%, time-avg od 0.41, errors 0, fitness -324 [1401s]
+2026-10-19T16:43:58 done  w150 final s3 val rc=0
+2026-10-19T16:43:58 start w150 best s3 val
+td3_actor.py split=val D2 n=52: median 11765 mg, p25 7679 mg, crash 0%, time-avg od 0.75, errors 0, fitness 9722 [1321s]
+2026-10-19T17:06:04 done  w150 best s3 val rc=0
+2026-10-19T18:40:03 start w150 final s5 val
+td3_actor.py split=val D2 n=52: median 4561 mg, p25 3106 mg, crash 0%, time-avg od 1.79, errors 0, fitness 3833 [573s]
+2026-10-19T18:49:39 done  w150 final s5 val rc=0
+2026-10-19T18:49:39 start w150 best s5 val
+td3_actor.py split=val D2 n=52: median 4561 mg, p25 3106 mg, crash 0%, time-avg od 1.79, errors 0, fitness 3833 [473s]
+2026-10-19T18:57:33 done  w150 best s5 val rc=0
